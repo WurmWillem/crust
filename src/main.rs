@@ -37,17 +37,20 @@ impl Display for Value {
 struct Chunk {
     code: Vec<Byte>,
     constants: Vec<Value>,
+    lines: Vec<u32>,
 }
 impl Chunk {
     fn new() -> Self {
         Self {
             code: vec![],
             constants: vec![],
+            lines: vec![],
         }
     }
 
-    fn write_byte_to_chunk(&mut self, byte: Byte) {
+    fn write_byte_to_chunk(&mut self, byte: Byte, line: u32) {
         self.code.push(byte);
+        self.lines.push(line);
     }
 
     fn add_constant(&mut self, value: Value) -> usize {
@@ -67,6 +70,12 @@ impl Chunk {
     fn disassemble_instruction(&mut self, offset: usize) -> usize {
         print!("{}  ", offset);
 
+        if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
+            print!("   | ");
+        } else {
+            print!("{} ", self.lines[offset]);
+        }
+
         let instruction = self.code[offset];
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
@@ -82,8 +91,8 @@ impl Chunk {
 
     fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant_index = self.code[offset + 1];
-        print!("{} const index: {}", name, constant_index);
-        println!(" value: {}", self.constants[constant_index as usize]);
+        print!("{}  {}:", name, constant_index);
+        println!(" '{}'", self.constants[constant_index as usize]);
         offset + 2
     }
 }
@@ -92,10 +101,10 @@ fn main() {
     let mut chunk = Chunk::new();
 
     let constant_index = chunk.add_constant(Value::F64(1.2));
-    chunk.write_byte_to_chunk(OpCode::Constant as u8);
-    chunk.write_byte_to_chunk(constant_index as u8);
+    chunk.write_byte_to_chunk(OpCode::Constant as u8, 123);
+    chunk.write_byte_to_chunk(constant_index as u8, 123);
 
-    chunk.write_byte_to_chunk(OpCode::Return as u8);
+    chunk.write_byte_to_chunk(OpCode::Return as u8, 123);
     chunk.disassemble("test");
     // let x = vec![1, 2, 3];
     // x.le/
