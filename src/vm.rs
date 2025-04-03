@@ -65,9 +65,8 @@ impl VM {
                 let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
                 self.chunk.disassemble_instruction(debug_offset as usize);
             }
-            // let instruction = self.ip;
-            // let byte = *self.ip;
-            // self.ip = self.ip.add(1);
+
+
             macro_rules! binary_op {
                 ($op: tt) => {{
                     let rhs = self.stack_pop();
@@ -75,7 +74,6 @@ impl VM {
                     self.stack_push(lhs $op rhs);
                 }};
             }
-
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
                     println!("{}", self.stack_pop());
@@ -84,15 +82,11 @@ impl VM {
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
                     let constant = self.chunk.constants[index].clone();
-                    // println!("hey");
-
                     self.stack_push(constant);
-                    // break;
                 }
                 OpCode::Negate => {
                     let new_value = -self.stack_pop();
                     self.stack_push(new_value);
-                    // break;
                 }
                 OpCode::Add => binary_op!(+),
                 OpCode::Sub => binary_op!(-),

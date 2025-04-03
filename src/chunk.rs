@@ -46,12 +46,6 @@ impl Chunk {
             print!("{} ", self.lines[offset]);
         }
 
-        // macro_rules! binary_op {
-        //     ($op: tt) => {
-        //         self
-        //     };
-        // }
-
         let instruction = self.code[offset];
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
