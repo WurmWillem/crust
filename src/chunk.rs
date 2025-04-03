@@ -1,8 +1,8 @@
-use crate::{OpCode, Value};
+use crate::{OpCode, StackValue};
 
 pub struct Chunk {
     pub code: Vec<u8>,
-    pub constants: Vec<Value>,
+    pub constants: Vec<StackValue>,
     lines: Vec<u32>,
 }
 impl Chunk {
@@ -23,7 +23,7 @@ impl Chunk {
         self.lines.push(line);
     }
 
-    pub fn add_constant(&mut self, value: Value) -> usize {
+    pub fn add_constant(&mut self, value: StackValue) -> usize {
         self.constants.push(value);
         self.constants.len() - 1
     }
@@ -50,7 +50,8 @@ impl Chunk {
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
             OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
-            _ => panic!("Unreachable."),
+            OpCode::Negate => Self::simple_instruction("OP_NEGATE", offset),
+            // _ => panic!("Unreachable."),
         }
     }
 

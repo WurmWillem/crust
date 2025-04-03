@@ -1,6 +1,6 @@
-use crate::{chunk::Chunk, opcode::OpCode, value::Value};
+use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
 
-const DEBUG_TRACE_EXECUTION: bool = true;
+const DEBUG_TRACE_EXECUTION: bool = false;
 
 pub enum InterpretResult {
     Ok,
@@ -13,7 +13,7 @@ const STACK_SIZE: usize = 256;
 pub struct VM {
     chunk: Chunk,
     ip: *const u8,
-    stack: [Value; STACK_SIZE],
+    stack: [StackValue; STACK_SIZE],
     stack_top: usize,
 }
 impl VM {
@@ -27,7 +27,7 @@ impl VM {
         let mut vm = Self {
             chunk,
             ip,
-            stack: [const { Value::None }; STACK_SIZE],
+            stack: [const { StackValue::None }; STACK_SIZE],
             stack_top: 0,
         };
         // self.chunk = chunk;
@@ -35,14 +35,14 @@ impl VM {
         unsafe { vm.run() }
     }
 
-    fn stack_push(&mut self, value: Value) {
+    fn stack_push(&mut self, value: StackValue) {
         self.stack[self.stack_top] = value;
         self.stack_top += 1;
     }
 
-    fn stack_pop(&mut self) -> &Value {
+    fn stack_pop(&mut self) -> StackValue {
         self.stack_top -= 1;
-        &self.stack[self.stack_top]
+        self.stack[self.stack_top]
     }
 
     #[inline(always)]
@@ -80,6 +80,11 @@ impl VM {
                     // println!("hey");
 
                     self.stack_push(constant);
+                    // break;
+                }
+                OpCode::Negate => {
+                    let new_value = -self.stack_pop();
+                    self.stack_push(new_value);
                     // break;
                 }
             }
