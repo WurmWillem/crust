@@ -1,6 +1,6 @@
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
 
-const DEBUG_TRACE_EXECUTION: bool = false;
+const DEBUG_TRACE_EXECUTION: bool = true;
 
 pub enum InterpretResult {
     Ok,
@@ -68,6 +68,13 @@ impl VM {
             // let instruction = self.ip;
             // let byte = *self.ip;
             // self.ip = self.ip.add(1);
+            macro_rules! binary_op {
+                ($op: tt) => {{
+                    let rhs = self.stack_pop();
+                    let lhs = self.stack_pop();
+                    self.stack_push(lhs $op rhs);
+                }};
+            }
 
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
@@ -87,6 +94,10 @@ impl VM {
                     self.stack_push(new_value);
                     // break;
                 }
+                OpCode::Add => binary_op!(+),
+                OpCode::Sub => binary_op!(-),
+                OpCode::Mul => binary_op!(*),
+                OpCode::Div => binary_op!(/),
             }
         }
         // dbg!(5);
