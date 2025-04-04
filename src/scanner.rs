@@ -1,9 +1,7 @@
 use colored::Colorize;
 use std::collections::HashMap;
 
-// use crate::error::{crash, rox_error, ScanError};
 use crate::token::{Literal, Token, TokenType};
-// use crate::token_type::TokenType;
 
 pub fn print_error(line: usize, message: &str) {
     let l = "[line ".blue();
@@ -22,6 +20,7 @@ pub fn print_error(line: usize, message: &str) {
 pub struct Scanner<'source> {
     source: &'source str,
     tokens: Vec<Token<'source>>,
+
     keywords: HashMap<String, TokenType>,
 
     start: usize,
@@ -152,6 +151,7 @@ impl<'source> Scanner<'source> {
             ' ' | '\r' | '\t' => (),
             '\n' => self.line += 1,
 
+            // keywords and variables
             _ => {
                 if c.is_ascii_digit() {
                     self.add_num_token()
@@ -160,6 +160,7 @@ impl<'source> Scanner<'source> {
                         self.current += 1;
                     }
 
+                    // NOTE: could be optimized with tries
                     let text = self.source[self.start..self.current].to_string();
                     let kind = match self.keywords.get(&text) {
                         Some(k) => *k,
@@ -236,8 +237,7 @@ impl<'source> Scanner<'source> {
             }
         }
 
-        let num = self.source[self.start..self.current].to_string();
-        let num = num.parse::<f64>().unwrap();
+        let num = self.source[self.start..self.current].parse::<f64>().unwrap();
         self.add_lit_token(TokenType::Number, Literal::Num(num))
     }
 
