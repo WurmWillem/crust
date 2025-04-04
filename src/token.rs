@@ -2,7 +2,7 @@
 pub enum Literal {
     None,
     Str,
-    F64(f64),
+    Num(f64),
     True,
     False,
     Nil,

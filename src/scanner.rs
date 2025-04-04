@@ -5,23 +5,23 @@ use std::collections::HashMap;
 use crate::token::{Literal, Token, TokenType};
 // use crate::token_type::TokenType;
 
-pub fn rox_error(line: usize, message: &str) {
+pub fn print_error(line: usize, message: &str) {
     let l = "[line ".blue();
     let i = "] Error: ".blue();
     let message = message.red();
     println!("{}{}{}{}", l, line, i, message);
 }
 
-pub fn crash(line: usize, message: &str) -> ! {
-    let l = "[line ".blue();
-    let i = "] Error: ".blue();
-    let message = message.red();
-    panic!("{}{}{}{}", l, line, i, message);
-}
+// pub fn crash(line: usize, message: &str) {
+//     let l = "[line ".blue();
+//     let i = "] Error: ".blue();
+//     let message = message.red();
+//     println!("{}{}{}{}", l, line, i, message);
+// }
 
-pub struct Scanner<'a> {
-    source: String,
-    tokens: Vec<Token<'a>>,
+pub struct Scanner<'source> {
+    source: &'source str,
+    tokens: Vec<Token<'source>>,
     keywords: HashMap<String, TokenType>,
 
     start: usize,
@@ -30,8 +30,8 @@ pub struct Scanner<'a> {
     had_error: bool,
 }
 
-impl<'a> Scanner<'a> {
-    pub fn new(source: String) -> Self {
+impl<'source> Scanner<'source> {
+    pub fn new(source_file: &'source str) -> Self {
         //let mut keywords = HashMap::new();
         macro_rules! create_keywords {
             ($($k: expr, $v: ident)*) => {
@@ -47,10 +47,10 @@ impl<'a> Scanner<'a> {
             "klas",Class "proces",Fun "laat",Var "geef",Return "zeg",Print "roep", Println
         );
 
-        let source_len = source.len();
+        let source_len = source_file.len();
 
         Self {
-            source,
+            source: source_file,
             tokens: Vec::with_capacity(source_len / 2),
             keywords,
             start: 0,
@@ -60,7 +60,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub fn scan_tokens(mut self) -> Result<Vec<Token<'a>>, ()> {
+    pub fn scan_tokens(mut self) -> Result<Vec<Token<'source>>, ()> {
         while !self.at_end_input() {
             self.start = self.current;
             self.scan_token();
@@ -138,14 +138,15 @@ impl<'a> Scanner<'a> {
                     self.current += 1;
                 }
                 if self.at_end_input() {
-                    crash(self.line, "Ongetermineerde reeks.");
+                    print_error(self.line, "Ongetermineerde reeks.");
+                    self.had_error = true;
+                    return ;
                 }
 
                 self.current += 1;
 
-                let lit = &(self.source[(self.start + 1)..(self.current - 1)]);
-
-                self.add_lit_token(TokenType::String, lit);
+                // let lit = &(self.source[(self.start + 1)..(self.current - 1)]);
+                self.add_lit_token(TokenType::String, Literal::None);
             }
 
             ' ' | '\r' | '\t' => (),
@@ -168,7 +169,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(kind);
                 } else {
                     let msg = format!("'{}' is een ongeldig karakter.", c);
-                    rox_error(self.line, &msg);
+                    print_error(self.line, &msg);
                     self.had_error = true;
                 }
             }
