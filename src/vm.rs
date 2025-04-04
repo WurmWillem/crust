@@ -66,7 +66,6 @@ impl VM {
                 self.chunk.disassemble_instruction(debug_offset as usize);
             }
 
-
             macro_rules! binary_op {
                 ($op: tt) => {{
                     let rhs = self.stack_pop();
