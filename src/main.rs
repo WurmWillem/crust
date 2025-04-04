@@ -10,6 +10,7 @@ mod scanner;
 mod token;
 mod value;
 mod vm;
+mod parser;
 
 pub type Byte = u8;
 

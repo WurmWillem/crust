@@ -10,7 +10,7 @@ pub enum Literal {
 
 #[derive(Clone, Debug)]
 pub struct Token<'source> {
-    kind: TokenType,
+    pub kind: TokenType,
     lexeme: &'source str,
     literal: Literal,
     line: usize,
