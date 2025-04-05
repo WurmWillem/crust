@@ -27,9 +27,9 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "en",And "of",Or "als",If "anders",Else "terwijl",While "voor",For 
-            "wellus",True "nietus",False "niks",Nil "dit",This "ouder",Super 
-            "klas",Class "proces",Fun "laat",Var "geef",Return "zeg",Print 
+            "en",And "of",Or "als",If "anders",Else "terwijl",While "voor",For
+            "wellus",True "nietus",False "niks",Nil "dit",This "ouder",Super
+            "klas",Class "proces",Fun "laat",Var "geef",Return "zeg",Print
         );
 
         let source_len = source_file.len();
@@ -51,7 +51,8 @@ impl<'source> Scanner<'source> {
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(TokenType::EOF, "", Literal::None, self.line));
+        self.tokens
+            .push(Token::new(TokenType::EOF, "", Literal::None, self.line));
 
         if self.had_error {
             Err(())
@@ -94,7 +95,6 @@ impl<'source> Scanner<'source> {
             ';' => self.add_token(TokenType::Semicolon),
             '*' => self.add_token(TokenType::Star),
             // '^' => self.add_token(TokenType::Caret),
-
             '!' => ternary!('=', BangEqual, Bang),
             '=' => ternary!('=', EqualEqual, Equal),
             '<' => ternary!('=', LessEqual, Less),
@@ -125,7 +125,7 @@ impl<'source> Scanner<'source> {
                 if self.at_end_input() {
                     print_error(self.line, "Ongetermineerde reeks.");
                     self.had_error = true;
-                    return ;
+                    return;
                 }
 
                 self.current += 1;
@@ -223,7 +223,9 @@ impl<'source> Scanner<'source> {
             }
         }
 
-        let num = self.source[self.start..self.current].parse::<f64>().unwrap();
+        let num = self.source[self.start..self.current]
+            .parse::<f64>()
+            .unwrap();
         self.add_lit_token(TokenType::Number, Literal::Num(num))
     }
 

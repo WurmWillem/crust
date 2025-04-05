@@ -6,4 +6,3 @@ pub fn print_error(line: usize, message: &str) {
     let message = message.red();
     println!("{}{}{}{}", l, line, i, message);
 }
-

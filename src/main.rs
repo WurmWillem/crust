@@ -8,13 +8,15 @@ use crate::opcode::OpCode;
 use crate::value::StackValue;
 
 mod chunk;
+mod error;
 mod opcode;
+mod parser;
 mod scanner;
 mod token;
 mod value;
 mod vm;
-mod parser;
-mod error;
+
+const PRINT_SCAN_TOKENS: bool = false;
 
 fn main() {
     let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
@@ -25,18 +27,17 @@ fn main() {
     let tokens = match scanner.scan_tokens() {
         Ok(tokens) => tokens,
         Err(_) => {
-            println!(
-                "{}",
-                "Scan error(s) detected, terminate program.".purple()
-            );
+            println!("{}", "Scan error(s) detected, terminate program.".purple());
             return;
         }
     };
 
-    for token in &tokens {
-        println!("{:?}", token);
+    if PRINT_SCAN_TOKENS {
+        for token in &tokens {
+            println!("{:?}", token);
+        }
+        println!();
     }
-    println!();
 
     let chunk = Parser::compile(tokens, Chunk::new());
     VM::interpret(chunk);

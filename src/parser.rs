@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{
     chunk::Chunk,
     error::print_error,
@@ -11,9 +13,9 @@ struct ParseError {
     line: usize,
 }
 impl ParseError {
-   fn new(line: usize, msg: String) -> Self {
-       Self { msg, line }
-    } 
+    fn new(line: usize, msg: String) -> Self {
+        Self { msg, line }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -30,6 +32,24 @@ enum Precedence {
     Unary,      // ! -
     Call,       // . ()
     Primary,
+}
+impl std::convert::From<u8> for Precedence {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Self::None,
+            1 => Self::Assignment,
+            2 => Self::Or,
+            3 => Self::And,
+            4 => Self::Equality,
+            5 => Self::Comparison,
+            6 => Self::Term,
+            7 => Self::Factor,
+            8 => Self::Unary,
+            9 => Self::Call,
+            10 => Self::Primary,
+            _ => panic!("Not a valid value for Precedence."),
+        }
+    }
 }
 // impl Precedence {
 //    #[inline(always)]
@@ -123,10 +143,6 @@ pub struct Parser<'token> {
     current: usize,
 }
 impl<'token> Parser<'token> {
-    // fn new() -> Self {
-    //     todo!()
-    // }
-
     pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Chunk {
         let mut parser = Parser {
             tokens,
@@ -135,10 +151,12 @@ impl<'token> Parser<'token> {
         };
 
         // parser.advance();
-        parser.expression();
+        if let Err(_) = parser.expression() {
+            println!("{}", "Parse error(s) detected, terminate program.".purple());
+        }
 
         parser.emit_byte(OpCode::Return as u8);
-        parser.chunk.disassemble("code");
+        // parser.chunk.disassemble("code");
         parser.chunk
     }
 
@@ -172,9 +190,9 @@ impl<'token> Parser<'token> {
         // dbg!(prefix);
 
         while precedence <= self.get_rule(self.peek().kind).precedence {
-           self.advance();
-           let infix = self.get_rule(self.previous().kind).infix;
-           self.execute_fn_type(infix)?;
+            self.advance();
+            let infix = self.get_rule(self.previous().kind).infix;
+            self.execute_fn_type(infix)?;
         }
         Ok(())
     }
@@ -192,7 +210,20 @@ impl<'token> Parser<'token> {
     }
 
     fn binary(&mut self) -> Result<(), ParseError> {
-        todo!()
+        let op_type = self.previous().kind;
+        let rule = self.get_rule(op_type);
+
+        let new_precedence = (rule.precedence as u8 + 1).into();
+        self.parse_precedence(new_precedence)?;
+
+        match op_type {
+            TokenType::Plus => self.emit_byte(OpCode::Add as u8),
+            TokenType::Minus => self.emit_byte(OpCode::Sub as u8),
+            TokenType::Star => self.emit_byte(OpCode::Mul as u8),
+            TokenType::Slash => self.emit_byte(OpCode::Div as u8),
+            _ => panic!("Unreachable."),
+        }
+        Ok(())
     }
 
     fn unary(&mut self) -> Result<(), ParseError> {
