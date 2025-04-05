@@ -11,6 +11,7 @@ mod token;
 mod value;
 mod vm;
 mod parser;
+mod error;
 
 pub type Byte = u8;
 

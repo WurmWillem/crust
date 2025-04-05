@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Literal {
     None,
     Str,
@@ -8,12 +8,12 @@ pub enum Literal {
     Nil,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Token<'source> {
     pub kind: TokenType,
     lexeme: &'source str,
-    literal: Literal,
-    line: usize,
+    pub literal: Literal,
+    pub line: usize,
 }
 impl<'source> Token<'source> {
     pub fn new(kind: TokenType, lexeme: &'source str, literal: Literal, line: usize) -> Self {

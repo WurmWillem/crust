@@ -1,6 +1,15 @@
 use crate::{
-    chunk::Chunk, opcode::OpCode, token::{Token, TokenType}
+    chunk::Chunk,
+    error::print_error,
+    opcode::OpCode,
+    token::{Literal, Token, TokenType},
+    value::StackValue,
 };
+
+struct ParseError {
+    msg: String,
+    line: usize,
+}
 
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
@@ -12,7 +21,7 @@ impl<'token> Parser<'token> {
     //     todo!()
     // }
 
-    pub fn compile(mut self, tokens: Vec<Token>, chunk: Chunk) {
+    pub fn compile(self, tokens: Vec<Token>, chunk: Chunk) {
         let mut parser = Parser {
             tokens,
             chunk,
@@ -20,6 +29,40 @@ impl<'token> Parser<'token> {
         };
 
         parser.emit_byte(OpCode::Return as u8);
+    }
+
+    fn expression(&mut self) {}
+
+    fn number(&mut self) {
+        let Literal::Num(value) = self.peek().literal else {
+            panic!("Unreachable.");
+        };
+        self.emit_constant(StackValue::F64(value));
+    }
+
+    fn emit_constant(&mut self, value: StackValue) {
+        let const_index = self.make_constant(value);
+        self.emit_bytes(OpCode::Constant as u8, const_index)
+    }
+
+    fn make_constant(&mut self, value: StackValue) -> u8 {
+        let const_index = self.chunk.add_constant(value) as u8;
+        if const_index > u8::MAX {
+            // NOTE: maybe make this return a Result instead?
+            print_error(self.peek().line, "Too many constants in one chunk.");
+        }
+        const_index
+    }
+
+    fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<Token, ParseError> {
+        if self.check(token_type) {
+            Ok(self.advance())
+        } else {
+            Err(ParseError {
+                line: self.previous().line,
+                msg: msg.to_string(),
+            })
+        }
     }
 
     fn emit_byte(&mut self, byte: u8) {
@@ -33,7 +76,13 @@ impl<'token> Parser<'token> {
         self.emit_byte(byte_1);
     }
 
-    fn consume(&mut self, kind: TokenType) {}
+    fn check(&mut self, kind: TokenType) -> bool {
+        if self.is_at_end() {
+            false
+        } else {
+            self.peek().kind == kind
+        }
+    }
 
     fn advance(&mut self) -> Token {
         if !self.is_at_end() {
@@ -47,10 +96,10 @@ impl<'token> Parser<'token> {
     }
 
     fn peek(&self) -> Token {
-        self.tokens[self.current].clone()
+        self.tokens[self.current]
     }
 
     fn previous(&self) -> Token {
-        self.tokens[self.current - 1].clone()
+        self.tokens[self.current - 1]
     }
 }
