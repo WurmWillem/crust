@@ -11,6 +11,89 @@ struct ParseError {
     line: usize,
 }
 
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+enum Precedence {
+    None,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+    Primary,
+}
+
+type ParseFn<'parser> = fn(&mut Parser<'parser>) -> Result<(), ParseError>;
+
+#[derive(Clone, Copy)]
+struct ParseRule<'parser> {
+    prefix: Option<ParseFn<'parser>>,
+    infix: Option<ParseFn<'parser>>,
+    precedence: Precedence,
+}
+macro_rules! none {
+    () => {
+        ParseRule { prefix: None, infix: None, precedence: Precedence::None }
+    }
+}
+
+#[rustfmt::skip]
+const RULES: [ParseRule; 39] = {
+    use Precedence as P;
+    [
+        // left paren
+        ParseRule { prefix: Some(Parser::grouping), infix: Option::None, precedence: P::None, },
+        none!(), // right paren
+        none!(), // left brace
+        none!(), // right brace
+        none!(), // comma
+        none!(), // dot
+        // minus
+        ParseRule { prefix: Some(Parser::unary), infix: Some(Parser::binary), precedence: P::Term, },
+        // plus
+        ParseRule { prefix: None, infix: Some(Parser::binary), precedence: P::Term, },
+                 //
+        none!(), // semicolon
+        // slash
+        ParseRule { prefix: None, infix: Some(Parser::binary), precedence: P::Factor, },
+        // star
+        ParseRule { prefix: None, infix: Some(Parser::binary), precedence: P::Factor, },
+        none!(), // bang
+        none!(), // bang equal
+        none!(), // equal
+        none!(), // equal equal
+        none!(), // greater
+        none!(), // greater equal
+        none!(), // less
+        none!(), // less equal
+        none!(), // identifier
+        none!(), // string
+        // number
+        ParseRule { prefix: Some(Parser::number), infix: None, precedence: P::None, },
+        none!(), // and
+        none!(), // class
+        none!(), // else
+        none!(), // false
+        none!(), // for
+        none!(), // fun
+        none!(), // if
+        none!(), // nil
+        none!(), // or
+        none!(), // print
+        none!(), // return
+        none!(), // super
+        none!(), // this
+        none!(), // true
+        none!(), // var
+        none!(), // while
+        none!(), // EOF
+    ]
+};
+
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     chunk: Chunk,
@@ -31,13 +114,44 @@ impl<'token> Parser<'token> {
         parser.emit_byte(OpCode::Return as u8);
     }
 
-    fn expression(&mut self) {}
+    fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
+        todo!()
+    }
 
-    fn number(&mut self) {
+    fn expression(&mut self) -> Result<(), ParseError> {
+        self.parse_precedence(Precedence::Assignment)
+    }
+
+    fn number(&mut self) -> Result<(), ParseError> {
         let Literal::Num(value) = self.peek().literal else {
             panic!("Unreachable.");
         };
         self.emit_constant(StackValue::F64(value));
+        Ok(())
+    }
+
+    fn binary(&mut self) -> Result<(), ParseError> {
+        todo!()
+    }
+
+    fn unary(&mut self) -> Result<(), ParseError> {
+        let operator_type = self.previous().kind;
+
+        self.parse_precedence(Precedence::Unary)?;
+
+        match operator_type {
+            TokenType::Minus => {
+                self.emit_byte(OpCode::Negate as u8);
+                // TODO: make it crash if - is applied to non-number
+            }
+            _ => panic!("Unreachable."),
+        }
+        Ok(())
+    }
+
+    fn grouping(&mut self) -> Result<(), ParseError> {
+        self.expression()?;
+        self.consume(TokenType::RightParen, "Expected ')' after expression.")
     }
 
     fn emit_constant(&mut self, value: StackValue) {
@@ -54,9 +168,10 @@ impl<'token> Parser<'token> {
         const_index
     }
 
-    fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<Token, ParseError> {
+    fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<(), ParseError> {
         if self.check(token_type) {
-            Ok(self.advance())
+            self.advance();
+            Ok(())
         } else {
             Err(ParseError {
                 line: self.previous().line,
