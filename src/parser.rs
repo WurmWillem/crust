@@ -10,9 +10,14 @@ struct ParseError {
     msg: String,
     line: usize,
 }
+impl ParseError {
+   fn new(line: usize, msg: String) -> Self {
+       Self { msg, line }
+    } 
+}
 
-#[derive(Debug, Clone, Copy)]
-// #[repr(usize)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[repr(u8)]
 enum Precedence {
     None,
     Assignment, // =
@@ -33,43 +38,53 @@ enum Precedence {
 //     }
 // }
 
-type ParseFn= for<'parser> fn(&mut Parser<'parser>) -> Result<(), ParseError>;
+type ParseFn = for<'parser> fn(&mut Parser<'parser>) -> Result<(), ParseError>;
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+enum FnType {
+    Grouping,
+    Unary,
+    Binary,
+    Number,
+    Empty,
+}
 
 #[derive(Clone, Copy)]
 struct ParseRule {
-    prefix: Option<ParseFn>,
-    infix: Option<ParseFn>,
+    prefix: FnType,
+    infix: FnType,
     precedence: Precedence,
 }
 
 #[rustfmt::skip]
 const PARSE_RULES: [ParseRule; 39] = {
+    use FnType::*;
     use Precedence as P;
 
     macro_rules! none {
         () => {
-            ParseRule { prefix: None, infix: None, precedence: P::None }
+            ParseRule { prefix: Empty, infix: Empty, precedence: P::None }
         }
     }
 
     [
         // left paren
-        ParseRule { prefix: Some(Parser::grouping), infix: Option::None, precedence: P::None, },
+        ParseRule { prefix: Grouping, infix: Empty, precedence: P::None, },
         none!(), // right paren
         none!(), // left brace
         none!(), // right brace
         none!(), // comma
         none!(), // dot
         // minus
-        ParseRule { prefix: Some(Parser::unary), infix: Some(Parser::binary), precedence: P::Term, },
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, },
         // plus
-        ParseRule { prefix: None, infix: Some(Parser::binary), precedence: P::Term, },
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, },
                  //
         none!(), // semicolon
         // slash
-        ParseRule { prefix: None, infix: Some(Parser::binary), precedence: P::Factor, },
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, },
         // star
-        ParseRule { prefix: None, infix: Some(Parser::binary), precedence: P::Factor, },
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, },
         none!(), // bang
         none!(), // bang equal
         none!(), // equal
@@ -81,7 +96,7 @@ const PARSE_RULES: [ParseRule; 39] = {
         none!(), // identifier
         none!(), // string
         // number
-        ParseRule { prefix: Some(Parser::number), infix: None, precedence: P::None, },
+        ParseRule { prefix: Number, infix: Empty, precedence: P::None, },
         none!(), // and
         none!(), // class
         none!(), // else
@@ -122,13 +137,36 @@ impl<'token> Parser<'token> {
         parser.emit_byte(OpCode::Return as u8);
     }
 
+    fn execute_fn_type(&mut self, fn_type: FnType) -> Result<(), ParseError> {
+        match fn_type {
+            FnType::Grouping => self.grouping(),
+            FnType::Unary => self.unary(),
+            FnType::Binary => self.binary(),
+            FnType::Number => self.number(),
+            FnType::Empty => Ok(()),
+        }
+    }
+
+    fn get_rule(&mut self, kind: TokenType) -> ParseRule {
+        PARSE_RULES[kind as usize]
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
         self.advance();
         let kind = self.previous().kind;
-        let rule = &PARSE_RULES[kind as usize].prefix;
-        // let rule = PARSE_RULES[self.previous().kind as usize];
-        if let Some(prefix) = rule{
-            prefix(self);
+        let prefix = self.get_rule(kind).prefix;
+
+        if prefix == FnType::Empty {
+            let msg = "Expected expression.".to_string();
+            let err = ParseError::new(self.peek().line, msg);
+            return Err(err);
+        }
+        self.execute_fn_type(prefix)?;
+
+        while precedence <= self.get_rule(self.peek().kind).precedence {
+           self.advance();
+           let infix = self.get_rule(self.previous().kind).infix;
+           self.execute_fn_type(infix)?;
         }
         Ok(())
     }
@@ -157,6 +195,7 @@ impl<'token> Parser<'token> {
         match operator_type {
             TokenType::Minus => {
                 self.emit_byte(OpCode::Negate as u8);
+                dbg!("ey");
                 // TODO: make it crash if - is applied to non-number
             }
             _ => panic!("Unreachable."),
