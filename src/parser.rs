@@ -4,137 +4,9 @@ use crate::{
     chunk::Chunk,
     error::print_error,
     opcode::OpCode,
+    parse_helpers::*,
     token::{Literal, Token, TokenType},
     value::StackValue,
-};
-
-struct ParseError {
-    msg: String,
-    line: usize,
-}
-impl ParseError {
-    fn new(line: usize, msg: String) -> Self {
-        Self { msg, line }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-#[repr(u8)]
-enum Precedence {
-    None,
-    Assignment, // =
-    Or,         // or
-    And,        // and
-    Equality,   // == !=
-    Comparison, // < > <= >=
-    Term,       // + -
-    Factor,     // * /
-    Unary,      // ! -
-    Call,       // . ()
-    Primary,
-}
-impl std::convert::From<u8> for Precedence {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => Self::None,
-            1 => Self::Assignment,
-            2 => Self::Or,
-            3 => Self::And,
-            4 => Self::Equality,
-            5 => Self::Comparison,
-            6 => Self::Term,
-            7 => Self::Factor,
-            8 => Self::Unary,
-            9 => Self::Call,
-            10 => Self::Primary,
-            _ => panic!("Not a valid value for Precedence."),
-        }
-    }
-}
-// impl Precedence {
-//    #[inline(always)]
-//     fn rule(self) -> &'static ParseRule {
-//         &PARSE_RULES[self as usize]
-//     }
-// }
-
-type ParseFn = for<'parser> fn(&mut Parser<'parser>) -> Result<(), ParseError>;
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-enum FnType {
-    Grouping,
-    Unary,
-    Binary,
-    Number,
-    Empty,
-}
-
-#[derive(Clone, Copy)]
-struct ParseRule {
-    prefix: FnType,
-    infix: FnType,
-    precedence: Precedence,
-}
-
-#[rustfmt::skip]
-const PARSE_RULES: [ParseRule; 39] = {
-    use FnType::*;
-    use Precedence as P;
-
-    macro_rules! none {
-        () => {
-            ParseRule { prefix: Empty, infix: Empty, precedence: P::None }
-        }
-    }
-
-    [
-        // left paren
-        ParseRule { prefix: Grouping, infix: Empty, precedence: P::None, },
-        none!(), // right paren
-        none!(), // left brace
-        none!(), // right brace
-        none!(), // comma
-        none!(), // dot
-        // minus
-        ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, },
-        // plus
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, },
-                 //
-        none!(), // semicolon
-        // slash
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, },
-        // star
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, },
-        none!(), // bang
-        none!(), // bang equal
-        none!(), // equal
-        none!(), // equal equal
-        none!(), // greater
-        none!(), // greater equal
-        none!(), // less
-        none!(), // less equal
-        none!(), // identifier
-        none!(), // string
-        // number
-        ParseRule { prefix: Number, infix: Empty, precedence: P::None, },
-        none!(), // and
-        none!(), // class
-        none!(), // else
-        none!(), // false
-        none!(), // for
-        none!(), // fun
-        none!(), // if
-        none!(), // nil
-        none!(), // or
-        none!(), // print
-        none!(), // return
-        none!(), // super
-        none!(), // this
-        none!(), // true
-        none!(), // var
-        none!(), // while
-        none!(), // EOF
-    ]
 };
 
 pub struct Parser<'token> {
@@ -151,7 +23,8 @@ impl<'token> Parser<'token> {
         };
 
         // parser.advance();
-        if let Err(_) = parser.expression() {
+        if let Err(err) = parser.expression() {
+            print_error(err.line, &err.msg);
             println!("{}", "Parse error(s) detected, terminate program.".purple());
         }
 
@@ -187,7 +60,7 @@ impl<'token> Parser<'token> {
             return Err(err);
         }
         self.execute_fn_type(prefix)?;
-        // dbg!(prefix);
+        // dbg!(self.peek().kind);
 
         while precedence <= self.get_rule(self.peek().kind).precedence {
             self.advance();
@@ -205,8 +78,7 @@ impl<'token> Parser<'token> {
         let Literal::Num(value) = self.previous().literal else {
             panic!("Unreachable.");
         };
-        self.emit_constant(StackValue::F64(value));
-        Ok(())
+        self.emit_constant(StackValue::F64(value))
     }
 
     fn binary(&mut self) -> Result<(), ParseError> {
@@ -234,7 +106,6 @@ impl<'token> Parser<'token> {
         match operator_type {
             TokenType::Minus => {
                 self.emit_byte(OpCode::Negate as u8);
-                dbg!("ey");
                 // TODO: make it crash if - is applied to non-number
             }
             _ => panic!("Unreachable."),
@@ -247,18 +118,19 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::RightParen, "Expected ')' after expression.")
     }
 
-    fn emit_constant(&mut self, value: StackValue) {
-        let const_index = self.make_constant(value);
-        self.emit_bytes(OpCode::Constant as u8, const_index)
+    fn emit_constant(&mut self, value: StackValue) -> Result<(), ParseError> {
+        let const_index = self.make_constant(value)?;
+        self.emit_bytes(OpCode::Constant as u8, const_index);
+        Ok(())
     }
 
-    fn make_constant(&mut self, value: StackValue) -> u8 {
-        let const_index = self.chunk.add_constant(value) as u8;
-        if const_index > u8::MAX {
-            // NOTE: maybe make this return a Result instead?
-            print_error(self.peek().line, "Too many constants in one chunk.");
+    fn make_constant(&mut self, value: StackValue) -> Result<u8, ParseError> {
+        let const_index = self.chunk.add_constant(value);
+        if const_index > u8::MAX.into() {
+            let msg = "Too many constants in one chunk.".to_string();
+            return Err(ParseError::new(self.peek().line, msg));
         }
-        const_index
+        Ok(const_index as u8)
     }
 
     fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<(), ParseError> {
@@ -274,9 +146,7 @@ impl<'token> Parser<'token> {
     }
 
     fn emit_byte(&mut self, byte: u8) {
-        // TODO: update line
-        let line = 0;
-        self.chunk.write_byte_to_chunk(byte, line);
+        self.chunk.write_byte_to_chunk(byte, self.peek().line);
     }
 
     fn emit_bytes(&mut self, byte_0: u8, byte_1: u8) {
@@ -300,7 +170,7 @@ impl<'token> Parser<'token> {
     }
 
     fn is_at_end(&self) -> bool {
-        self.peek().kind == TokenType::EOF
+        self.peek().kind == TokenType::Eof
     }
 
     fn peek(&self) -> Token {

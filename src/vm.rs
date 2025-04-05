@@ -1,11 +1,10 @@
+use crate::error::DEBUG_TRACE_EXECUTION;
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
-
-const DEBUG_TRACE_EXECUTION: bool = true;
 
 pub enum InterpretResult {
     Ok,
-    CompileError,
-    RuntimeError,
+    // CompileError,
+    // RuntimeError,
 }
 
 const STACK_SIZE: usize = 256;
@@ -17,11 +16,6 @@ pub struct VM {
     stack_top: usize,
 }
 impl VM {
-    // fn new() -> Self {
-    //     let chunk =
-    //     Self { chunk: Chunk::new(), ip: (), stack: [Value::None; STACK_SIZE], stack_top: () }
-    // }
-
     pub fn interpret(chunk: Chunk) -> InterpretResult {
         let ip = chunk.get_ptr();
         let mut vm = Self {
@@ -30,8 +24,6 @@ impl VM {
             stack: [const { StackValue::None }; STACK_SIZE],
             stack_top: 0,
         };
-        // self.chunk = chunk;
-        // self.ip = self.chunk.get_ptr();
         unsafe { vm.run() }
     }
 
@@ -80,7 +72,7 @@ impl VM {
                 }
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
-                    let constant = self.chunk.constants[index].clone();
+                    let constant = self.chunk.constants[index];
                     self.stack_push(constant);
                 }
                 OpCode::Negate => {

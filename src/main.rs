@@ -4,19 +4,19 @@ use parser::Parser;
 use scanner::Scanner;
 use vm::VM;
 
+use crate::error::PRINT_SCAN_TOKENS;
 use crate::opcode::OpCode;
 use crate::value::StackValue;
 
 mod chunk;
 mod error;
 mod opcode;
+mod parse_helpers;
 mod parser;
 mod scanner;
 mod token;
 mod value;
 mod vm;
-
-const PRINT_SCAN_TOKENS: bool = false;
 
 fn main() {
     let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
