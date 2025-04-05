@@ -3,8 +3,11 @@ pub struct ParseError {
     pub line: u32,
 }
 impl ParseError {
-    pub fn new(line: u32, msg: String) -> Self {
-        Self { msg, line }
+    pub fn new(line: u32, msg: &str) -> Self {
+        Self {
+            msg: msg.to_string(),
+            line,
+        }
     }
 }
 

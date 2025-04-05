@@ -146,7 +146,7 @@ impl<'source> Scanner<'source> {
                         self.current += 1;
                     }
 
-                    // NOTE: could be optimized with tries
+                    // TODO: could be optimized with tries
                     let text = self.source[self.start..self.current].to_string();
                     let kind = match self.keywords.get(&text) {
                         Some(k) => *k,

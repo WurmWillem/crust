@@ -33,20 +33,6 @@ impl<'token> Parser<'token> {
         parser.chunk
     }
 
-    fn execute_fn_type(&mut self, fn_type: FnType) -> Result<(), ParseError> {
-        match fn_type {
-            FnType::Grouping => self.grouping(),
-            FnType::Unary => self.unary(),
-            FnType::Binary => self.binary(),
-            FnType::Number => self.number(),
-            FnType::Empty => Ok(()),
-        }
-    }
-
-    fn get_rule(&mut self, kind: TokenType) -> ParseRule {
-        PARSE_RULES[kind as usize]
-    }
-
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
         self.advance();
         let kind = self.previous().kind;
@@ -55,7 +41,7 @@ impl<'token> Parser<'token> {
         // dbg!(prefix);
 
         if prefix == FnType::Empty {
-            let msg = "Expected expression.".to_string();
+            let msg = "Expected expression.";
             let err = ParseError::new(self.peek().line, msg);
             return Err(err);
         }
@@ -100,13 +86,17 @@ impl<'token> Parser<'token> {
 
     fn unary(&mut self) -> Result<(), ParseError> {
         let operator_type = self.previous().kind;
+        let operand_type = self.peek().kind;
 
         self.parse_precedence(Precedence::Unary)?;
 
         match operator_type {
             TokenType::Minus => {
+                if operand_type != TokenType::Number {
+                    let msg = "'-' can only be applied to numbers.";
+                    return Err(ParseError::new(self.peek().line, msg));
+                }
                 self.emit_byte(OpCode::Negate as u8);
-                // TODO: make it crash if - is applied to non-number
             }
             _ => panic!("Unreachable."),
         }
@@ -118,6 +108,16 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::RightParen, "Expected ')' after expression.")
     }
 
+    fn execute_fn_type(&mut self, fn_type: FnType) -> Result<(), ParseError> {
+        match fn_type {
+            FnType::Grouping => self.grouping(),
+            FnType::Unary => self.unary(),
+            FnType::Binary => self.binary(),
+            FnType::Number => self.number(),
+            FnType::Empty => Ok(()),
+        }
+    }
+
     fn emit_constant(&mut self, value: StackValue) -> Result<(), ParseError> {
         let const_index = self.make_constant(value)?;
         self.emit_bytes(OpCode::Constant as u8, const_index);
@@ -127,10 +127,14 @@ impl<'token> Parser<'token> {
     fn make_constant(&mut self, value: StackValue) -> Result<u8, ParseError> {
         let const_index = self.chunk.add_constant(value);
         if const_index > u8::MAX.into() {
-            let msg = "Too many constants in one chunk.".to_string();
+            let msg = "Too many constants in one chunk.";
             return Err(ParseError::new(self.peek().line, msg));
         }
         Ok(const_index as u8)
+    }
+
+    fn get_rule(&mut self, kind: TokenType) -> ParseRule {
+        PARSE_RULES[kind as usize]
     }
 
     fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<(), ParseError> {
