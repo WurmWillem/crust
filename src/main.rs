@@ -1,5 +1,8 @@
+use chunk::Chunk;
 use colored::Colorize;
+use parser::Parser;
 use scanner::Scanner;
+use vm::VM;
 
 use crate::opcode::OpCode;
 use crate::value::StackValue;
@@ -12,8 +15,6 @@ mod value;
 mod vm;
 mod parser;
 mod error;
-
-pub type Byte = u8;
 
 fn main() {
     let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
@@ -36,4 +37,7 @@ fn main() {
         println!("{:?}", token);
     }
     println!();
+
+    let chunk = Parser::compile(tokens, Chunk::new());
+    VM::interpret(chunk);
 }

@@ -27,9 +27,9 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "en",And "of",Or "als",If "anders",Else "terwijl",While "voor",For "tot",Until
-            "wellus",True "nietus",False "niks",Nil "dit",This "ouder",Super "van",From
-            "klas",Class "proces",Fun "laat",Var "geef",Return "zeg",Print "roep", Println
+            "en",And "of",Or "als",If "anders",Else "terwijl",While "voor",For 
+            "wellus",True "nietus",False "niks",Nil "dit",This "ouder",Super 
+            "klas",Class "proces",Fun "laat",Var "geef",Return "zeg",Print 
         );
 
         let source_len = source_file.len();
@@ -85,15 +85,15 @@ impl<'source> Scanner<'source> {
             ')' => self.add_token(TokenType::RightParen),
             '{' => self.add_token(TokenType::LeftBrace),
             '}' => self.add_token(TokenType::RightBrace),
-            '[' => self.add_token(TokenType::LeftBracket),
-            ']' => self.add_token(TokenType::RightBracket),
+            // '[' => self.add_token(TokenType::LeftBracket),
+            // ']' => self.add_token(TokenType::RightBracket),
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
             '-' => self.add_token(TokenType::Minus),
             '+' => self.add_token(TokenType::Plus),
             ';' => self.add_token(TokenType::Semicolon),
             '*' => self.add_token(TokenType::Star),
-            '^' => self.add_token(TokenType::Caret),
+            // '^' => self.add_token(TokenType::Caret),
 
             '!' => ternary!('=', BangEqual, Bang),
             '=' => ternary!('=', EqualEqual, Equal),

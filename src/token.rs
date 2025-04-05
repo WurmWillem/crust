@@ -40,16 +40,11 @@ impl<'source> Token<'source> {
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
-    // Single-character tokens.
-    From,
-    Until,
-    Caret,
+    // Single-character tokens
     LeftParen,
     RightParen,
     LeftBrace,
     RightBrace,
-    LeftBracket,
-    RightBracket,
     Comma,
     Dot,
     Minus,
@@ -58,7 +53,7 @@ pub enum TokenType {
     Slash,
     Star,
 
-    // One or two character tokens.
+    // One or two character tokens
     Bang,
     BangEqual,
     Equal,
@@ -68,29 +63,31 @@ pub enum TokenType {
     Less,
     LessEqual,
 
-    // Literals.
+    // Literals
     Identifier,
     String,
     Number,
 
-    // Keywords.
+    // Keywords
     And,
     Class,
     Else,
     False,
-    Fun,
     For,
+    Fun,
     If,
     Nil,
     Or,
     Print,
-    Println,
+    // Println,
     Return,
     Super,
     This,
     True,
     Var,
     While,
-    //
+
+    // End of file
     EOF,
 }
+

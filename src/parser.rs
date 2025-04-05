@@ -76,7 +76,7 @@ const PARSE_RULES: [ParseRule; 39] = {
         none!(), // comma
         none!(), // dot
         // minus
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, },
+        ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, },
         // plus
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, },
                  //
@@ -127,14 +127,19 @@ impl<'token> Parser<'token> {
     //     todo!()
     // }
 
-    pub fn compile(self, tokens: Vec<Token>, chunk: Chunk) {
+    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Chunk {
         let mut parser = Parser {
             tokens,
             chunk,
             current: 0,
         };
 
+        // parser.advance();
+        parser.expression();
+
         parser.emit_byte(OpCode::Return as u8);
+        parser.chunk.disassemble("code");
+        parser.chunk
     }
 
     fn execute_fn_type(&mut self, fn_type: FnType) -> Result<(), ParseError> {
@@ -154,7 +159,9 @@ impl<'token> Parser<'token> {
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
         self.advance();
         let kind = self.previous().kind;
+        // dbg!(kind);
         let prefix = self.get_rule(kind).prefix;
+        // dbg!(prefix);
 
         if prefix == FnType::Empty {
             let msg = "Expected expression.".to_string();
@@ -162,6 +169,7 @@ impl<'token> Parser<'token> {
             return Err(err);
         }
         self.execute_fn_type(prefix)?;
+        // dbg!(prefix);
 
         while precedence <= self.get_rule(self.peek().kind).precedence {
            self.advance();
@@ -176,7 +184,7 @@ impl<'token> Parser<'token> {
     }
 
     fn number(&mut self) -> Result<(), ParseError> {
-        let Literal::Num(value) = self.peek().literal else {
+        let Literal::Num(value) = self.previous().literal else {
             panic!("Unreachable.");
         };
         self.emit_constant(StackValue::F64(value));
