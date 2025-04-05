@@ -12,7 +12,7 @@ struct ParseError {
 }
 
 #[derive(Debug, Clone, Copy)]
-#[repr(u8)]
+// #[repr(usize)]
 enum Precedence {
     None,
     Assignment, // =
@@ -26,24 +26,32 @@ enum Precedence {
     Call,       // . ()
     Primary,
 }
+// impl Precedence {
+//    #[inline(always)]
+//     fn rule(self) -> &'static ParseRule {
+//         &PARSE_RULES[self as usize]
+//     }
+// }
 
-type ParseFn<'parser> = fn(&mut Parser<'parser>) -> Result<(), ParseError>;
+type ParseFn= for<'parser> fn(&mut Parser<'parser>) -> Result<(), ParseError>;
 
 #[derive(Clone, Copy)]
-struct ParseRule<'parser> {
-    prefix: Option<ParseFn<'parser>>,
-    infix: Option<ParseFn<'parser>>,
+struct ParseRule {
+    prefix: Option<ParseFn>,
+    infix: Option<ParseFn>,
     precedence: Precedence,
-}
-macro_rules! none {
-    () => {
-        ParseRule { prefix: None, infix: None, precedence: Precedence::None }
-    }
 }
 
 #[rustfmt::skip]
-const RULES: [ParseRule; 39] = {
+const PARSE_RULES: [ParseRule; 39] = {
     use Precedence as P;
+
+    macro_rules! none {
+        () => {
+            ParseRule { prefix: None, infix: None, precedence: P::None }
+        }
+    }
+
     [
         // left paren
         ParseRule { prefix: Some(Parser::grouping), infix: Option::None, precedence: P::None, },
@@ -115,7 +123,14 @@ impl<'token> Parser<'token> {
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
-        todo!()
+        self.advance();
+        let kind = self.previous().kind;
+        let rule = &PARSE_RULES[kind as usize].prefix;
+        // let rule = PARSE_RULES[self.previous().kind as usize];
+        if let Some(prefix) = rule{
+            prefix(self);
+        }
+        Ok(())
     }
 
     fn expression(&mut self) -> Result<(), ParseError> {
