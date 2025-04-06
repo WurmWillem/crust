@@ -1,19 +1,18 @@
 use chunk::Chunk;
-use colored::Colorize;
-use error::print_error;
-use parser::Parser;
+use compiler::Compiler;
+use error::{print_error, PRINT_SCAN_TOKENS};
+use opcode::OpCode;
 use scanner::Scanner;
+use value::StackValue;
 use vm::VM;
 
-use crate::error::PRINT_SCAN_TOKENS;
-use crate::opcode::OpCode;
-use crate::value::StackValue;
+use colored::Colorize;
 
 mod chunk;
+mod compiler;
+mod compiler_helper;
 mod error;
 mod opcode;
-mod parse_helpers;
-mod parser;
 mod scanner;
 mod token;
 mod value;
@@ -40,7 +39,7 @@ fn main() {
         println!();
     }
 
-    let chunk = match Parser::compile(tokens, Chunk::new()) {
+    let chunk = match Compiler::compile(tokens, Chunk::new()) {
         Err(err) => {
             print_error(err.line, &err.msg);
             println!("{}", "Parse error(s) detected, terminate program.".purple());

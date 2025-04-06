@@ -1,19 +1,19 @@
 use crate::{
     chunk::Chunk,
     opcode::OpCode,
-    parse_helpers::*,
+    compiler_helper::*,
     token::{Literal, Token, TokenType},
     value::StackValue,
 };
 
-pub struct Parser<'token> {
+pub struct Compiler<'token> {
     tokens: Vec<Token<'token>>,
     chunk: Chunk,
     current: usize,
 }
-impl<'token> Parser<'token> {
+impl<'token> Compiler<'token> {
     pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Result<Chunk, ParseError> {
-        let mut parser = Parser {
+        let mut parser = Compiler {
             tokens,
             chunk,
             current: 0,

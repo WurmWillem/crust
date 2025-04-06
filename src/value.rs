@@ -1,9 +1,9 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Neg, Not, Sub},
+    ops::{Neg, Not},
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum StackValue {
     Null,
     Bool(bool),
@@ -44,36 +44,9 @@ impl StackValue {
     add_num_comparison!(is_less_equal_than, <=);
 
     pub fn equals(self, rhs: StackValue) -> StackValue {
-        match (self, rhs) {
-            (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs == rhs),
-            (StackValue::Bool(lhs), StackValue::Bool(rhs)) => StackValue::Bool(lhs == rhs),
-            (StackValue::Null, StackValue::Null) => StackValue::Bool(true),
-            _ => unreachable!(),
-        }
+        StackValue::Bool(self == rhs)
     }
 }
-
-macro_rules! add_op_overload {
-    ($op_name: ident, $fun_name: ident, $op: tt) => {
-        impl $op_name for StackValue {
-            type Output = Self;
-
-            #[inline(always)]
-            fn $fun_name(self, rhs: Self) -> Self::Output {
-                match (self, rhs) {
-                    (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
-                    _ => {
-                        unreachable!("Attempted to use operation that is not defined for this type.")
-                    }
-                }
-            }
-        }
-    };
-}
-add_op_overload!(Add, add, +);
-add_op_overload!(Sub, sub, -);
-add_op_overload!(Mul, mul, *);
-add_op_overload!(Div, div, /);
 
 impl Neg for StackValue {
     type Output = Self;
