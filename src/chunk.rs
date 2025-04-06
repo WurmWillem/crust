@@ -56,6 +56,7 @@ impl Chunk {
             OpCode::False => Self::simple_instruction("OP_FALSE", offset),
 
             OpCode::Negate => Self::simple_instruction("OP_NEGATE", offset),
+            OpCode::Not => Self::simple_instruction("OP_NOT", offset),
 
             OpCode::Add => Self::simple_instruction("OP_ADD", offset),
             OpCode::Sub => Self::simple_instruction("OP_SUB", offset),

@@ -94,7 +94,14 @@ impl<'token> Parser<'token> {
                 }
                 self.emit_byte(OpCode::Negate as u8);
             }
-            _ => panic!("Unreachable."),
+            TokenType::Bang => {
+                if operand_type != TokenType::True && operand_type != TokenType::False {
+                    let msg = "'!' can only be applied to booleans.";
+                    return Err(ParseError::new(self.peek().line, msg));
+                }
+                self.emit_byte(OpCode::Not as u8);
+            }
+            _ => unreachable!("Unreachable."),
         }
         Ok(())
     }

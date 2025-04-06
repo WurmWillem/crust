@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, Div, Mul, Neg, Not, Sub},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -39,6 +39,19 @@ impl Neg for StackValue {
     fn neg(self) -> Self::Output {
         match self {
             StackValue::F64(value) => StackValue::F64(-value),
+            _ => {
+                unreachable!("Attempted to use operation that is not defined for this type.")
+            }
+        }
+    }
+}
+impl Not for StackValue {
+    type Output = Self;
+
+    #[inline(always)]
+    fn not(self) -> Self::Output {
+        match self {
+            StackValue::Bool(value) => StackValue::Bool(!value),
             _ => {
                 unreachable!("Attempted to use operation that is not defined for this type.")
             }

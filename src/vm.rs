@@ -88,6 +88,10 @@ impl VM {
                     let new_value = -self.stack_pop();
                     self.stack_push(new_value);
                 }
+                OpCode::Not => {
+                    let new_value = !self.stack_pop();
+                    self.stack_push(new_value);
+                }
                 OpCode::Add => binary_op!(+),
                 OpCode::Sub => binary_op!(-),
                 OpCode::Mul => binary_op!(*),

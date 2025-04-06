@@ -81,17 +81,12 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         none!(), // right brace
         none!(), // comma
         none!(), // dot
-        // minus
-        ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, },
-        // plus
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, },
-                 //
+        ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, }, // minus
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, }, // plus
         none!(), // semicolon
-        // slash
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, },
-        // star
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, },
-        none!(), // bang
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // slash
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // star
+        ParseRule { prefix: Unary, infix: Empty, precedence: P::Factor, }, // bang
         none!(), // bang equal
         none!(), // equal
         none!(), // equal equal
@@ -101,22 +96,21 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         none!(), // less equal
         none!(), // identifier
         none!(), // string
-        // number
-        ParseRule { prefix: Number, infix: Empty, precedence: P::None, },
+        ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
         none!(), // and
         none!(), // class
         none!(), // else
-        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, },
+        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // false
         none!(), // for
         none!(), // fun
         none!(), // if
-        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, },
+        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // nil
         none!(), // or
         none!(), // print
         none!(), // return
         none!(), // super
         none!(), // this
-        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, },
+        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // true
         none!(), // var
         none!(), // while
         none!(), // EOF
