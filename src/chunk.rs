@@ -47,6 +47,7 @@ impl Chunk {
         }
 
         let instruction = self.code[offset];
+        // dbg!(instruction);
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
             OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
@@ -62,6 +63,12 @@ impl Chunk {
             OpCode::Sub => Self::simple_instruction("OP_SUB", offset),
             OpCode::Mul => Self::simple_instruction("OP_MUL", offset),
             OpCode::Div => Self::simple_instruction("OP_DIV", offset),
+
+            OpCode::Equal => Self::simple_instruction("OP_EQUAL", offset),
+            OpCode::Greater => Self::simple_instruction("OP_GREATER", offset),
+            OpCode::GreaterEqual => Self::simple_instruction("OP_GREATER_EQUAL", offset),
+            OpCode::Less => Self::simple_instruction("OP_LESS", offset),
+            OpCode::LessEqual => Self::simple_instruction("OP_LESS_EQUAL", offset),
         }
     }
 

@@ -17,6 +17,13 @@ pub enum OpCode {
     Sub,
     Mul,
     Div,
+
+    Equal,
+    // EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
 }
 impl std::convert::From<u8> for OpCode {
     fn from(value: u8) -> Self {
@@ -26,12 +33,17 @@ impl std::convert::From<u8> for OpCode {
             2 => OpCode::True,
             3 => OpCode::False,
             4 => OpCode::Null,
-            5 => OpCode::Not,
-            6 => OpCode::Negate,
+            5 => OpCode::Negate,
+            6 => OpCode::Not,
             7 => OpCode::Add,
             8 => OpCode::Sub,
             9 => OpCode::Mul,
             10 => OpCode::Div,
+            11 => OpCode::Equal,
+            12 => OpCode::Greater,
+            13 => OpCode::GreaterEqual,
+            14 => OpCode::Less,
+            15 => OpCode::LessEqual,
             _ => panic!("Not a valid opcode."),
         }
     }

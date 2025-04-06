@@ -59,10 +59,10 @@ impl VM {
             }
 
             macro_rules! binary_op {
-                ($op: tt) => {{
+                ($operation: ident) => {{
                     let rhs = self.stack_pop();
                     let lhs = self.stack_pop();
-                    self.stack_push(lhs $op rhs);
+                    self.stack_push(lhs.$operation(rhs));
                 }};
             }
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
@@ -84,6 +84,7 @@ impl VM {
                 OpCode::Null => {
                     self.stack_push(StackValue::Null);
                 }
+
                 OpCode::Negate => {
                     let new_value = -self.stack_pop();
                     self.stack_push(new_value);
@@ -92,10 +93,16 @@ impl VM {
                     let new_value = !self.stack_pop();
                     self.stack_push(new_value);
                 }
-                OpCode::Add => binary_op!(+),
-                OpCode::Sub => binary_op!(-),
-                OpCode::Mul => binary_op!(*),
-                OpCode::Div => binary_op!(/),
+
+                OpCode::Add => binary_op!(add_nums),
+                OpCode::Sub => binary_op!(sub_nums),
+                OpCode::Mul => binary_op!(mul_nums),
+                OpCode::Div => binary_op!(div_nums),
+                OpCode::Equal => binary_op!(equal),
+                OpCode::Greater => binary_op!(greater_than),
+                OpCode::GreaterEqual => binary_op!(greater_equal_than),
+                OpCode::Less => binary_op!(less_than),
+                OpCode::LessEqual => binary_op!(less_equal_than),
             }
         }
         // dbg!(5);

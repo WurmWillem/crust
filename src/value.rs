@@ -10,6 +10,41 @@ pub enum StackValue {
     F64(f64),
 }
 
+macro_rules! add_num_operation {
+    ($fun_name: ident, $op: tt) => {
+        pub fn $fun_name(self, rhs: StackValue) -> StackValue {
+            match (self, rhs) {
+                (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
+                _ => unreachable!("$fun_name is only available for numbers"),
+            }
+        }
+    };
+}
+
+macro_rules! add_num_comparison {
+    ($fun_name: ident, $op: tt) => {
+        pub fn $fun_name(self, rhs: StackValue) -> StackValue {
+            match (self, rhs) {
+                (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs $op rhs),
+                _ => unreachable!("$fun_name is only available for numbers"),
+            }
+        }
+    };
+}
+
+impl StackValue {
+    add_num_operation!(add_nums, +);
+    add_num_operation!(sub_nums, -);
+    add_num_operation!(mul_nums, *);
+    add_num_operation!(div_nums, /);
+
+    add_num_comparison!(equal, ==);
+    add_num_comparison!(greater_than, >);
+    add_num_comparison!(greater_equal_than, >=);
+    add_num_comparison!(less_than, <);
+    add_num_comparison!(less_equal_than, <=);
+}
+
 macro_rules! add_op_overload {
     ($op_name: ident, $fun_name: ident, $op: tt) => {
         impl $op_name for StackValue {
@@ -58,6 +93,7 @@ impl Not for StackValue {
         }
     }
 }
+
 impl Display for StackValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

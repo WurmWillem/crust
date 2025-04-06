@@ -89,11 +89,11 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         ParseRule { prefix: Unary, infix: Empty, precedence: P::Factor, }, // bang
         none!(), // bang equal
         none!(), // equal
-        none!(), // equal equal
-        none!(), // greater
-        none!(), // greater equal
-        none!(), // less
-        none!(), // less equal
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // equal equal
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Greater
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Greater equal
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less equal
         none!(), // identifier
         none!(), // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number

@@ -75,7 +75,12 @@ impl<'token> Parser<'token> {
             TokenType::Minus => self.emit_byte(OpCode::Sub as u8),
             TokenType::Star => self.emit_byte(OpCode::Mul as u8),
             TokenType::Slash => self.emit_byte(OpCode::Div as u8),
-            _ => panic!("Unreachable."),
+            TokenType::EqualEqual => self.emit_byte(OpCode::Equal as u8),
+            TokenType::Greater => self.emit_byte(OpCode::Greater as u8),
+            TokenType::GreaterEqual => self.emit_byte(OpCode::GreaterEqual as u8),
+            TokenType::Less => self.emit_byte(OpCode::Less as u8),
+            TokenType::LessEqual => self.emit_byte(OpCode::LessEqual as u8),
+            _ => unreachable!(),
         }
         Ok(())
     }
@@ -87,6 +92,7 @@ impl<'token> Parser<'token> {
         self.parse_precedence(Precedence::Unary)?;
 
         match operator_type {
+            // TODO: make them stackable
             TokenType::Minus => {
                 if operand_type != TokenType::Number {
                     let msg = "'-' can only be applied to numbers.";
