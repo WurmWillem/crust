@@ -76,7 +76,7 @@ pub enum TokenType {
     For,
     Fun,
     If,
-    Nil,
+    Null,
     Or,
     Print,
     // Println,

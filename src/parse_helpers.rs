@@ -51,6 +51,7 @@ pub enum FnType {
     Unary,
     Binary,
     Number,
+    Literal,
     Empty,
 }
 
@@ -105,17 +106,17 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         none!(), // and
         none!(), // class
         none!(), // else
-        none!(), // false
+        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, },
         none!(), // for
         none!(), // fun
         none!(), // if
-        none!(), // nil
+        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, },
         none!(), // or
         none!(), // print
         none!(), // return
         none!(), // super
         none!(), // this
-        none!(), // true
+        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, },
         none!(), // var
         none!(), // while
         none!(), // EOF

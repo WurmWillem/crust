@@ -50,12 +50,17 @@ impl Chunk {
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
             OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
+
+            OpCode::Null => Self::simple_instruction("OP_NULL", offset),
+            OpCode::True => Self::simple_instruction("OP_TRUE", offset),
+            OpCode::False => Self::simple_instruction("OP_FALSE", offset),
+
             OpCode::Negate => Self::simple_instruction("OP_NEGATE", offset),
+
             OpCode::Add => Self::simple_instruction("OP_ADD", offset),
             OpCode::Sub => Self::simple_instruction("OP_SUB", offset),
             OpCode::Mul => Self::simple_instruction("OP_MUL", offset),
             OpCode::Div => Self::simple_instruction("OP_DIV", offset),
-            // _ => panic!("Unreachable."),
         }
     }
 

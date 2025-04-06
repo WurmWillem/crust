@@ -1,8 +1,5 @@
-use colored::Colorize;
-
 use crate::{
     chunk::Chunk,
-    error::print_error,
     opcode::OpCode,
     parse_helpers::*,
     token::{Literal, Token, TokenType},
@@ -15,22 +12,18 @@ pub struct Parser<'token> {
     current: usize,
 }
 impl<'token> Parser<'token> {
-    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Chunk {
+    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Result<Chunk, ParseError> {
         let mut parser = Parser {
             tokens,
             chunk,
             current: 0,
         };
 
-        // parser.advance();
-        if let Err(err) = parser.expression() {
-            print_error(err.line, &err.msg);
-            println!("{}", "Parse error(s) detected, terminate program.".purple());
-        }
+        parser.expression()?;
 
         parser.emit_byte(OpCode::Return as u8);
         // parser.chunk.disassemble("code");
-        parser.chunk
+        Ok(parser.chunk)
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
@@ -47,6 +40,7 @@ impl<'token> Parser<'token> {
         }
         self.execute_fn_type(prefix)?;
         // dbg!(self.peek().kind);
+        // let operand_type = ./
 
         while precedence <= self.get_rule(self.peek().kind).precedence {
             self.advance();
@@ -73,6 +67,8 @@ impl<'token> Parser<'token> {
 
         let new_precedence = (rule.precedence as u8 + 1).into();
         self.parse_precedence(new_precedence)?;
+
+        // TODO: return error if operator applied to non-number
 
         match op_type {
             TokenType::Plus => self.emit_byte(OpCode::Add as u8),
@@ -108,12 +104,23 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::RightParen, "Expected ')' after expression.")
     }
 
+    fn literal(&mut self) -> Result<(), ParseError> {
+        match self.previous().kind {
+            TokenType::True => self.emit_byte(OpCode::True as u8),    
+            TokenType::False => self.emit_byte(OpCode::False as u8),    
+            TokenType::Null => self.emit_byte(OpCode::Null as u8),    
+            _ => unreachable!(),
+        }
+        Ok(())
+    }
+
     fn execute_fn_type(&mut self, fn_type: FnType) -> Result<(), ParseError> {
         match fn_type {
             FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
+            FnType::Literal => self.literal(),
             FnType::Empty => Ok(()),
         }
     }

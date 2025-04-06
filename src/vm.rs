@@ -21,7 +21,7 @@ impl VM {
         let mut vm = Self {
             chunk,
             ip,
-            stack: [const { StackValue::None }; STACK_SIZE],
+            stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
         };
         unsafe { vm.run() }
@@ -74,6 +74,15 @@ impl VM {
                     let index = self.read_byte() as usize;
                     let constant = self.chunk.constants[index];
                     self.stack_push(constant);
+                }
+                OpCode::True => {
+                    self.stack_push(StackValue::Bool(true));
+                }
+                OpCode::False => {
+                    self.stack_push(StackValue::Bool(false));
+                }
+                OpCode::Null => {
+                    self.stack_push(StackValue::Null);
                 }
                 OpCode::Negate => {
                     let new_value = -self.stack_pop();

@@ -1,5 +1,6 @@
 use chunk::Chunk;
 use colored::Colorize;
+use error::print_error;
 use parser::Parser;
 use scanner::Scanner;
 use vm::VM;
@@ -39,6 +40,14 @@ fn main() {
         println!();
     }
 
-    let chunk = Parser::compile(tokens, Chunk::new());
+    let chunk = match Parser::compile(tokens, Chunk::new()) {
+        Err(err) => {
+            print_error(err.line, &err.msg);
+            println!("{}", "Parse error(s) detected, terminate program.".purple());
+            return;
+        }
+        Ok(chunk) => chunk,
+    };
+
     VM::interpret(chunk);
 }

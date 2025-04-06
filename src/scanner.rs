@@ -28,7 +28,7 @@ impl<'source> Scanner<'source> {
 
         let keywords = create_keywords!(
             "en",And "of",Or "als",If "anders",Else "terwijl",While "voor",For
-            "wellus",True "nietus",False "niks",Nil "dit",This "ouder",Super
+            "true",True "false",False "null",Null "dit",This "ouder",Super
             "klas",Class "proces",Fun "laat",Var "geef",Return "zeg",Print
         );
 
@@ -146,7 +146,7 @@ impl<'source> Scanner<'source> {
                         self.current += 1;
                     }
 
-                    // TODO: could be optimized with tries
+                    // NOTE: could be optimized with tries
                     let text = self.source[self.start..self.current].to_string();
                     let kind = match self.keywords.get(&text) {
                         Some(k) => *k,

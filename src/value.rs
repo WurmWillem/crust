@@ -5,8 +5,9 @@ use std::{
 
 #[derive(Debug, Clone, Copy)]
 pub enum StackValue {
+    Null,
+    Bool(bool),
     F64(f64),
-    None,
 }
 
 macro_rules! add_op_overload {
@@ -19,7 +20,7 @@ macro_rules! add_op_overload {
                 match (self, rhs) {
                     (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
                     _ => {
-                        panic!("Attempted to use operation that is not defined for this type.")
+                        unreachable!("Attempted to use operation that is not defined for this type.")
                     }
                 }
             }
@@ -38,8 +39,8 @@ impl Neg for StackValue {
     fn neg(self) -> Self::Output {
         match self {
             StackValue::F64(value) => StackValue::F64(-value),
-            StackValue::None => {
-                panic!("Attempted to use operation that is not defined for this type.")
+            _ => {
+                unreachable!("Attempted to use operation that is not defined for this type.")
             }
         }
     }
@@ -48,12 +49,8 @@ impl Display for StackValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             StackValue::F64(value) => write!(f, "{:?}", value),
-            StackValue::None => write!(f, "None"),
+            StackValue::Bool(value) => write!(f, "{:?}", value),
+            StackValue::Null => write!(f, "Null"),
         }
     }
 }
-// enum ValueType {
-//     Bool,
-//     Num,
-//     Nil,
-// }

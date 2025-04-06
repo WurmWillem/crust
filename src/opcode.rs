@@ -2,8 +2,15 @@
 pub enum OpCode {
     Return,
     Constant,
+
+    Null,
+    True,
+    False,
+
+    // unary
     Negate,
 
+    // binary
     Add,
     Sub,
     Mul,
