@@ -1,15 +1,24 @@
 use crate::{
     chunk::Chunk,
-    opcode::OpCode,
     compiler_helper::*,
+    opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::StackValue,
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+enum ValueType {
+    None,
+    Null,
+    Bool,
+    Num,
+}
 
 pub struct Compiler<'token> {
     tokens: Vec<Token<'token>>,
     chunk: Chunk,
     current: usize,
+    last_oper_done: ValueType,
 }
 impl<'token> Compiler<'token> {
     pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Result<Chunk, ParseError> {
@@ -17,10 +26,10 @@ impl<'token> Compiler<'token> {
             tokens,
             chunk,
             current: 0,
+            last_oper_done: ValueType::None,
         };
 
         parser.expression()?;
-
         parser.emit_byte(OpCode::Return as u8);
         // parser.chunk.disassemble("code");
         Ok(parser.chunk)
@@ -45,6 +54,7 @@ impl<'token> Compiler<'token> {
         while precedence <= self.get_rule(self.peek().kind).precedence {
             self.advance();
             let infix = self.get_rule(self.previous().kind).infix;
+            // dbg!(infix);
             self.execute_fn_type(infix)?;
         }
         Ok(())
@@ -56,8 +66,9 @@ impl<'token> Compiler<'token> {
 
     fn number(&mut self) -> Result<(), ParseError> {
         let Literal::Num(value) = self.previous().literal else {
-            panic!("Unreachable.");
+            unreachable!();
         };
+        self.last_oper_done = ValueType::Num;
         self.emit_constant(StackValue::F64(value))
     }
 
@@ -87,21 +98,20 @@ impl<'token> Compiler<'token> {
 
     fn unary(&mut self) -> Result<(), ParseError> {
         let operator_type = self.previous().kind;
-        let operand_type = self.peek().kind;
 
         self.parse_precedence(Precedence::Unary)?;
 
         match operator_type {
             // TODO: make them stackable
             TokenType::Minus => {
-                if operand_type != TokenType::Number {
+                if self.last_oper_done != ValueType::Num {
                     let msg = "'-' can only be applied to numbers.";
                     return Err(ParseError::new(self.peek().line, msg));
                 }
                 self.emit_byte(OpCode::Negate as u8);
             }
             TokenType::Bang => {
-                if operand_type != TokenType::True && operand_type != TokenType::False {
+                if self.last_oper_done != ValueType::Bool {
                     let msg = "'!' can only be applied to booleans.";
                     return Err(ParseError::new(self.peek().line, msg));
                 }
@@ -119,9 +129,18 @@ impl<'token> Compiler<'token> {
 
     fn literal(&mut self) -> Result<(), ParseError> {
         match self.previous().kind {
-            TokenType::True => self.emit_byte(OpCode::True as u8),    
-            TokenType::False => self.emit_byte(OpCode::False as u8),    
-            TokenType::Null => self.emit_byte(OpCode::Null as u8),    
+            TokenType::True => {
+                self.emit_byte(OpCode::True as u8);
+                self.last_oper_done = ValueType::Bool;
+            }
+            TokenType::False => {
+                self.emit_byte(OpCode::False as u8);
+                self.last_oper_done = ValueType::Bool;
+            }
+            TokenType::Null => {
+                self.emit_byte(OpCode::Null as u8);
+                self.last_oper_done = ValueType::Null;
+            }
             _ => unreachable!(),
         }
         Ok(())
