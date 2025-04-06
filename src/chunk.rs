@@ -65,6 +65,7 @@ impl Chunk {
             OpCode::Div => Self::simple_instruction("OP_DIV", offset),
 
             OpCode::Equal => Self::simple_instruction("OP_EQUAL", offset),
+            OpCode::BangEqual => Self::simple_instruction("OP_BANG_EQUAL", offset),
             OpCode::Greater => Self::simple_instruction("OP_GREATER", offset),
             OpCode::GreaterEqual => Self::simple_instruction("OP_GREATER_EQUAL", offset),
             OpCode::Less => Self::simple_instruction("OP_LESS", offset),

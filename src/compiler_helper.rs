@@ -87,7 +87,7 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // slash
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // star
         ParseRule { prefix: Unary, infix: Empty, precedence: P::Factor, }, // bang
-        none!(), // bang equal
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // bang equal
         none!(), // equal
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // equal equal
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Greater

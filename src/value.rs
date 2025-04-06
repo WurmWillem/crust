@@ -46,6 +46,9 @@ impl StackValue {
     pub fn equals(self, rhs: StackValue) -> StackValue {
         StackValue::Bool(self == rhs)
     }
+    pub fn not_equals(self, rhs: StackValue) -> StackValue {
+        StackValue::Bool(self != rhs)
+    }
 }
 
 impl Neg for StackValue {

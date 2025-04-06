@@ -42,7 +42,7 @@ fn main() {
     let chunk = match Compiler::compile(tokens, Chunk::new()) {
         Err(err) => {
             print_error(err.line, &err.msg);
-            println!("{}", "Parse error(s) detected, terminate program.".purple());
+            println!("{}", "Parse error(s) detected, terminate program.".red());
             return;
         }
         Ok(chunk) => chunk,

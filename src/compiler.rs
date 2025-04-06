@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{
     chunk::Chunk,
     compiler_helper::*,
@@ -31,6 +33,9 @@ impl<'token> Compiler<'token> {
 
         parser.expression()?;
         parser.emit_byte(OpCode::Return as u8);
+        if parser.current != parser.tokens.len() - 1 {
+            println!("{}", "Not all tokens were parsed.".red());
+        }
         // parser.chunk.disassemble("code");
         Ok(parser.chunk)
     }
@@ -115,6 +120,7 @@ impl<'token> Compiler<'token> {
                 self.emit_byte(OpCode::Equal as u8);
                 self.last_operand_type = ValueType::Bool;
             }
+            TokenType::BangEqual => emit_and_update_last_operand!("!=", BangEqual),
             TokenType::Greater => emit_and_update_last_operand!('>', Greater),
             TokenType::GreaterEqual => emit_and_update_last_operand!(">=", GreaterEqual),
             TokenType::Less => emit_and_update_last_operand!('<', Less),

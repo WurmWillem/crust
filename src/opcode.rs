@@ -19,7 +19,7 @@ pub enum OpCode {
     Div,
 
     Equal,
-    // EqualEqual,
+    BangEqual,
     Greater,
     GreaterEqual,
     Less,
@@ -40,10 +40,11 @@ impl std::convert::From<u8> for OpCode {
             9 => OpCode::Mul,
             10 => OpCode::Div,
             11 => OpCode::Equal,
-            12 => OpCode::Greater,
-            13 => OpCode::GreaterEqual,
-            14 => OpCode::Less,
-            15 => OpCode::LessEqual,
+            12 => OpCode::BangEqual,
+            13 => OpCode::Greater,
+            14 => OpCode::GreaterEqual,
+            15 => OpCode::Less,
+            16 => OpCode::LessEqual,
             _ => panic!("Not a valid opcode."),
         }
     }

@@ -99,6 +99,7 @@ impl VM {
                 OpCode::Mul => binary_op!(mul_nums),
                 OpCode::Div => binary_op!(div_nums),
                 OpCode::Equal => binary_op!(equals),
+                OpCode::BangEqual => binary_op!(not_equals),
                 OpCode::Greater => binary_op!(is_greater_than),
                 OpCode::GreaterEqual => binary_op!(is_greater_equal_than),
                 OpCode::Less => binary_op!(is_less_than),
