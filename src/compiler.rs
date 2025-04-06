@@ -86,7 +86,6 @@ impl<'token> Compiler<'token> {
         let new_precedence = (rule.precedence as u8 + 1).into();
         self.parse_precedence(new_precedence)?;
 
-        // TODO: return error if operator applied to non-number
         macro_rules! emit_op_code {
             ($op_char: expr, $op_code: ident) => {{
                 if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
@@ -136,7 +135,6 @@ impl<'token> Compiler<'token> {
         self.parse_precedence(Precedence::Unary)?;
 
         match operator_type {
-            // TODO: make them stackable
             TokenType::Minus => {
                 if self.last_operand_type != ValueType::Num {
                     let msg = "'-' can only be applied to numbers.";
@@ -151,7 +149,7 @@ impl<'token> Compiler<'token> {
                 }
                 self.emit_byte(OpCode::Not as u8);
             }
-            _ => unreachable!("Unreachable."),
+            _ => unreachable!(),
         }
         Ok(())
     }
@@ -161,7 +159,7 @@ impl<'token> Compiler<'token> {
         self.consume(TokenType::RightParen, "Expected ')' after expression.")
     }
 
-    fn literal(&mut self) -> Result<(), ParseError> {
+    fn literal(&mut self) {
         match self.previous().kind {
             TokenType::True => {
                 self.emit_byte(OpCode::True as u8);
@@ -177,7 +175,6 @@ impl<'token> Compiler<'token> {
             }
             _ => unreachable!(),
         }
-        Ok(())
     }
 
     fn execute_fn_type(&mut self, fn_type: FnType) -> Result<(), ParseError> {
@@ -186,7 +183,7 @@ impl<'token> Compiler<'token> {
             FnType::Unary => self.unary(),
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
-            FnType::Literal => self.literal(),
+            FnType::Literal => Ok(self.literal()),
             FnType::Empty => Ok(()),
         }
     }
