@@ -98,11 +98,11 @@ impl VM {
                 OpCode::Sub => binary_op!(sub_nums),
                 OpCode::Mul => binary_op!(mul_nums),
                 OpCode::Div => binary_op!(div_nums),
-                OpCode::Equal => binary_op!(equal),
-                OpCode::Greater => binary_op!(greater_than),
-                OpCode::GreaterEqual => binary_op!(greater_equal_than),
-                OpCode::Less => binary_op!(less_than),
-                OpCode::LessEqual => binary_op!(less_equal_than),
+                OpCode::Equal => binary_op!(equals),
+                OpCode::Greater => binary_op!(is_greater_than),
+                OpCode::GreaterEqual => binary_op!(is_greater_equal_than),
+                OpCode::Less => binary_op!(is_less_than),
+                OpCode::LessEqual => binary_op!(is_less_equal_than),
             }
         }
         // dbg!(5);

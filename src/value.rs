@@ -38,11 +38,19 @@ impl StackValue {
     add_num_operation!(mul_nums, *);
     add_num_operation!(div_nums, /);
 
-    add_num_comparison!(equal, ==);
-    add_num_comparison!(greater_than, >);
-    add_num_comparison!(greater_equal_than, >=);
-    add_num_comparison!(less_than, <);
-    add_num_comparison!(less_equal_than, <=);
+    add_num_comparison!(is_greater_than, >);
+    add_num_comparison!(is_greater_equal_than, >=);
+    add_num_comparison!(is_less_than, <);
+    add_num_comparison!(is_less_equal_than, <=);
+
+    pub fn equals(self, rhs: StackValue) -> StackValue {
+        match (self, rhs) {
+            (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs == rhs),
+            (StackValue::Bool(lhs), StackValue::Bool(rhs)) => StackValue::Bool(lhs == rhs),
+            (StackValue::Null, StackValue::Null) => StackValue::Bool(true),
+            _ => unreachable!(),
+        }
+    }
 }
 
 macro_rules! add_op_overload {
