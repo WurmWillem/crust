@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     chunk::Chunk,
     compiler_helper::*,
-    object::{ObjString, ObjType, Object},
+    object::{Object, ObjectValue},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::StackValue,
@@ -76,14 +76,16 @@ impl<'token> Compiler<'token> {
 
     fn string(&mut self) -> Result<(), ParseError> {
         let value = self.previous().lexeme.to_string();
+        let obj = Object {
+            value: ObjectValue::Str(value),
+        };
 
-        let mut obj_str = ObjString::new(ObjType::String, value);
-        let obj = Object { str: &mut obj_str };
-        // Box::new(obj_str);
-        // self.objects.push(obj);
-
+        self.objects.push(obj);
         self.last_operand_type = ValueType::Str;
-        self.emit_constant(StackValue::Obj(obj))
+
+        let len = self.objects.len() - 1;
+        let ptr = StackValue::Obj(&mut self.objects[len]);
+        self.emit_constant(ptr)
     }
 
     fn number(&mut self) -> Result<(), ParseError> {

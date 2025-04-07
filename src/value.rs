@@ -3,14 +3,14 @@ use std::{
     ops::{Neg, Not},
 };
 
-use crate::object::Object;
+use crate::object::{Object, ObjectValue};
 
 #[derive(Clone, Copy)]
 pub enum StackValue {
     Null,
     Bool(bool),
     F64(f64),
-    Obj(Object),
+    Obj(*mut Object),
 }
 
 macro_rules! add_num_operation {
@@ -92,7 +92,13 @@ impl Display for StackValue {
             StackValue::Null => write!(f, "Null"),
             // StackValue::Obj(_) => write!(f, "Null"),
 
-            StackValue::Obj(obj) => write!(f, "{:?}", unsafe { obj.str }),
+            StackValue::Obj(obj) => {
+                let val = unsafe { (**obj).value.clone() };
+                let str = match &val {
+                    ObjectValue::Str(str) => str,
+                };
+                write!(f, "{:?}", str)
+            },
         }
     }
 }

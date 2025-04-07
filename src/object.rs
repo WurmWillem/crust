@@ -1,8 +1,12 @@
+#[derive(Debug, Clone)]
+pub struct Object {
+    // pub str: *mut ObjString,
+    pub value: ObjectValue,
+}
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub union Object {
-    pub str: *mut ObjString,
+#[derive(Clone, Debug)]
+pub enum ObjectValue {
+    Str(String),
 }
 // #[repr(C)]
 // pub struct Object {
@@ -14,20 +18,20 @@ pub union Object {
 //     }
 // }
 
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub enum ObjType {
-    String,
-}
+// #[repr(C)]
+// #[derive(Debug, Clone)]
+// pub enum ObjType {
+//     String,
+// }
 
-#[repr(C)]
-#[derive(Debug, Clone)]
-pub struct ObjString {
-    kind: ObjType,
-    pub value: String,
-}
-impl ObjString {
-   pub fn new(kind: ObjType, value: String) -> Self {
-       Self { kind, value, }
-    } 
-}
+// #[repr(C)]
+// #[derive(Debug, Clone)]
+// pub struct ObjString {
+//     kind: ObjType,
+//     pub value: String,
+// }
+// impl ObjString {
+//    pub fn new(kind: ObjType, value: String) -> Self {
+//        Self { kind, value, }
+//     }
+// }
