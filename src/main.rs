@@ -40,7 +40,7 @@ fn main() {
         println!();
     }
 
-    let (chunk, mut objects) = match Compiler::compile(tokens, Chunk::new()) {
+    let (chunk, objects) = match Compiler::compile(tokens, Chunk::new()) {
         Err(err) => {
             print_error(err.line, &err.msg);
             println!("{}", "Parse error(s) detected, terminate program.".red());
@@ -49,7 +49,7 @@ fn main() {
         Ok((chunk, objects)) => (chunk, objects),
     };
 
-    VM::interpret(chunk);
+    VM::interpret(chunk, objects);
     // objects.pop();
     // unsafe {
     //     println!("{:?}", (*objects[0].str).value);

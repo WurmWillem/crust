@@ -1,4 +1,5 @@
 use crate::error::DEBUG_TRACE_EXECUTION;
+use crate::object::Object;
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
 
 pub enum InterpretResult {
@@ -14,12 +15,14 @@ pub struct VM {
     ip: *const u8,
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
+    objects: Vec<Object>,
 }
 impl VM {
-    pub fn interpret(chunk: Chunk) -> InterpretResult {
+    pub fn interpret(chunk: Chunk, objects: Vec<Object>) -> InterpretResult {
         let ip = chunk.get_ptr();
         let mut vm = Self {
             chunk,
+            objects,
             ip,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
@@ -50,7 +53,7 @@ impl VM {
             if DEBUG_TRACE_EXECUTION {
                 print!("          ");
                 for stack_index in 0..self.stack_top {
-                    print!("[ {} ]", self.stack[stack_index])
+                    print!("[ {} ]", self.stack[stack_index].display(&self.objects))
                 }
                 println!();
 
@@ -67,7 +70,7 @@ impl VM {
             }
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
-                    println!("{}", self.stack_pop());
+                    println!("{}", self.stack_pop().display(&self.objects));
                     return InterpretResult::Ok;
                 }
                 OpCode::Constant => {

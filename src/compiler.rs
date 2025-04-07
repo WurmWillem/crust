@@ -84,8 +84,8 @@ impl<'token> Compiler<'token> {
         self.last_operand_type = ValueType::Str;
 
         let len = self.objects.len() - 1;
-        let ptr = StackValue::Obj(&mut self.objects[len]);
-        self.emit_constant(ptr)
+        // let ptr = 
+        self.emit_constant(StackValue::Obj(len))
     }
 
     fn number(&mut self) -> Result<(), ParseError> {
