@@ -3,32 +3,37 @@ use colored::Colorize;
 use crate::{
     chunk::Chunk,
     compiler_helper::*,
+    object::{ObjString, ObjType, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::StackValue,
 };
 
+// TODO: look into naming conventions, so we don't have a Str and a String
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 enum ValueType {
     None,
     Null,
     Bool,
     Num,
+    Str,
 }
 
 pub struct Compiler<'token> {
     tokens: Vec<Token<'token>>,
+    objects: Vec<Object>,
     chunk: Chunk,
     current: usize,
     last_operand_type: ValueType,
 }
 impl<'token> Compiler<'token> {
-    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Result<Chunk, ParseError> {
+    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Result<(Chunk, Vec<Object>), ParseError> {
         let mut parser = Compiler {
             tokens,
             chunk,
             current: 0,
             last_operand_type: ValueType::None,
+            objects: Vec::new(),
         };
 
         parser.expression()?;
@@ -37,7 +42,7 @@ impl<'token> Compiler<'token> {
             println!("{}", "Not all tokens were parsed.".red());
         }
         // parser.chunk.disassemble("code");
-        Ok(parser.chunk)
+        Ok((parser.chunk, parser.objects))
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
@@ -67,6 +72,18 @@ impl<'token> Compiler<'token> {
 
     fn expression(&mut self) -> Result<(), ParseError> {
         self.parse_precedence(Precedence::Assignment)
+    }
+
+    fn string(&mut self) -> Result<(), ParseError> {
+        let value = self.previous().lexeme.to_string();
+
+        let mut obj_str = ObjString::new(ObjType::String, value);
+        let obj = Object { str: &mut obj_str };
+        // Box::new(obj_str);
+        // self.objects.push(obj);
+
+        self.last_operand_type = ValueType::Str;
+        self.emit_constant(StackValue::Obj(obj))
     }
 
     fn number(&mut self) -> Result<(), ParseError> {
@@ -183,6 +200,7 @@ impl<'token> Compiler<'token> {
             FnType::Unary => self.unary(),
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
+            FnType::String => self.string(),
             FnType::Literal => Ok(self.literal()),
             FnType::Empty => Ok(()),
         }

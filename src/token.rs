@@ -1,17 +1,18 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Literal {
     None,
-    // Str,
+    Str,
     Num(f64),
     // True,
     // False,
     // Nil,
 }
 
+// TODO: look into removing lexeme and using literal to store strings instead
 #[derive(Clone, Copy, Debug)]
 pub struct Token<'source> {
     pub kind: TokenType,
-    lexeme: &'source str,
+    pub lexeme: &'source str,
     pub literal: Literal,
     pub line: u32,
 }

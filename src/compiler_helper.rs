@@ -51,6 +51,7 @@ pub enum FnType {
     Unary,
     Binary,
     Number,
+    String,
     Literal,
     Empty,
 }
@@ -62,7 +63,7 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
-#[rustfmt::skip]
+// #[rustfmt::skip]
 pub const PARSE_RULES: [ParseRule; 39] = {
     use FnType::*;
     use Precedence as P;
@@ -74,8 +75,8 @@ pub const PARSE_RULES: [ParseRule; 39] = {
     }
 
     [
-        // left paren
-        ParseRule { prefix: Grouping, infix: Empty, precedence: P::None, },
+        
+        ParseRule { prefix: Grouping, infix: Empty, precedence: P::None, }, // left paren
         none!(), // right paren
         none!(), // left brace
         none!(), // right brace
@@ -95,7 +96,7 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less equal
         none!(), // identifier
-        none!(), // string
+        ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
         none!(), // and
         none!(), // class

@@ -12,6 +12,7 @@ mod chunk;
 mod compiler;
 mod compiler_helper;
 mod error;
+mod object;
 mod opcode;
 mod scanner;
 mod token;
@@ -39,14 +40,18 @@ fn main() {
         println!();
     }
 
-    let chunk = match Compiler::compile(tokens, Chunk::new()) {
+    let (chunk, mut objects) = match Compiler::compile(tokens, Chunk::new()) {
         Err(err) => {
             print_error(err.line, &err.msg);
             println!("{}", "Parse error(s) detected, terminate program.".red());
             return;
         }
-        Ok(chunk) => chunk,
+        Ok((chunk, objects)) => (chunk, objects),
     };
 
     VM::interpret(chunk);
+    // objects.pop();
+    // unsafe {
+    //     println!("{:?}", (*objects[0].str).value);
+    // }
 }
