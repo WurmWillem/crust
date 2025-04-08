@@ -112,10 +112,12 @@ impl VM {
                         (StackValue::Obj(lhs), StackValue::Obj(rhs)) => {
                             // remove rhs so we can take ownership, but mutate lhs so we don't
                             // have to remove and then push again
-                            let lhs_index = lhs;
-                            // NOTE: maybe replace by remove
                             assert_ne!(lhs, rhs, "lhs and rhs must not be the same object index");
-                            let rhs_value = self.objects.swap_remove(rhs).value;
+                            
+                            let lhs_index = lhs;
+                            // let rhs_value = self.objects.swap_remove(rhs).value;
+                            let rhs_value = self.objects[rhs].value.clone();
+                            // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
                             let lhs_value = &mut self.objects[lhs].value;
 
                             let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) =
