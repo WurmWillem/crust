@@ -29,7 +29,7 @@ impl<'source> Scanner<'source> {
         let keywords = create_keywords!(
             "en",And "of",Or "als",If "anders",Else "terwijl",While "voor",For
             "true",True "false",False "null",Null "dit",This "ouder",Super
-            "klas",Class "proces",Fun "laat",Var "geef",Return "print",Print
+            "klas",Class "proces",Fun "let",Var "geef",Return "print",Print
         );
 
         let source_len = source_file.len();
@@ -52,7 +52,7 @@ impl<'source> Scanner<'source> {
         }
 
         self.tokens
-            .push(Token::new(TokenType::Eof, Literal::None, self.line));
+            .push(Token::new(TokenType::Eof, "", Literal::None, self.line));
 
         if self.had_error {
             Err(())
@@ -202,7 +202,8 @@ impl<'source> Scanner<'source> {
     }
 
     fn add_lit_token(&mut self, kind: TokenType, lit: Literal<'source>) {
-        self.tokens.push(Token::new(kind, lit, self.line));
+        let lexeme = &self.source[self.start..self.current];
+        self.tokens.push(Token::new(kind, lexeme, lit, self.line));
     }
 
     fn add_token(&mut self, kind: TokenType) {

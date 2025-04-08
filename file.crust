@@ -1,3 +1,2 @@
-print 3 + "hey";
-print 3 + "World!";
+let x = 5;
 

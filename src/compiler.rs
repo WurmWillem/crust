@@ -46,7 +46,6 @@ impl<'token> Compiler<'token> {
                 compiler.synchronize();
             }
         }
-        compiler.emit_byte(OpCode::Return as u8);
         if had_error {
             println!("{}", "Parse error(s) detected, terminate program.".red());
             return None;
@@ -56,6 +55,7 @@ impl<'token> Compiler<'token> {
             println!("{}", "Not all tokens were parsed.".red());
         }
         // compiler.chunk.disassemble("code");
+        compiler.emit_byte(OpCode::Return as u8);
         Some((compiler.chunk, compiler.objects))
     }
 
@@ -69,7 +69,43 @@ impl<'token> Compiler<'token> {
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
-        self.statement()
+        if self.matches(TokenType::Var) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        }
+    }
+    fn var_declaration(&mut self) -> Result<(), ParseError> {
+        let global = self.parse_var()?;
+
+        if self.matches(TokenType::Equal) {
+            self.expression()?;
+        } else {
+            self.emit_byte(OpCode::Null as u8);
+        }
+
+        self.consume(TokenType::Semicolon, "Expected ';' after variable declaration.")?;
+
+        self.emit_bytes(OpCode::DefineGlobal as u8, global);
+        Ok(())
+    }
+
+    fn parse_var(&mut self) -> Result<u8, ParseError> {
+        self.consume(TokenType::Identifier, "Expected variable name.")?;
+
+        let var_token = self.previous().lexeme.to_string();
+        self.identifier_constant(var_token)
+    }
+
+    fn identifier_constant(&mut self, lexeme: String) -> Result<u8, ParseError> {
+        let idx = self.objects.len();
+
+        let var_name = Object {
+            value: ObjectValue::Str(lexeme),
+        };
+        self.objects.push(var_name);
+
+        self.make_constant(StackValue::Obj(idx))
     }
 
     fn statement(&mut self) -> Result<(), ParseError> {
