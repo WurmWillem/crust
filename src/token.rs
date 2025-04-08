@@ -8,7 +8,6 @@ pub enum Literal<'source> {
     // Nil,
 }
 
-// TODO: look into removing lexeme and using literal to store strings instead
 #[derive(Clone, Copy, Debug)]
 pub struct Token<'source> {
     pub kind: TokenType,
@@ -17,7 +16,7 @@ pub struct Token<'source> {
     pub line: u32,
 }
 impl<'source> Token<'source> {
-    pub fn new(kind: TokenType,  literal: Literal<'source>, line: u32) -> Self {
+    pub fn new(kind: TokenType, literal: Literal<'source>, line: u32) -> Self {
         Self {
             kind,
             // lexeme,

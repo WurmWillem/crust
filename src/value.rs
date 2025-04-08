@@ -33,7 +33,7 @@ macro_rules! add_num_comparison {
 }
 
 impl StackValue {
-    add_num_operation!(add_nums, +);
+    // add_num_operation!(add_nums, +);
     add_num_operation!(sub_nums, -);
     add_num_operation!(mul_nums, *);
     add_num_operation!(div_nums, /);

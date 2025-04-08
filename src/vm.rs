@@ -112,7 +112,9 @@ impl VM {
                             let rhs_value = self.objects.swap_remove(rhs).value;
                             let lhs_value = &mut self.objects[lhs].value;
 
-                            let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value) else {
+                            let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) =
+                                (lhs_value, rhs_value)
+                            else {
                                 unreachable!();
                             };
 

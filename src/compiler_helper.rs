@@ -63,7 +63,7 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
-// #[rustfmt::skip]
+#[rustfmt::skip]
 pub const PARSE_RULES: [ParseRule; 39] = {
     use FnType::*;
     use Precedence as P;
