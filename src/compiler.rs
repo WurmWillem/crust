@@ -122,7 +122,13 @@ impl<'token> Compiler<'token> {
         }
 
         match op_type {
-            TokenType::Plus => emit_op_code!('+', Add),
+            TokenType::Plus => {
+                if lhs_type != self.last_operand_type || (lhs_type != ValueType::Num && lhs_type != ValueType::Str) {
+                    let msg = "'+' can only be applied to numbers and strings.";
+                    return Err(ParseError::new(self.peek().line, msg));
+                }
+                self.emit_byte(OpCode::Add as u8);
+            },
             TokenType::Minus => emit_op_code!('-', Sub),
             TokenType::Star => emit_op_code!('*', Mul),
             TokenType::Slash => emit_op_code!('/', Div),

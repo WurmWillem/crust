@@ -1,7 +1,4 @@
-use std::{
-    fmt::Display,
-    ops::{Neg, Not},
-};
+use std::ops::{Neg, Not};
 
 use crate::object::{Object, ObjectValue};
 

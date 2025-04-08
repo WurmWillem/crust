@@ -1,5 +1,5 @@
 use crate::error::DEBUG_TRACE_EXECUTION;
-use crate::object::Object;
+use crate::object::{Object, ObjectValue};
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
 
 pub enum InterpretResult {
@@ -97,7 +97,31 @@ impl VM {
                     self.stack_push(new_value);
                 }
 
-                OpCode::Add => binary_op!(add_nums),
+                OpCode::Add => {
+                    let rhs = self.stack_pop();
+                    let lhs = self.stack_pop();
+
+                    let new_value = match (lhs, rhs) {
+                        (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs + rhs),
+                        (StackValue::Obj(lhs), StackValue::Obj(rhs)) => {
+                            // remove rhs so we can take ownership, but mutate lhs so we don't
+                            // have to remove and then push again
+                            let index = lhs;
+                            let rhs = self.objects.remove(rhs).value;
+                            let lhs = &mut self.objects[lhs].value;
+
+                            if let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs, rhs) {
+                                lhs.push_str(&rhs);
+                                StackValue::Obj(index)
+                            } else {
+                                unreachable!();
+                            }
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    self.stack_push(new_value);
+                }
                 OpCode::Sub => binary_op!(sub_nums),
                 OpCode::Mul => binary_op!(mul_nums),
                 OpCode::Div => binary_op!(div_nums),

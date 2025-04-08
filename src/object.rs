@@ -4,7 +4,7 @@ pub struct Object {
     pub value: ObjectValue,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum ObjectValue {
     Str(String),
 }

@@ -201,7 +201,8 @@ impl<'source> Scanner<'source> {
 
     fn add_lit_token(&mut self, kind: TokenType, lit: Literal) {
         let lexeme = &self.source[self.start..self.current];
-        dbg!(lexeme);
+        let x = "\"hoi\"";
+        dbg!(x);
         self.tokens.push(Token::new(kind, lexeme, lit, self.line));
     }
 
