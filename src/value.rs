@@ -89,7 +89,7 @@ impl Not for StackValue {
 //     }
 // }
 impl StackValue {
-    pub fn display(&self, objects: &Vec<Object>) -> String {
+    pub fn display(&self, objects: &[Object]) -> String {
         match self {
             StackValue::Null => "null".to_string(),
             StackValue::Bool(b) => b.to_string(),

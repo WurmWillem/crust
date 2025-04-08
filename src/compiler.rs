@@ -212,7 +212,10 @@ impl<'token> Compiler<'token> {
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            FnType::Literal => Ok(self.literal()),
+            FnType::Literal => {
+                self.literal();
+                Ok(())
+            },
             FnType::Empty => Ok(()),
         }
     }
