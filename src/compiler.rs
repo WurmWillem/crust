@@ -75,16 +75,17 @@ impl<'token> Compiler<'token> {
     }
 
     fn string(&mut self) -> Result<(), ParseError> {
-        let value = self.previous().lexeme.to_string();
+        let Literal::Str(value) = self.previous().literal else {
+            unreachable!();
+        };
         let obj = Object {
-            value: ObjectValue::Str(value),
+            value: ObjectValue::Str(value.to_string()),
         };
 
         self.objects.push(obj);
         self.last_operand_type = ValueType::Str;
 
         let len = self.objects.len() - 1;
-        // let ptr = 
         self.emit_constant(StackValue::Obj(len))
     }
 

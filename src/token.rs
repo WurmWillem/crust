@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Literal {
+pub enum Literal<'source> {
     None,
-    Str,
+    Str(&'source str),
     Num(f64),
     // True,
     // False,
@@ -13,11 +13,11 @@ pub enum Literal {
 pub struct Token<'source> {
     pub kind: TokenType,
     pub lexeme: &'source str,
-    pub literal: Literal,
+    pub literal: Literal<'source>,
     pub line: u32,
 }
 impl<'source> Token<'source> {
-    pub fn new(kind: TokenType, lexeme: &'source str, literal: Literal, line: u32) -> Self {
+    pub fn new(kind: TokenType, lexeme: &'source str, literal: Literal<'source>, line: u32) -> Self {
         Self {
             kind,
             lexeme,
