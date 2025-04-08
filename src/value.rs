@@ -103,22 +103,3 @@ impl StackValue {
         }
     }
 }
-// impl Display for StackValue {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-// TODO: add print for object
-//         match self {
-//             StackValue::F64(value) => write!(f, "{:?}", value),
-//             StackValue::Bool(value) => write!(f, "{:?}", value),
-//             StackValue::Null => write!(f, "Null"),
-//             // StackValue::Obj(_) => write!(f, "Null"),
-//
-//             StackValue::Obj(obj) => {
-//                 let val = unsafe { (**obj).value.clone() };
-//                 let str = match &val {
-//                     ObjectValue::Str(str) => str,
-//                 };
-//                 write!(f, "{:?}", str)
-//             },
-//         }
-//     }
-// }

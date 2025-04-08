@@ -28,7 +28,7 @@ pub struct Compiler<'token> {
 }
 impl<'token> Compiler<'token> {
     pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Result<(Chunk, Vec<Object>), ParseError> {
-        let mut parser = Compiler {
+        let mut compiler = Compiler {
             tokens,
             chunk,
             current: 0,
@@ -36,13 +36,37 @@ impl<'token> Compiler<'token> {
             objects: Vec::new(),
         };
 
-        parser.expression()?;
-        parser.emit_byte(OpCode::Return as u8);
-        if parser.current != parser.tokens.len() - 1 {
+        while !compiler.matches(TokenType::Eof) {
+            compiler.declaration()?;
+        }
+        compiler.emit_byte(OpCode::Return as u8);
+
+        if compiler.current != compiler.tokens.len() - 1 {
             println!("{}", "Not all tokens were parsed.".red());
         }
-        // parser.chunk.disassemble("code");
-        Ok((parser.chunk, parser.objects))
+        // compiler.chunk.disassemble("code");
+        Ok((compiler.chunk, compiler.objects))
+    }
+
+    fn declaration(&mut self) -> Result<(), ParseError> {
+        self.statement()
+    }
+
+    fn statement(&mut self) -> Result<(), ParseError> {
+        // dbg!(self.peek());
+        if self.matches(TokenType::Print) {
+            return self.print_statement();
+        }
+        unreachable!()
+    }
+
+    fn print_statement(&mut self) -> Result<(), ParseError> {
+        // dbg!(self.chunk.constants.len());
+        self.expression()?;
+        self.consume(TokenType::Semicolon, "Expected ';' after statement.")?;
+        self.emit_byte(OpCode::Print as u8);
+        // dbg!(self.chunk.constants.len());
+        Ok(())
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
@@ -215,7 +239,7 @@ impl<'token> Compiler<'token> {
             FnType::Literal => {
                 self.literal();
                 Ok(())
-            },
+            }
             FnType::Empty => Ok(()),
         }
     }
@@ -260,12 +284,17 @@ impl<'token> Compiler<'token> {
         self.emit_byte(byte_1);
     }
 
-    fn check(&mut self, kind: TokenType) -> bool {
-        if self.is_at_end() {
+    fn matches(&mut self, kind: TokenType) -> bool {
+        if !self.check(kind) {
             false
         } else {
-            self.peek().kind == kind
+            self.advance();
+            true
         }
+    }
+
+    fn check(&mut self, kind: TokenType) -> bool {
+        self.peek().kind == kind
     }
 
     fn advance(&mut self) -> Token {

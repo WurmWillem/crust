@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::error::DEBUG_TRACE_EXECUTION;
 use crate::object::{Object, ObjectValue};
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
@@ -70,13 +72,17 @@ impl VM {
             }
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
-                    println!("{}", self.stack_pop().display(&self.objects));
                     return InterpretResult::Ok;
                 }
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
                     let constant = self.chunk.constants[index];
                     self.stack_push(constant);
+                }
+                OpCode::Print => {
+                    let string = format!("{}", self.stack_pop().display(&self.objects)).green();
+                    println!("{}", string);
+
                 }
                 OpCode::True => {
                     self.stack_push(StackValue::Bool(true));
@@ -145,7 +151,6 @@ impl VM {
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
             }
         }
-        // dbg!(5);
         // InterpretResult::RuntimeError
     }
 }

@@ -52,6 +52,8 @@ impl Chunk {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
             OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
 
+            OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
+
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
             OpCode::False => Self::simple_instruction("OP_FALSE", offset),
@@ -80,9 +82,9 @@ impl Chunk {
 
     fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant_index = self.code[offset + 1];
-        print!("{}  {}:", name, constant_index);
-        // println!(" '{}'", self.constants[constant_index as usize].display(objects));
-        println!();
+        println!("{}  {}:", name, constant_index);
+        // println!(" '{}'", self.constants[constant_index as usize].display(&self.objects));
+        // println!();
         offset + 2
     }
 }
