@@ -95,9 +95,10 @@ impl VM {
                     };
 
                     let ObjectValue::Str(var_name) = self.objects[idx].value.clone();
-                    self.globals.insert(var_name, StackValue::Obj(idx));
+                    let value = self.stack_pop();
+                    self.globals.insert(var_name, value);
 
-                    self.stack_pop();
+                    // self.stack_pop();
                 }
                 OpCode::GetGlobal => {
                     let constants_index = self.read_byte() as usize;
@@ -106,13 +107,13 @@ impl VM {
                     };
                     let ObjectValue::Str(var_name) = &self.objects[idx].value;
                     let value = self.globals.get(var_name).unwrap();
-                    let StackValue::Obj(index) = value else {
-                        unreachable!()
-                    };
+                    // let StackValue::Obj(index) = value else {
+                    //     unreachable!()
+                    // };
                     // dbg!(value);
 
-                    let val = self.objects[*index].clone();
-                    self.stack_push(val);
+                    // let val = self.objects[*index].clone();
+                    self.stack_push(*value);
                 }
 
                 OpCode::True => {
