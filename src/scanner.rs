@@ -52,7 +52,7 @@ impl<'source> Scanner<'source> {
         }
 
         self.tokens
-            .push(Token::new(TokenType::Eof, "", Literal::None, self.line));
+            .push(Token::new(TokenType::Eof, Literal::None, self.line));
 
         if self.had_error {
             Err(())
@@ -130,7 +130,7 @@ impl<'source> Scanner<'source> {
 
                 let str = &self.source[(self.start + 1)..self.current];
                 self.add_lit_token(TokenType::String, Literal::Str(str));
-                
+
                 self.current += 1;
             }
 
@@ -202,8 +202,7 @@ impl<'source> Scanner<'source> {
     }
 
     fn add_lit_token(&mut self, kind: TokenType, lit: Literal<'source>) {
-        let lexeme = &self.source[self.start..self.current];
-        self.tokens.push(Token::new(kind, lexeme, lit, self.line));
+        self.tokens.push(Token::new(kind, lit, self.line));
     }
 
     fn add_token(&mut self, kind: TokenType) {

@@ -12,15 +12,15 @@ pub enum Literal<'source> {
 #[derive(Clone, Copy, Debug)]
 pub struct Token<'source> {
     pub kind: TokenType,
-    pub lexeme: &'source str,
+    // pub lexeme: &'source str,
     pub literal: Literal<'source>,
     pub line: u32,
 }
 impl<'source> Token<'source> {
-    pub fn new(kind: TokenType, lexeme: &'source str, literal: Literal<'source>, line: u32) -> Self {
+    pub fn new(kind: TokenType,  literal: Literal<'source>, line: u32) -> Self {
         Self {
             kind,
-            lexeme,
+            // lexeme,
             literal,
             line,
         }
