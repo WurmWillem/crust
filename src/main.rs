@@ -41,12 +41,10 @@ fn main() {
     }
 
     let (chunk, objects) = match Compiler::compile(tokens, Chunk::new()) {
-        Err(err) => {
-            print_error(err.line, &err.msg);
-            println!("{}", "Parse error(s) detected, terminate program.".red());
+        None => {
             return;
         }
-        Ok((chunk, objects)) => (chunk, objects),
+        Some((chunk, objects)) => (chunk, objects),
     };
 
     VM::interpret(chunk, objects);

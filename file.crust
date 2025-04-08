@@ -1,3 +1,3 @@
-print "Hello " + "World!";
-print "Hello " + "World!";
+print 3 + "hey";
+print 3 + "World!";
 

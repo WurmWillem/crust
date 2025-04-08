@@ -3,6 +3,7 @@ use colored::Colorize;
 use crate::{
     chunk::Chunk,
     compiler_helper::*,
+    error::print_error,
     object::{Object, ObjectValue},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
@@ -27,7 +28,7 @@ pub struct Compiler<'token> {
     last_operand_type: ValueType,
 }
 impl<'token> Compiler<'token> {
-    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Result<(Chunk, Vec<Object>), ParseError> {
+    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(Chunk, Vec<Object>)> {
         let mut compiler = Compiler {
             tokens,
             chunk,
@@ -36,16 +37,35 @@ impl<'token> Compiler<'token> {
             objects: Vec::new(),
         };
 
+        let mut had_error = false;
         while !compiler.matches(TokenType::Eof) {
-            compiler.declaration()?;
+            if let Err(err) = compiler.declaration() {
+                print_error(err.line, &err.msg);
+
+                had_error = true;
+                compiler.synchronize();
+            }
         }
         compiler.emit_byte(OpCode::Return as u8);
+        if had_error {
+            println!("{}", "Parse error(s) detected, terminate program.".red());
+            return None;
+        }
 
         if compiler.current != compiler.tokens.len() - 1 {
             println!("{}", "Not all tokens were parsed.".red());
         }
         // compiler.chunk.disassemble("code");
-        Ok((compiler.chunk, compiler.objects))
+        Some((compiler.chunk, compiler.objects))
+    }
+
+    fn synchronize(&mut self) {
+        while self.peek().kind != TokenType::Eof {
+            if self.previous().kind == TokenType::Semicolon {
+                return;
+            }
+            self.advance();
+        }
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
