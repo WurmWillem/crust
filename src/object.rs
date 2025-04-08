@@ -1,6 +1,5 @@
 #[derive(Debug, Clone)]
 pub struct Object {
-    // pub str: *mut ObjString,
     pub value: ObjectValue,
 }
 
