@@ -267,6 +267,16 @@ impl<'token> Compiler<'token> {
         self.consume(TokenType::RightParen, "Expected ')' after expression.")
     }
 
+    fn variable(&mut self) -> Result<(), ParseError> {
+        self.named_variable(self.previous().lexeme.to_string())
+    }
+
+    fn named_variable(&mut self, lexeme: String) -> Result<(), ParseError> {
+        let arg = self.identifier_constant(lexeme)?;
+        self.emit_bytes(OpCode::GetGlobal as u8, arg);
+        Ok(())
+    }
+
     fn literal(&mut self) {
         match self.previous().kind {
             TokenType::True => {
@@ -292,6 +302,7 @@ impl<'token> Compiler<'token> {
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
+            FnType::Variable => self.variable(),
             FnType::Literal => {
                 self.literal();
                 Ok(())

@@ -87,6 +87,7 @@ impl VM {
                     let string = format!("{}", self.stack_pop().display(&self.objects)).green();
                     println!("{}", string);
                 }
+
                 OpCode::DefineGlobal => {
                     let constants_index = self.read_byte() as usize;
                     let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
@@ -97,6 +98,21 @@ impl VM {
                     self.globals.insert(var_name, StackValue::Obj(idx));
 
                     self.stack_pop();
+                }
+                OpCode::GetGlobal => {
+                    let constants_index = self.read_byte() as usize;
+                    let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
+                        unreachable!();
+                    };
+                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
+                    let value = self.globals.get(var_name).unwrap();
+                    let StackValue::Obj(index) = value else {
+                        unreachable!()
+                    };
+                    // dbg!(value);
+
+                    let val = self.objects[*index].clone();
+                    self.stack_push(val);
                 }
 
                 OpCode::True => {

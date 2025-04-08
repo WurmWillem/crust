@@ -54,6 +54,7 @@ impl Chunk {
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
             OpCode::DefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
+            OpCode::GetGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
