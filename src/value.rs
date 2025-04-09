@@ -2,7 +2,7 @@ use std::ops::{Neg, Not};
 
 use crate::object::{Object, ObjectValue};
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum StackValue {
     Null,
     Bool(bool),

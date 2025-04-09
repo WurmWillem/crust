@@ -46,6 +46,10 @@ impl VM {
         self.stack[self.stack_top]
     }
 
+    fn stack_peek(&mut self) -> StackValue {
+        self.stack[self.stack_top - 1]
+    }
+
     #[inline(always)]
     unsafe fn read_byte(&mut self) -> u8 {
         let byte = *self.ip;
@@ -74,6 +78,18 @@ impl VM {
                     self.stack_push(lhs.$operation(rhs));
                 }};
             }
+            macro_rules! get_var_name_from_next_byte {
+                () => {
+                    {
+                    let constants_index = self.read_byte() as usize;
+                    let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
+                        unreachable!();
+                    };
+                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
+                    var_name
+                    }
+                };
+            }
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
                     return InterpretResult::Ok;
@@ -85,7 +101,7 @@ impl VM {
                 }
                 OpCode::Pop => {
                     // dbg!(self.stack_top);
-                    // self.stack_pop();
+                    self.stack_pop();
                 }
 
                 OpCode::Print => {
@@ -94,44 +110,22 @@ impl VM {
                 }
 
                 OpCode::DefineGlobal => {
-                    let constants_index = self.read_byte() as usize;
-                    let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
-                        unreachable!();
-                    };
-
                     let value = self.stack_pop();
-                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
+                    let var_name = get_var_name_from_next_byte!();
 
                     self.globals.insert(var_name.clone(), value);
-
-                    // self.stack_pop();
                 }
                 OpCode::GetGlobal => {
-                    let constants_index = self.read_byte() as usize;
-                    let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
-                        unreachable!();
-                    };
-                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
-                    
+                    let var_name = get_var_name_from_next_byte!();
                     let value = self.globals.get(var_name).unwrap();
                     self.stack_push(*value);
                 }
                 OpCode::SetGlobal => {
-                    let constants_index = self.read_byte() as usize;
-                    let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
-                        unreachable!();
-                    };
+                    let new_value = self.stack_peek();
+                    let var_name = get_var_name_from_next_byte!();
 
-                    let new_value = self.stack_pop();
-
-                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
-                    
-                    // let value = self.globals.get(var_name).unwrap();
                     let value = self.globals.get_mut(var_name).unwrap();
                     *value = new_value;
-                    // val
-                    // let v = *value;
-                    // self.stack_push(v);
                 }
 
                 OpCode::True => {
