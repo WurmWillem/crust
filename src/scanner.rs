@@ -17,7 +17,6 @@ pub struct Scanner<'source> {
 
 impl<'source> Scanner<'source> {
     pub fn new(source_file: &'source str) -> Self {
-        //let mut keywords = HashMap::new();
         macro_rules! create_keywords {
             ($($k: expr, $v: ident)*) => {
                 HashMap::from([
@@ -146,7 +145,7 @@ impl<'source> Scanner<'source> {
                         self.current += 1;
                     }
 
-                    // NOTE: could be optimized with tries
+                    // TODO: could be optimized with tries
                     let text = self.source[self.start..self.current].to_string();
                     let kind = match self.keywords.get(&text) {
                         Some(k) => *k,

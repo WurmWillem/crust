@@ -24,7 +24,6 @@ fn main() {
     let source = std::fs::read_to_string("file.js").expect(msg);
 
     let scanner = Scanner::new(&source);
-    // let tokens = scanner.scan_tokens().unwrap();
     let tokens = match scanner.scan_tokens() {
         Ok(tokens) => tokens,
         Err(_) => {
@@ -32,7 +31,7 @@ fn main() {
             return;
         }
     };
-
+    
     if PRINT_SCAN_TOKENS {
         for token in &tokens {
             println!("{:?}", token);
@@ -48,8 +47,4 @@ fn main() {
     };
 
     VM::interpret(chunk, objects);
-    // objects.pop();
-    // unsafe {
-    //     println!("{:?}", (*objects[0].str).value);
-    // }
 }

@@ -2,14 +2,13 @@ use std::collections::HashMap;
 
 use colored::Colorize;
 
-use crate::error::DEBUG_TRACE_EXECUTION;
+use crate::error::{print_error, DEBUG_TRACE_EXECUTION};
 use crate::object::{Object, ObjectValue};
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
 
 pub enum InterpretResult {
     Ok,
-    // CompileError,
-    // RuntimeError,
+    RuntimeError,
 }
 
 const STACK_SIZE: usize = 256;
@@ -68,7 +67,8 @@ impl VM {
                 println!();
 
                 let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                self.chunk.disassemble_instruction(debug_offset as usize, &self.objects);
+                self.chunk
+                    .disassemble_instruction(debug_offset as usize, &self.objects);
             }
 
             macro_rules! binary_op {
@@ -79,17 +79,16 @@ impl VM {
                 }};
             }
             macro_rules! get_var_name_from_next_byte {
-                () => {
-                    {
+                () => {{
                     let constants_index = self.read_byte() as usize;
                     let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
                         unreachable!();
                     };
                     let ObjectValue::Str(var_name) = &self.objects[idx].value;
                     var_name
-                    }
-                };
+                }};
             }
+
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
                     return InterpretResult::Ok;
@@ -117,14 +116,37 @@ impl VM {
                 }
                 OpCode::GetGlobal => {
                     let var_name = get_var_name_from_next_byte!();
-                    let value = self.globals.get(var_name).unwrap();
+                    let value = match self.globals.get(var_name) {
+                        Some(value) => value,
+                        _ => {
+                            let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
+                            let line = self.chunk.lines[debug_offset as usize];
+
+                            let msg = format!("The variable with name '{}' does not exist.", var_name);
+                            print_error(line, &msg);
+
+                            return InterpretResult::RuntimeError;
+                        }
+                    };
                     self.stack_push(*value);
                 }
                 OpCode::SetGlobal => {
                     let new_value = self.stack_peek();
                     let var_name = get_var_name_from_next_byte!();
 
-                    let value = self.globals.get_mut(var_name).unwrap();
+                    let value = match self.globals.get_mut(var_name) {
+                        Some(value) => value,
+                        _ => {
+                            let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
+                            let line = self.chunk.lines[debug_offset as usize];
+
+                            let msg = format!("The variable with name '{}' does not exist.", var_name);
+                            print_error(line, &msg);
+
+                            return InterpretResult::RuntimeError;
+                        }
+                    };
+
                     *value = new_value;
                 }
 
@@ -154,24 +176,7 @@ impl VM {
                     let new_value = match (lhs, rhs) {
                         (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs + rhs),
                         (StackValue::Obj(lhs), StackValue::Obj(rhs)) => {
-                            // remove rhs so we can take ownership, but mutate lhs so we don't
-                            // have to remove and then push again
-                            assert_ne!(lhs, rhs, "lhs and rhs must not be the same object index");
-
-                            let lhs_index = lhs;
-                            // let rhs_value = self.objects.swap_remove(rhs).value;
-                            let rhs_value = self.objects[rhs].value.clone();
-                            // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
-                            let lhs_value = &mut self.objects[lhs].value;
-
-                            let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) =
-                                (lhs_value, rhs_value)
-                            else {
-                                unreachable!();
-                            };
-
-                            lhs.push_str(&rhs);
-                            StackValue::Obj(lhs_index)
+                            self.concatenate_strings(lhs, rhs)
                         }
                         _ => unreachable!(),
                     };
@@ -198,5 +203,24 @@ impl VM {
             }
         }
         // InterpretResult::RuntimeError
+    }
+
+    fn concatenate_strings(&mut self, lhs: usize, rhs: usize) -> StackValue {
+        // remove rhs so we can take ownership, but mutate lhs so we don't
+        // have to remove and then push again
+        assert_ne!(lhs, rhs, "lhs and rhs must not be the same object index");
+
+        let lhs_index = lhs;
+        // let rhs_value = self.objects.swap_remove(rhs).value;
+        let rhs_value = self.objects[rhs].value.clone();
+        // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
+        let lhs_value = &mut self.objects[lhs].value;
+
+        let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value) else {
+            unreachable!();
+        };
+
+        lhs.push_str(&rhs);
+        StackValue::Obj(lhs_index)
     }
 }

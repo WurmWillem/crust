@@ -3,22 +3,12 @@ use colored::Colorize;
 use crate::{
     chunk::Chunk,
     compiler_helper::*,
-    error::print_error,
+    error::{print_error, ParseError},
     object::{Object, ObjectValue},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
-    value::StackValue,
+    value::{StackValue, ValueType},
 };
-
-// TODO: look into naming conventions, so we don't have a Str and a String
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-enum ValueType {
-    None,
-    Null,
-    Bool,
-    Num,
-    Str,
-}
 
 pub struct Compiler<'token> {
     tokens: Vec<Token<'token>>,
@@ -55,23 +45,9 @@ impl<'token> Compiler<'token> {
             println!("{}", "Not all tokens were parsed.".red());
         }
         // compiler.chunk.disassemble("code");
+
         compiler.emit_byte(OpCode::Return as u8);
         Some((compiler.chunk, compiler.objects))
-    }
-
-    fn synchronize(&mut self) {
-        while self.peek().kind != TokenType::Eof {
-            if self.previous().kind == TokenType::Semicolon {
-                return;
-            }
-            self.advance();
-        }
-    }
-    fn expression_statement(&mut self) -> Result<(), ParseError> {
-        self.expression()?;
-        self.consume(TokenType::Semicolon, "Expected ';' afer expression.")?;
-        self.emit_byte(OpCode::Pop as u8);
-        Ok(())
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
@@ -99,24 +75,6 @@ impl<'token> Compiler<'token> {
         Ok(())
     }
 
-    fn parse_var(&mut self) -> Result<u8, ParseError> {
-        self.consume(TokenType::Identifier, "Expected variable name.")?;
-
-        let var_token = self.previous().lexeme.to_string();
-        self.identifier_constant(var_token)
-    }
-
-    fn identifier_constant(&mut self, lexeme: String) -> Result<u8, ParseError> {
-        let idx = self.objects.len();
-
-        let var_name = Object {
-            value: ObjectValue::Str(lexeme),
-        };
-        self.objects.push(var_name);
-
-        self.make_constant(StackValue::Obj(idx))
-    }
-
     fn statement(&mut self) -> Result<(), ParseError> {
         // dbg!(self.peek());
         if self.matches(TokenType::Print) {
@@ -135,6 +93,40 @@ impl<'token> Compiler<'token> {
         Ok(())
     }
 
+    fn expression_statement(&mut self) -> Result<(), ParseError> {
+        self.expression()?;
+        self.consume(TokenType::Semicolon, "Expected ';' afer expression.")?;
+        self.emit_byte(OpCode::Pop as u8);
+        Ok(())
+    }
+
+    fn synchronize(&mut self) {
+        while self.peek().kind != TokenType::Eof {
+            if self.previous().kind == TokenType::Semicolon {
+                return;
+            }
+            self.advance();
+        }
+    }
+
+    fn parse_var(&mut self) -> Result<u8, ParseError> {
+        self.consume(TokenType::Identifier, "Expected variable name.")?;
+
+        let var_token = self.previous().lexeme.to_string();
+        self.identifier_constant(var_token)
+    }
+
+    fn identifier_constant(&mut self, lexeme: String) -> Result<u8, ParseError> {
+        let idx = self.objects.len();
+
+        let var_name = Object {
+            value: ObjectValue::Str(lexeme),
+        };
+        self.objects.push(var_name);
+
+        self.make_constant(StackValue::Obj(idx))
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
         self.advance();
         let kind = self.previous().kind;
@@ -149,8 +141,6 @@ impl<'token> Compiler<'token> {
         }
         let can_assign = precedence <= Precedence::Assignment;
         self.execute_fn_type(prefix, can_assign)?;
-        // dbg!(self.peek().kind);
-        // let operand_type = ./
 
         while precedence <= self.get_rule(self.peek().kind).precedence {
             self.advance();

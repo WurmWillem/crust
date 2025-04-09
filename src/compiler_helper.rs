@@ -1,16 +1,3 @@
-pub struct ParseError {
-    pub msg: String,
-    pub line: u32,
-}
-impl ParseError {
-    pub fn new(line: u32, msg: &str) -> Self {
-        Self {
-            msg: msg.to_string(),
-            line,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Precedence {

@@ -3,7 +3,7 @@ use crate::{object::Object, OpCode, StackValue};
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<StackValue>,
-    lines: Vec<u32>,
+    pub lines: Vec<u32>,
 }
 impl Chunk {
     pub fn new() -> Self {
