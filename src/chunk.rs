@@ -1,4 +1,4 @@
-use crate::{OpCode, StackValue};
+use crate::{object::Object, OpCode, StackValue};
 
 pub struct Chunk {
     pub code: Vec<u8>,
@@ -28,35 +28,37 @@ impl Chunk {
         self.constants.len() - 1
     }
 
-    pub fn disassemble(&mut self, name: &str) {
-        println!("== {} ==", name);
+    // pub fn disassemble(&mut self, name: &str) {
+    //     println!("== {} ==", name);
+    //
+    //     let mut offset = 0;
+    //     while offset < self.code.len() {
+    //         offset = self.disassemble_instruction(offset);
+    //     }
+    // }
 
-        let mut offset = 0;
-        while offset < self.code.len() {
-            offset = self.disassemble_instruction(offset);
-        }
-    }
+    pub fn disassemble_instruction(&mut self, offset: usize, objects: &[Object]) -> usize {
 
-    pub fn disassemble_instruction(&mut self, offset: usize) -> usize {
-        print!("{}  ", offset);
+        // print!("{}  ", offset);
+        // dbg!(self.lines[offset]);
 
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
             print!("   | ");
         } else {
-            print!("{} ", self.lines[offset]);
+            print!("\n{} ", self.lines[offset]);
         }
 
         let instruction = self.code[offset];
         // dbg!(instruction);
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
-            OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
+            OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset, objects),
             OpCode::Pop => Self::simple_instruction("OP_POP", offset),
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
-            OpCode::DefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
-            OpCode::GetGlobal => self.constant_instruction("OP_GET_GLOBAL", offset),
-            OpCode::SetGlobal => self.constant_instruction("OP_SET_GLOBAL", offset),
+            OpCode::DefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset, objects),
+            OpCode::GetGlobal => self.constant_instruction("OP_GET_GLOBAL", offset, objects),
+            OpCode::SetGlobal => self.constant_instruction("OP_SET_GLOBAL", offset, objects),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
@@ -84,10 +86,10 @@ impl Chunk {
         offset + 1
     }
 
-    fn constant_instruction(&self, name: &str, offset: usize) -> usize {
+    fn constant_instruction(&self, name: &str, offset: usize, objects: &[Object]) -> usize {
         let constant_index = self.code[offset + 1];
-        println!("{}  {}:", name, constant_index);
-        // println!(" '{}'", self.constants[constant_index as usize].display(&self.objects));
+        print!("{}  {}:", name, constant_index);
+        println!(" '{}'", self.constants[constant_index as usize].display(objects));
         // println!();
         offset + 2
     }

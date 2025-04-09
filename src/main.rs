@@ -1,6 +1,6 @@
 use chunk::Chunk;
 use compiler::Compiler;
-use error::{print_error, PRINT_SCAN_TOKENS};
+use error::PRINT_SCAN_TOKENS;
 use opcode::OpCode;
 use scanner::Scanner;
 use value::StackValue;
@@ -21,7 +21,7 @@ mod vm;
 
 fn main() {
     let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
-    let source = std::fs::read_to_string("file.crust").expect(msg);
+    let source = std::fs::read_to_string("file.js").expect(msg);
 
     let scanner = Scanner::new(&source);
     // let tokens = scanner.scan_tokens().unwrap();

@@ -68,7 +68,7 @@ impl VM {
                 println!();
 
                 let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                self.chunk.disassemble_instruction(debug_offset as usize);
+                self.chunk.disassemble_instruction(debug_offset as usize, &self.objects);
             }
 
             macro_rules! binary_op {

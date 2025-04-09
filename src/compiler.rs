@@ -360,7 +360,7 @@ impl<'token> Compiler<'token> {
     }
 
     fn emit_byte(&mut self, byte: u8) {
-        self.chunk.write_byte_to_chunk(byte, self.peek().line);
+        self.chunk.write_byte_to_chunk(byte, self.previous().line);
     }
 
     fn emit_bytes(&mut self, byte_0: u8, byte_1: u8) {
