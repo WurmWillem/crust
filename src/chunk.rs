@@ -51,10 +51,12 @@ impl Chunk {
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
             OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
+            OpCode::Pop => Self::simple_instruction("OP_POP", offset),
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
             OpCode::DefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
-            OpCode::GetGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset),
+            OpCode::GetGlobal => self.constant_instruction("OP_GET_GLOBAL", offset),
+            OpCode::SetGlobal => self.constant_instruction("OP_SET_GLOBAL", offset),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),

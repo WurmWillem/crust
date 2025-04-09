@@ -83,6 +83,11 @@ impl VM {
                     let constant = self.chunk.constants[index];
                     self.stack_push(constant);
                 }
+                OpCode::Pop => {
+                    // dbg!(self.stack_top);
+                    // self.stack_pop();
+                }
+
                 OpCode::Print => {
                     let string = format!("{}", self.stack_pop().display(&self.objects)).green();
                     println!("{}", string);
@@ -94,9 +99,10 @@ impl VM {
                         unreachable!();
                     };
 
-                    let ObjectValue::Str(var_name) = self.objects[idx].value.clone();
                     let value = self.stack_pop();
-                    self.globals.insert(var_name, value);
+                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
+
+                    self.globals.insert(var_name.clone(), value);
 
                     // self.stack_pop();
                 }
@@ -106,14 +112,26 @@ impl VM {
                         unreachable!();
                     };
                     let ObjectValue::Str(var_name) = &self.objects[idx].value;
+                    
                     let value = self.globals.get(var_name).unwrap();
-                    // let StackValue::Obj(index) = value else {
-                    //     unreachable!()
-                    // };
-                    // dbg!(value);
-
-                    // let val = self.objects[*index].clone();
                     self.stack_push(*value);
+                }
+                OpCode::SetGlobal => {
+                    let constants_index = self.read_byte() as usize;
+                    let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
+                        unreachable!();
+                    };
+
+                    let new_value = self.stack_pop();
+
+                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
+                    
+                    // let value = self.globals.get(var_name).unwrap();
+                    let value = self.globals.get_mut(var_name).unwrap();
+                    *value = new_value;
+                    // val
+                    // let v = *value;
+                    // self.stack_push(v);
                 }
 
                 OpCode::True => {

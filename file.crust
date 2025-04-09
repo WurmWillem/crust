@@ -1,4 +1,7 @@
-let x = "Hello ";
-let y = "World!";
-print x + y;
+let x = 5;
+print x;
+print x;
+print x;
+x = 2;
+print x;
 

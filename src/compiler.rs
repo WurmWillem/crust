@@ -67,6 +67,12 @@ impl<'token> Compiler<'token> {
             self.advance();
         }
     }
+    fn expression_statement(&mut self) -> Result<(), ParseError> {
+        self.expression()?;
+        self.consume(TokenType::Semicolon, "Expected ';' afer expression.")?;
+        self.emit_byte(OpCode::Pop as u8);
+        Ok(())
+    }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
         if self.matches(TokenType::Var) {
@@ -84,7 +90,10 @@ impl<'token> Compiler<'token> {
             self.emit_byte(OpCode::Null as u8);
         }
 
-        self.consume(TokenType::Semicolon, "Expected ';' after variable declaration.")?;
+        self.consume(
+            TokenType::Semicolon,
+            "Expected ';' after variable declaration.",
+        )?;
 
         self.emit_bytes(OpCode::DefineGlobal as u8, global);
         Ok(())
@@ -111,9 +120,10 @@ impl<'token> Compiler<'token> {
     fn statement(&mut self) -> Result<(), ParseError> {
         // dbg!(self.peek());
         if self.matches(TokenType::Print) {
-            return self.print_statement();
+            self.print_statement()
+        } else {
+            self.expression_statement()
         }
-        unreachable!()
     }
 
     fn print_statement(&mut self) -> Result<(), ParseError> {
@@ -137,7 +147,8 @@ impl<'token> Compiler<'token> {
             let err = ParseError::new(self.peek().line, msg);
             return Err(err);
         }
-        self.execute_fn_type(prefix)?;
+        let can_assign = precedence <= Precedence::Assignment;
+        self.execute_fn_type(prefix, can_assign)?;
         // dbg!(self.peek().kind);
         // let operand_type = ./
 
@@ -145,7 +156,7 @@ impl<'token> Compiler<'token> {
             self.advance();
             let infix = self.get_rule(self.previous().kind).infix;
             // dbg!(infix);
-            self.execute_fn_type(infix)?;
+            self.execute_fn_type(infix, can_assign)?;
         }
         Ok(())
     }
@@ -267,13 +278,19 @@ impl<'token> Compiler<'token> {
         self.consume(TokenType::RightParen, "Expected ')' after expression.")
     }
 
-    fn variable(&mut self) -> Result<(), ParseError> {
-        self.named_variable(self.previous().lexeme.to_string())
+    fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
+        self.named_variable(self.previous().lexeme.to_string(), can_assign)
     }
 
-    fn named_variable(&mut self, lexeme: String) -> Result<(), ParseError> {
+    fn named_variable(&mut self, lexeme: String, can_assign: bool) -> Result<(), ParseError> {
         let arg = self.identifier_constant(lexeme)?;
-        self.emit_bytes(OpCode::GetGlobal as u8, arg);
+
+        if can_assign && self.matches(TokenType::Equal) {
+            self.expression()?;
+            self.emit_bytes(OpCode::SetGlobal as u8, arg);
+        } else {
+            self.emit_bytes(OpCode::GetGlobal as u8, arg);
+        }
         Ok(())
     }
 
@@ -295,14 +312,14 @@ impl<'token> Compiler<'token> {
         }
     }
 
-    fn execute_fn_type(&mut self, fn_type: FnType) -> Result<(), ParseError> {
+    fn execute_fn_type(&mut self, fn_type: FnType, can_assign: bool) -> Result<(), ParseError> {
         match fn_type {
             FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            FnType::Variable => self.variable(),
+            FnType::Variable => self.variable(can_assign),
             FnType::Literal => {
                 self.literal();
                 Ok(())
