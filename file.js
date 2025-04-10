@@ -1,3 +1,3 @@
-let x = 3 + "hey";
+let x = true * "hey";
 
 

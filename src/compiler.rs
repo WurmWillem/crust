@@ -187,7 +187,9 @@ impl<'token> Compiler<'token> {
         macro_rules! emit_op_code {
             ($op_char: expr, $op_code: ident) => {{
                 if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
-                    let msg = &format!("{} can only be applied to numbers.", $op_char);
+                    let lhs_type = lhs_type.to_string();
+                    let rhs_type = self.last_operand_type.to_string();
+                    let msg = &format!("Operator '{}' expects two numbers, got types '{}' and '{}'.", $op_char, lhs_type, rhs_type);
                     return Err(ParseError::new(self.peek().line, msg));
                 }
                 self.emit_byte(OpCode::$op_code as u8);
@@ -205,8 +207,13 @@ impl<'token> Compiler<'token> {
                 if lhs_type != self.last_operand_type
                     || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
                 {
-                    let msg = "'+' only accepts either two numbers or two strings as its operands.";
-                    return Err(ParseError::new(self.peek().line, msg));
+                    let lhs_type = lhs_type.to_string();
+                    let rhs_type = self.last_operand_type.to_string();
+                    let msg = format!(
+                        "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
+                        lhs_type, rhs_type
+                    );
+                    return Err(ParseError::new(self.peek().line, &msg));
                 }
                 self.emit_byte(OpCode::Add as u8);
             }

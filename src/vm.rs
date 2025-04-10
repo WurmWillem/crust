@@ -216,9 +216,7 @@ impl VM {
         // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
         let lhs_value = &mut self.objects[lhs].value;
 
-        let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value) else {
-            unreachable!();
-        };
+        let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value); 
 
         lhs.push_str(&rhs);
         StackValue::Obj(lhs_index)

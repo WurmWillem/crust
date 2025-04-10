@@ -3,9 +3,7 @@ pub enum Literal<'source> {
     None,
     Str(&'source str),
     Num(f64),
-    // True,
-    // False,
-    // Nil,
+    // other types of literals such as true, false, or null are not necessary
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -24,23 +22,12 @@ impl<'source> Token<'source> {
             line,
         }
     }
-
-    // pub fn to_string(&self) -> String {
-    //     //format!("{:?}{}{}", self.kind, self.lexeme, self.literal)
-    //     match &self.literal {
-    //         Literal::Str(s) => s.clone(),
-    //         Literal::Num(n) => n.to_string(),
-    //         _ => self.lexeme.clone(),
-    //         /* _ => "".to_string(), */
-    //     }
-    //     //self.lexeme.clone()
-    // }
 }
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
-    // Single-character tokens
+    // single-character tokens
     LeftParen,
     RightParen,
     LeftBrace,
@@ -53,7 +40,7 @@ pub enum TokenType {
     Slash,
     Star,
 
-    // One or two character tokens
+    // one or two character tokens
     Bang,
     BangEqual,
     Equal,
@@ -63,12 +50,12 @@ pub enum TokenType {
     Less,
     LessEqual,
 
-    // Literals
+    // literals
     Identifier,
     String,
     Number,
 
-    // Keywords
+    // keywords
     And,
     Class,
     Else,
@@ -87,6 +74,6 @@ pub enum TokenType {
     Var,
     While,
 
-    // End of file
+    // end of file
     Eof,
 }

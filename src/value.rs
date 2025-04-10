@@ -1,7 +1,10 @@
-use std::ops::{Neg, Not};
+use std::{
+    fmt,
+    ops::{Neg, Not},
+};
 
 use crate::object::{Object, ObjectValue};
-// 
+
 // TODO: look into naming conventions, so we don't have a Str and a String
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ValueType {
@@ -11,7 +14,17 @@ pub enum ValueType {
     Num,
     Str,
 }
-
+impl fmt::Display for ValueType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ValueType::None => unreachable!(),
+            ValueType::Null => write!(f, "Null"),
+            ValueType::Bool => write!(f, "Bool"),
+            ValueType::Num => write!(f, "Number"),
+            ValueType::Str => write!(f, "String"),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum StackValue {
