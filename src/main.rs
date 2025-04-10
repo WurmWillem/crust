@@ -10,7 +10,7 @@ use colored::Colorize;
 
 mod chunk;
 mod compiler;
-mod compiler_helper;
+mod compiler_types;
 mod error;
 mod object;
 mod opcode;

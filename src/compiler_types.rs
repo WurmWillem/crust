@@ -1,3 +1,5 @@
+pub const EXPECTED_SEMICOLON_MSG: &str = "Expected ';' after variable declaration.";
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Precedence {

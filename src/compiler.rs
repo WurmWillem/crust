@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use crate::{
     chunk::Chunk,
-    compiler_helper::*,
+    compiler_types::*,
     error::{print_error, ParseError},
     object::{Object, ObjectValue},
     opcode::OpCode,
@@ -66,10 +66,7 @@ impl<'token> Compiler<'token> {
             self.emit_byte(OpCode::Null as u8);
         }
 
-        self.consume(
-            TokenType::Semicolon,
-            "Expected ';' after variable declaration.",
-        )?;
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
 
         self.emit_bytes(OpCode::DefineGlobal as u8, global);
         Ok(())
@@ -87,7 +84,7 @@ impl<'token> Compiler<'token> {
     fn print_statement(&mut self) -> Result<(), ParseError> {
         // dbg!(self.chunk.constants.len());
         self.expression()?;
-        self.consume(TokenType::Semicolon, "Expected ';' after statement.")?;
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
         self.emit_byte(OpCode::Print as u8);
         // dbg!(self.chunk.constants.len());
         Ok(())
@@ -95,7 +92,7 @@ impl<'token> Compiler<'token> {
 
     fn expression_statement(&mut self) -> Result<(), ParseError> {
         self.expression()?;
-        self.consume(TokenType::Semicolon, "Expected ';' afer expression.")?;
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
         self.emit_byte(OpCode::Pop as u8);
         Ok(())
     }
@@ -208,7 +205,7 @@ impl<'token> Compiler<'token> {
                 if lhs_type != self.last_operand_type
                     || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
                 {
-                    let msg = "'+' can only be applied to numbers and strings.";
+                    let msg = "'+' only accepts either two numbers or two strings as its operands.";
                     return Err(ParseError::new(self.peek().line, msg));
                 }
                 self.emit_byte(OpCode::Add as u8);

@@ -104,7 +104,7 @@ impl VM {
                 }
 
                 OpCode::Print => {
-                    let string = format!("{}", self.stack_pop().display(&self.objects)).green();
+                    let string = self.stack_pop().display(&self.objects).green();
                     println!("{}", string);
                 }
 
