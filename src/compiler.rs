@@ -27,16 +27,16 @@ impl<'token> Compiler<'token> {
             objects: Vec::new(),
         };
 
-        let mut had_error = false;
+        let mut had_compile_error = false;
         while !compiler.matches(TokenType::Eof) {
             if let Err(err) = compiler.declaration() {
                 print_error(err.line, &err.msg);
 
-                had_error = true;
+                had_compile_error = true;
                 compiler.synchronize();
             }
         }
-        if had_error {
+        if had_compile_error {
             println!("{}", "Parse error(s) detected, terminate program.".red());
             return None;
         }
@@ -189,7 +189,10 @@ impl<'token> Compiler<'token> {
                 if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
                     let lhs_type = lhs_type.to_string();
                     let rhs_type = self.last_operand_type.to_string();
-                    let msg = &format!("Operator '{}' expects two numbers, got types '{}' and '{}'.", $op_char, lhs_type, rhs_type);
+                    let msg = &format!(
+                        "Operator '{}' expects two numbers, got types '{}' and '{}'.",
+                        $op_char, lhs_type, rhs_type
+                    );
                     return Err(ParseError::new(self.peek().line, msg));
                 }
                 self.emit_byte(OpCode::$op_code as u8);
@@ -253,6 +256,7 @@ impl<'token> Compiler<'token> {
                     let msg = "'-' can only be applied to numbers.";
                     return Err(ParseError::new(self.peek().line, msg));
                 }
+
                 self.emit_byte(OpCode::Negate as u8);
             }
             TokenType::Bang => {
@@ -260,6 +264,7 @@ impl<'token> Compiler<'token> {
                     let msg = "'!' can only be applied to booleans.";
                     return Err(ParseError::new(self.peek().line, msg));
                 }
+
                 self.emit_byte(OpCode::Not as u8);
             }
             _ => unreachable!(),
