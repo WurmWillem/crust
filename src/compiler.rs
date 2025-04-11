@@ -10,44 +10,73 @@ use crate::{
     value::{StackValue, ValueType},
 };
 
-pub struct Compiler<'token> {
-    tokens: Vec<Token<'token>>,
-    objects: Vec<Object>,
-    chunk: Chunk,
-    current: usize,
-    last_operand_type: ValueType,
+#[derive(Debug, Clone, Copy)]
+struct Local<'a> {
+    name: Token<'a>,
+    depth: usize,
 }
-impl<'token> Compiler<'token> {
+impl<'a> Local<'a> {
+    fn new(name: Token<'a>, depth: usize) -> Self {
+        Self { name, depth }
+    }
+}
+
+const MAX_LOCAL_AMT: usize = u8::MAX as usize;
+struct Compiler<'a> {
+    locals: [Option<Local<'a>>; MAX_LOCAL_AMT],
+    local_count: usize,
+    scope_depth: usize,
+}
+impl<'a> Compiler<'a> {
+    fn new() -> Self {
+        Self {
+            locals: [const { None }; MAX_LOCAL_AMT],
+            local_count: 0,
+            scope_depth: 0,
+        }
+    }
+}
+
+pub struct Parser<'token> {
+    tokens: Vec<Token<'token>>,
+    current_token: usize,
+    chunk: Chunk,
+    last_operand_type: ValueType,
+    objects: Vec<Object>,
+    compiler: Compiler<'token>,
+}
+impl<'token> Parser<'token> {
     pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(Chunk, Vec<Object>)> {
-        let mut compiler = Compiler {
+        let mut parser = Parser {
             tokens,
             chunk,
-            current: 0,
+            current_token: 0,
             last_operand_type: ValueType::None,
             objects: Vec::new(),
+            compiler: Compiler::new(),
         };
 
-        let mut had_compile_error = false;
-        while !compiler.matches(TokenType::Eof) {
-            if let Err(err) = compiler.declaration() {
+        let mut had_error = false;
+        while !parser.matches(TokenType::Eof) {
+            if let Err(err) = parser.declaration() {
                 print_error(err.line, &err.msg);
 
-                had_compile_error = true;
-                compiler.synchronize();
+                had_error = true;
+                parser.synchronize();
             }
         }
-        if had_compile_error {
+        if had_error {
             println!("{}", "Parse error(s) detected, terminate program.".red());
             return None;
         }
 
-        if compiler.current != compiler.tokens.len() - 1 {
+        if parser.current_token != parser.tokens.len() - 1 {
             println!("{}", "Not all tokens were parsed.".red());
         }
         // compiler.chunk.disassemble("code");
 
-        compiler.emit_byte(OpCode::Return as u8);
-        Some((compiler.chunk, compiler.objects))
+        parser.emit_byte(OpCode::Return as u8);
+        Some((parser.chunk, parser.objects))
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
@@ -68,16 +97,47 @@ impl<'token> Compiler<'token> {
 
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
 
-        self.emit_bytes(OpCode::DefineGlobal as u8, global);
+        self.define_var(global);
         Ok(())
     }
+    fn define_var(&mut self, global: u8) {
+        if self.compiler.scope_depth > 0 {
+            return;
+        }
+        self.emit_bytes(OpCode::DefineGlobal as u8, global);
+    }
 
+    fn block(&mut self) -> Result<(), ParseError> {
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
+            self.declaration()?;
+        }
+        self.consume(TokenType::RightBrace, "Expected '}' at end of block.")
+    }
     fn statement(&mut self) -> Result<(), ParseError> {
         // dbg!(self.peek());
         if self.matches(TokenType::Print) {
             self.print_statement()
+        } else if self.matches(TokenType::LeftBrace) {
+            self.compiler.scope_depth += 1;
+            self.block()?;
+            self.end_scope();
+            Ok(())
         } else {
             self.expression_statement()
+        }
+    }
+    
+    fn end_scope(&mut self) {
+        self.compiler.scope_depth -= 1;
+
+        while self.compiler.local_count > 0
+            && self.compiler.locals[self.compiler.local_count - 1]
+                .unwrap()
+                .depth
+                > 0
+        {
+            self.emit_byte(OpCode::Pop as u8);
+            self.compiler.local_count -= 1;
         }
     }
 
@@ -109,8 +169,33 @@ impl<'token> Compiler<'token> {
     fn parse_var(&mut self) -> Result<u8, ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
 
+        self.declare_var()?;
+        if self.compiler.scope_depth > 0 {
+            return Ok(0);
+        }
+
         let var_token = self.previous().lexeme.to_string();
         self.identifier_constant(var_token)
+    }
+
+    fn declare_var(&mut self) -> Result<(), ParseError> {
+        if self.compiler.scope_depth == 0 {
+            return Ok(());
+        }
+
+        let name = self.previous();
+        self.add_local(name)
+    }
+    fn add_local(&mut self, name: Token<'token>) -> Result<(), ParseError> {
+        if self.compiler.local_count == MAX_LOCAL_AMT {
+            let msg = "Too many local variables in function.";
+            return Err(ParseError::new(name.line, msg));
+        }
+        let local = Local::new(name, self.compiler.scope_depth);
+
+        self.compiler.locals[self.compiler.local_count] = Some(local);
+        self.compiler.local_count += 1;
+        Ok(())
     }
 
     fn identifier_constant(&mut self, lexeme: String) -> Result<u8, ParseError> {
@@ -376,26 +461,22 @@ impl<'token> Compiler<'token> {
         }
     }
 
-    fn check(&mut self, kind: TokenType) -> bool {
+    fn check(&self, kind: TokenType) -> bool {
         self.peek().kind == kind
     }
 
-    fn advance(&mut self) -> Token {
-        if !self.is_at_end() {
-            self.current += 1;
+    fn advance(&mut self) -> Token<'token> {
+        if self.peek().kind != TokenType::Eof {
+            self.current_token += 1;
         }
         self.previous()
     }
 
-    fn is_at_end(&self) -> bool {
-        self.peek().kind == TokenType::Eof
+    fn peek(&self) -> Token<'token> {
+        self.tokens[self.current_token]
     }
 
-    fn peek(&self) -> Token {
-        self.tokens[self.current]
-    }
-
-    fn previous(&self) -> Token {
-        self.tokens[self.current - 1]
+    fn previous(&self) -> Token<'token> {
+        self.tokens[self.current_token - 1]
     }
 }

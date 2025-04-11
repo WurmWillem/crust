@@ -1,5 +1,5 @@
 use chunk::Chunk;
-use compiler::Compiler;
+use compiler::Parser;
 use error::PRINT_SCAN_TOKENS;
 use opcode::OpCode;
 use scanner::Scanner;
@@ -39,7 +39,7 @@ fn main() {
         println!();
     }
 
-    let (chunk, objects) = match Compiler::compile(tokens, Chunk::new()) {
+    let (chunk, objects) = match Parser::compile(tokens, Chunk::new()) {
         None => {
             return;
         }
