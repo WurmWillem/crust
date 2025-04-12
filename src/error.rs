@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 pub const PRINT_SCAN_TOKENS: bool = false;
-pub const DEBUG_TRACE_EXECUTION: bool = true;
+pub const DEBUG_TRACE_EXECUTION: bool = false;
 
 pub const EXPECTED_SEMICOLON_MSG: &str = "Expected ';' after variable declaration.";
 

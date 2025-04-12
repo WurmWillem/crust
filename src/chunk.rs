@@ -53,9 +53,10 @@ impl Chunk {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
             OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset, objects),
             OpCode::Pop => Self::simple_instruction("OP_POP", offset),
-            // TODO: update for jump and vars
+            // TODO: update for jump and vars and loop
             OpCode::Jump => Self::simple_instruction("OP_POP", offset),
             OpCode::JumpIfFalse => Self::simple_instruction("OP_POP", offset),
+            OpCode::Loop => Self::simple_instruction("OP_POP", offset),
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 

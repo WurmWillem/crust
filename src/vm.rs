@@ -106,6 +106,7 @@ impl VM {
                     // dbg!(self.stack_top);
                     self.stack_pop();
                 }
+
                 OpCode::Jump => {
                     let offset = self.read_short() as usize;
                     self.ip = self.ip.add(offset);
@@ -115,6 +116,10 @@ impl VM {
                     if let StackValue::Bool(false) = self.stack_peek() {
                         self.ip = self.ip.add(offset);
                     }
+                }
+                OpCode::Loop => {
+                    let offset = self.read_short() as usize;
+                    self.ip = self.ip.sub(offset);
                 }
 
                 OpCode::Print => {

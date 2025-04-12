@@ -26,7 +26,7 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "en",And "of",Or "if",If "else",Else "terwijl",While "voor",For
+            "en",And "of",Or "if",If "else",Else "while",While "voor",For
             "true",True "false",False "null",Null "dit",This "ouder",Super
             "klas",Class "proces",Fun "let",Var "geef",Return "print",Print
         );

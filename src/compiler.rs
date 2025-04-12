@@ -79,6 +79,8 @@ impl<'token> Parser<'token> {
             self.print_statement()
         } else if self.matches(TokenType::If) {
             self.if_statement()
+        } else if self.matches(TokenType::While) {
+            self.while_statement()
         } else if self.matches(TokenType::LeftBrace) {
             self.compiler.scope_depth += 1;
             self.block()?;
@@ -87,6 +89,20 @@ impl<'token> Parser<'token> {
         } else {
             self.expression_statement()
         }
+    }
+
+    fn emit_loop(&mut self, loop_start: usize) -> Result<(), ParseError> {
+        self.emit_byte(OpCode::Loop as u8);
+
+        let offset = self.chunk.code.len() - loop_start + 2;
+        if offset > u16::MAX as usize {
+            let msg = "Loop body too large.";
+            return Err(ParseError::new(0, msg));
+        }
+
+        self.emit_byte(((offset >> 8) & 0xFF) as u8);
+        self.emit_byte((offset & 0xFF) as u8);
+        Ok(())
     }
 
     fn emit_jump(&mut self, instruction: OpCode) -> usize {
@@ -110,6 +126,20 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
+    fn while_statement(&mut self) -> Result<(), ParseError> {
+        let loop_start = self.chunk.code.len();
+        self.expression()?;
+
+        let exit_jump = self.emit_jump(OpCode::JumpIfFalse);
+        self.emit_byte(OpCode::Pop as u8);
+        self.statement()?;
+        self.emit_loop(loop_start)?;
+
+        self.patch_jump(exit_jump)?;
+        self.emit_byte(OpCode::Pop as u8);
+        Ok(())
+    }
+
     fn if_statement(&mut self) -> Result<(), ParseError> {
         self.expression()?;
 
@@ -123,10 +153,9 @@ impl<'token> Parser<'token> {
         self.emit_byte(OpCode::Pop as u8);
 
         if self.matches(TokenType::Else) {
-           self.statement()?; 
+            self.statement()?;
         }
         self.patch_jump(else_jump)
-        // Ok(())
     }
 
     fn print_statement(&mut self) -> Result<(), ParseError> {
@@ -285,17 +314,17 @@ impl<'token> Parser<'token> {
 
         match op_type {
             TokenType::Plus => {
-                if lhs_type != self.last_operand_type
-                    || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
-                {
-                    let lhs_type = lhs_type.to_string();
-                    let rhs_type = self.last_operand_type.to_string();
-                    let msg = format!(
-                        "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
-                        lhs_type, rhs_type
-                    );
-                    return Err(ParseError::new(self.peek().line, &msg));
-                }
+                // if lhs_type != self.last_operand_type
+                //     || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
+                // {
+                //     let lhs_type = lhs_type.to_string();
+                //     let rhs_type = self.last_operand_type.to_string();
+                //     let msg = format!(
+                //         "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
+                //         lhs_type, rhs_type
+                //     );
+                //     return Err(ParseError::new(self.peek().line, &msg));
+                // }
                 self.emit_byte(OpCode::Add as u8);
             }
             TokenType::Minus => emit_op_code!('-', Sub),
