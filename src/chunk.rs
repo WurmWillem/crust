@@ -38,7 +38,6 @@ impl Chunk {
     // }
 
     pub fn disassemble_instruction(&mut self, offset: usize, objects: &[Object]) -> usize {
-
         // print!("{}  ", offset);
         // dbg!(self.lines[offset]);
 
@@ -57,9 +56,6 @@ impl Chunk {
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 
-            OpCode::DefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset, objects),
-            OpCode::GetGlobal => self.constant_instruction("OP_GET_GLOBAL", offset, objects),
-            OpCode::SetGlobal => self.constant_instruction("OP_SET_GLOBAL", offset, objects),
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset, objects),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset, objects),
 
@@ -92,7 +88,10 @@ impl Chunk {
     fn constant_instruction(&self, name: &str, offset: usize, objects: &[Object]) -> usize {
         let constant_index = self.code[offset + 1];
         print!("{}  {}:", name, constant_index);
-        println!(" '{}'", self.constants[constant_index as usize].display(objects));
+        println!(
+            " '{}'",
+            self.constants[constant_index as usize].display(objects)
+        );
         // println!();
         offset + 2
     }

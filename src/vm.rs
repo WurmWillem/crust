@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-
 use colored::Colorize;
 
-use crate::error::{print_error, DEBUG_TRACE_EXECUTION};
+use crate::error::DEBUG_TRACE_EXECUTION;
 use crate::object::{Object, ObjectValue};
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
 
 pub enum InterpretResult {
     Ok,
-    RuntimeError,
+    // RuntimeError,
 }
 
 const STACK_SIZE: usize = 256;
@@ -19,7 +17,6 @@ pub struct VM {
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
     objects: Vec<Object>,
-    globals: HashMap<String, StackValue>,
 }
 impl VM {
     pub fn interpret(chunk: Chunk, objects: Vec<Object>) -> InterpretResult {
@@ -30,7 +27,6 @@ impl VM {
             ip,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
-            globals: HashMap::new(),
         };
         unsafe { vm.run() }
     }
@@ -78,16 +74,16 @@ impl VM {
                     self.stack_push(lhs.$operation(rhs));
                 }};
             }
-            macro_rules! get_var_name_from_next_byte {
-                () => {{
-                    let constants_index = self.read_byte() as usize;
-                    let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
-                        unreachable!();
-                    };
-                    let ObjectValue::Str(var_name) = &self.objects[idx].value;
-                    var_name
-                }};
-            }
+            // macro_rules! get_var_name_from_next_byte {
+            //     () => {{
+            //         let constants_index = self.read_byte() as usize;
+            //         let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
+            //             unreachable!();
+            //         };
+            //         let ObjectValue::Str(var_name) = &self.objects[idx].value;
+            //         var_name
+            //     }};
+            // }
 
             match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
@@ -108,28 +104,6 @@ impl VM {
                     println!("{}", string);
                 }
 
-                OpCode::DefineGlobal => {
-                    let value = self.stack_pop();
-                    let var_name = get_var_name_from_next_byte!();
-
-                    self.globals.insert(var_name.clone(), value);
-                }
-                OpCode::GetGlobal => {
-                    let var_name = get_var_name_from_next_byte!();
-                    let value = match self.globals.get(var_name) {
-                        Some(value) => value,
-                        _ => {
-                            let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                            let line = self.chunk.lines[debug_offset as usize];
-
-                            let msg = format!("The variable with name '{}' does not exist.", var_name);
-                            print_error(line, &msg);
-
-                            return InterpretResult::RuntimeError;
-                        }
-                    };
-                    self.stack_push(*value);
-                }
                 OpCode::GetLocal => {
                     let slot = self.read_byte();
                     self.stack_push(self.stack[slot as usize]);
@@ -137,25 +111,6 @@ impl VM {
                 OpCode::SetLocal => {
                     let slot = self.read_byte();
                     self.stack[slot as usize] = self.stack_peek();
-                }
-                OpCode::SetGlobal => {
-                    let new_value = self.stack_peek();
-                    let var_name = get_var_name_from_next_byte!();
-
-                    let value = match self.globals.get_mut(var_name) {
-                        Some(value) => value,
-                        _ => {
-                            let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                            let line = self.chunk.lines[debug_offset as usize];
-
-                            let msg = format!("The variable with name '{}' does not exist.", var_name);
-                            print_error(line, &msg);
-
-                            return InterpretResult::RuntimeError;
-                        }
-                    };
-
-                    *value = new_value;
                 }
 
                 OpCode::True => {
@@ -224,7 +179,7 @@ impl VM {
         // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
         let lhs_value = &mut self.objects[lhs].value;
 
-        let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value); 
+        let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value);
 
         lhs.push_str(&rhs);
         StackValue::Obj(lhs_index)

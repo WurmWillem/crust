@@ -89,9 +89,7 @@ impl<'token> Parser<'token> {
         }
     }
     fn var_declaration(&mut self) -> Result<(), ParseError> {
-        // global is 0 and won't be used if the variable is local
-        let global = self.parse_var()?;
-        // dbg!(global);
+        self.parse_var()?;
 
         if self.matches(TokenType::Equal) {
             self.expression()?;
@@ -100,15 +98,7 @@ impl<'token> Parser<'token> {
         }
 
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
-
-        self.define_var(global);
         Ok(())
-    }
-    fn define_var(&mut self, global: u8) {
-        if self.compiler.scope_depth > 0 {
-            return;
-        }
-        self.emit_bytes(OpCode::DefineGlobal as u8, global);
     }
 
     fn block(&mut self) -> Result<(), ParseError> {
@@ -130,15 +120,16 @@ impl<'token> Parser<'token> {
             self.expression_statement()
         }
     }
-    fn resolve_local(&mut self, name: Token<'token>) -> Option<u8> {
+    fn resolve_local(&mut self, name: Token<'token>) -> Result<u8, ParseError> {
         //TODO: shadowing now doesn't remove the old var
         for i in (0..self.compiler.local_count).rev() {
             // dbg!(self.compiler.locals[i]);
             if self.compiler.locals[i].name.lexeme == name.lexeme {
-                return Some(i as u8);
+                return Ok(i as u8);
             }
         }
-        None
+        let msg = format!("The variable with name '{}' does not exist.", name.lexeme);
+        Err(ParseError::new(name.line, &msg))
     }
 
     fn end_scope(&mut self) {
@@ -177,26 +168,11 @@ impl<'token> Parser<'token> {
         }
     }
 
-    fn parse_var(&mut self) -> Result<u8, ParseError> {
+    fn parse_var(&mut self) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
-
-        self.declare_var()?;
-        if self.compiler.scope_depth > 0 {
-            return Ok(0);
-        }
-
-        let var_token = self.previous().lexeme.to_string();
-        self.identifier_constant(var_token)
+        self.add_local(self.previous())
     }
 
-    fn declare_var(&mut self) -> Result<(), ParseError> {
-        if self.compiler.scope_depth == 0 {
-            return Ok(());
-        }
-
-        let name = self.previous();
-        self.add_local(name)
-    }
     fn add_local(&mut self, name: Token<'token>) -> Result<(), ParseError> {
         if self.compiler.local_count == MAX_LOCAL_AMT {
             let msg = "Too many local variables in function.";
@@ -208,17 +184,6 @@ impl<'token> Parser<'token> {
         self.compiler.locals[self.compiler.local_count] = local;
         self.compiler.local_count += 1;
         Ok(())
-    }
-
-    fn identifier_constant(&mut self, lexeme: String) -> Result<u8, ParseError> {
-        let idx = self.objects.len();
-
-        let var_name = Object {
-            value: ObjectValue::Str(lexeme),
-        };
-        self.objects.push(var_name);
-
-        self.make_constant(StackValue::Obj(idx))
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
@@ -375,31 +340,19 @@ impl<'token> Parser<'token> {
     }
 
     fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
-        self.named_variable(self.previous(), can_assign)
-    }
-
-    fn named_variable(&mut self, name: Token<'token>, can_assign: bool) -> Result<(), ParseError> {
-        let arg = self.resolve_local(name);
-
-        let (arg, get_op, set_op) = if let Some(arg) = arg {
-            (arg, OpCode::GetLocal, OpCode::SetLocal)
-        } else {
-            let new_arg = self.identifier_constant(name.lexeme.to_string())?;
-            (new_arg, OpCode::GetGlobal, OpCode::SetGlobal)
-        };
+        let name = self.previous();
+        let arg = self.resolve_local(name)?;
 
         if can_assign && self.matches(TokenType::Equal) {
             self.expression()?;
-            self.emit_bytes(set_op as u8, arg);
+            self.emit_bytes(OpCode::SetLocal as u8, arg);
         } else {
-            dbg!(arg);
-            self.emit_bytes(get_op as u8, arg);
+            self.emit_bytes(OpCode::GetLocal as u8, arg);
         }
-        // self.emit_bytes(OpCode::GetGlobal as u8, arg);
         Ok(())
     }
 
-    fn literal(&mut self) {
+        fn literal(&mut self) {
         match self.previous().kind {
             TokenType::True => {
                 self.emit_byte(OpCode::True as u8);

@@ -31,7 +31,7 @@ fn main() {
             return;
         }
     };
-    
+
     if PRINT_SCAN_TOKENS {
         for token in &tokens {
             println!("{:?}", token);
