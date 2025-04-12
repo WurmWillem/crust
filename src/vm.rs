@@ -52,6 +52,14 @@ impl VM {
         byte
     }
 
+    #[inline(always)]
+    unsafe fn read_short(&mut self) -> u16 {
+        self.ip = self.ip.add(2);
+        let high = *self.ip.offset(-2);
+        let low = *self.ip.offset(-1);
+        ((high as u16) << 8) | (low as u16)
+    }
+
     unsafe fn run(&mut self) -> InterpretResult {
         // consider making ip a local variable
         loop {
@@ -97,6 +105,12 @@ impl VM {
                 OpCode::Pop => {
                     // dbg!(self.stack_top);
                     self.stack_pop();
+                }
+                OpCode::JumpIfFalse => {
+                    let offset = self.read_short() as usize;
+                    if let StackValue::Bool(false) = self.stack_peek() {
+                        self.ip = self.ip.add(offset);
+                    }
                 }
 
                 OpCode::Print => {

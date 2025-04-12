@@ -3,41 +3,12 @@ use colored::Colorize;
 use crate::{
     chunk::Chunk,
     compiler_types::*,
-    error::{print_error, ParseError},
+    error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     object::{Object, ObjectValue},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
 };
-
-#[derive(Debug, Clone, Copy)]
-struct Local<'a> {
-    name: Token<'a>,
-    depth: usize,
-}
-impl<'a> Local<'a> {
-    fn new(name: Token<'a>, depth: usize) -> Self {
-        Self { name, depth }
-    }
-}
-
-const MAX_LOCAL_AMT: usize = u8::MAX as usize;
-struct Compiler<'a> {
-    locals: [Local<'a>; MAX_LOCAL_AMT],
-    local_count: usize,
-    scope_depth: usize,
-}
-impl<'a> Compiler<'a> {
-    fn new() -> Self {
-        let name = Token::new(TokenType::Equal, "", Literal::None, 0);
-        let local = Local::new(name, 0);
-        Self {
-            locals: [local; MAX_LOCAL_AMT],
-            local_count: 0,
-            scope_depth: 0,
-        }
-    }
-}
 
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
@@ -88,6 +59,7 @@ impl<'token> Parser<'token> {
             self.statement()
         }
     }
+
     fn var_declaration(&mut self) -> Result<(), ParseError> {
         self.parse_var()?;
 
@@ -101,16 +73,12 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
-    fn block(&mut self) -> Result<(), ParseError> {
-        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
-            self.declaration()?;
-        }
-        self.consume(TokenType::RightBrace, "Expected '}' at end of block.")
-    }
     fn statement(&mut self) -> Result<(), ParseError> {
         // dbg!(self.peek());
         if self.matches(TokenType::Print) {
             self.print_statement()
+        } else if self.matches(TokenType::If) {
+            self.if_statement()
         } else if self.matches(TokenType::LeftBrace) {
             self.compiler.scope_depth += 1;
             self.block()?;
@@ -120,27 +88,34 @@ impl<'token> Parser<'token> {
             self.expression_statement()
         }
     }
-    fn resolve_local(&mut self, name: Token<'token>) -> Result<u8, ParseError> {
-        //TODO: shadowing now doesn't remove the old var
-        for i in (0..self.compiler.local_count).rev() {
-            // dbg!(self.compiler.locals[i]);
-            if self.compiler.locals[i].name.lexeme == name.lexeme {
-                return Ok(i as u8);
-            }
-        }
-        let msg = format!("The variable with name '{}' does not exist.", name.lexeme);
-        Err(ParseError::new(name.line, &msg))
+
+    fn emit_jump(&mut self, instruction: OpCode) -> usize {
+        self.emit_byte(instruction as u8);
+        // placeholders
+        self.emit_byte(0xFF);
+        self.emit_byte(0xFF);
+        self.chunk.code.len() - 2
     }
 
-    fn end_scope(&mut self) {
-        self.compiler.scope_depth -= 1;
+    fn patch_jump(&mut self, offset: usize) -> Result<(), ParseError> {
+        let jump = self.chunk.code.len() - offset - 2;
 
-        while self.compiler.local_count > 0
-            && self.compiler.locals[self.compiler.local_count - 1].depth > self.compiler.scope_depth
-        {
-            self.emit_byte(OpCode::Pop as u8);
-            self.compiler.local_count -= 1;
+        if jump > u16::MAX as usize {
+            let msg = "Too much code to jump over.";
+            return Err(ParseError::new(0, msg));
         }
+
+        self.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        self.chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        Ok(())
+    }
+
+    fn if_statement(&mut self) -> Result<(), ParseError> {
+        self.expression()?;
+        let then_jump = self.emit_jump(OpCode::JumpIfFalse);
+        self.statement()?;
+        self.patch_jump(then_jump)?;
+        Ok(())
     }
 
     fn print_statement(&mut self) -> Result<(), ParseError> {
@@ -184,6 +159,36 @@ impl<'token> Parser<'token> {
         self.compiler.locals[self.compiler.local_count] = local;
         self.compiler.local_count += 1;
         Ok(())
+    }
+
+    fn resolve_local(&mut self, name: Token<'token>) -> Result<u8, ParseError> {
+        //TODO: shadowing now doesn't remove the old var
+        for i in (0..self.compiler.local_count).rev() {
+            // dbg!(self.compiler.locals[i]);
+            if self.compiler.locals[i].name.lexeme == name.lexeme {
+                return Ok(i as u8);
+            }
+        }
+        let msg = format!("The variable with name '{}' does not exist.", name.lexeme);
+        Err(ParseError::new(name.line, &msg))
+    }
+
+    fn block(&mut self) -> Result<(), ParseError> {
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
+            self.declaration()?;
+        }
+        self.consume(TokenType::RightBrace, "Expected '}' at end of block.")
+    }
+
+    fn end_scope(&mut self) {
+        self.compiler.scope_depth -= 1;
+
+        while self.compiler.local_count > 0
+            && self.compiler.locals[self.compiler.local_count - 1].depth > self.compiler.scope_depth
+        {
+            self.emit_byte(OpCode::Pop as u8);
+            self.compiler.local_count -= 1;
+        }
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
@@ -352,7 +357,7 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
-        fn literal(&mut self) {
+    fn literal(&mut self) {
         match self.previous().kind {
             TokenType::True => {
                 self.emit_byte(OpCode::True as u8);

@@ -3,6 +3,8 @@ use colored::Colorize;
 pub const PRINT_SCAN_TOKENS: bool = false;
 pub const DEBUG_TRACE_EXECUTION: bool = true;
 
+pub const EXPECTED_SEMICOLON_MSG: &str = "Expected ';' after variable declaration.";
+
 pub struct ParseError {
     pub msg: String,
     pub line: u32,

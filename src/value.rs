@@ -5,7 +5,6 @@ use std::{
 
 use crate::object::{Object, ObjectValue};
 
-// TODO: look into naming conventions, so we don't have a Str and a String
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ValueType {
     None,

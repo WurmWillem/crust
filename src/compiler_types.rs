@@ -1,4 +1,34 @@
-pub const EXPECTED_SEMICOLON_MSG: &str = "Expected ';' after variable declaration.";
+use crate::token::{Literal, Token, TokenType};
+
+#[derive(Debug, Clone, Copy)]
+pub struct Local<'a> {
+    pub name: Token<'a>,
+    pub depth: usize,
+}
+impl<'a> Local<'a> {
+    pub fn new(name: Token<'a>, depth: usize) -> Self {
+        Self { name, depth }
+    }
+}
+
+pub const MAX_LOCAL_AMT: usize = u8::MAX as usize;
+pub struct Compiler<'a> {
+    pub locals: [Local<'a>; MAX_LOCAL_AMT],
+    pub local_count: usize,
+    pub scope_depth: usize,
+}
+impl<'a> Compiler<'a> {
+    pub fn new() -> Self {
+        let name = Token::new(TokenType::Equal, "", Literal::None, 0);
+        let local = Local::new(name, 0);
+        Self {
+            locals: [local; MAX_LOCAL_AMT],
+            local_count: 0,
+            scope_depth: 0,
+        }
+    }
+}
+
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
