@@ -112,10 +112,21 @@ impl<'token> Parser<'token> {
 
     fn if_statement(&mut self) -> Result<(), ParseError> {
         self.expression()?;
+
         let then_jump = self.emit_jump(OpCode::JumpIfFalse);
+        self.emit_byte(OpCode::Pop as u8);
         self.statement()?;
+
+        let else_jump = self.emit_jump(OpCode::Jump);
+
         self.patch_jump(then_jump)?;
-        Ok(())
+        self.emit_byte(OpCode::Pop as u8);
+
+        if self.matches(TokenType::Else) {
+           self.statement()?; 
+        }
+        self.patch_jump(else_jump)
+        // Ok(())
     }
 
     fn print_statement(&mut self) -> Result<(), ParseError> {

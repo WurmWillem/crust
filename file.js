@@ -1,8 +1,9 @@
-let x = 3;
+let x = 4;
 if x == 4 {
    print "yeah"; 
+} else {
+    print "nuh-uh"; 
 }
-print "nuh-uh"; 
 // {
 //     let x = 4 + 3;
 //     print x;
