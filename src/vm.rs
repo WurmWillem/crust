@@ -130,6 +130,14 @@ impl VM {
                     };
                     self.stack_push(*value);
                 }
+                OpCode::GetLocal => {
+                    let slot = self.read_byte();
+                    self.stack_push(self.stack[slot as usize]);
+                }
+                OpCode::SetLocal => {
+                    let slot = self.read_byte();
+                    self.stack[slot as usize] = self.stack_peek();
+                }
                 OpCode::SetGlobal => {
                     let new_value = self.stack_peek();
                     let var_name = get_var_name_from_next_byte!();

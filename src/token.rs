@@ -6,7 +6,7 @@ pub enum Literal<'source> {
     // other types of literals such as true, false, or null are not necessary
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token<'source> {
     pub kind: TokenType,
     pub lexeme: &'source str,

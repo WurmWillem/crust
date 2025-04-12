@@ -23,14 +23,16 @@ impl<'a> Local<'a> {
 
 const MAX_LOCAL_AMT: usize = u8::MAX as usize;
 struct Compiler<'a> {
-    locals: [Option<Local<'a>>; MAX_LOCAL_AMT],
+    locals: [Local<'a>; MAX_LOCAL_AMT],
     local_count: usize,
     scope_depth: usize,
 }
 impl<'a> Compiler<'a> {
     fn new() -> Self {
+        let name = Token::new(TokenType::Equal, "", Literal::None, 0);
+        let local = Local::new(name, 0);
         Self {
-            locals: [const { None }; MAX_LOCAL_AMT],
+            locals: [local; MAX_LOCAL_AMT],
             local_count: 0,
             scope_depth: 0,
         }
@@ -87,7 +89,9 @@ impl<'token> Parser<'token> {
         }
     }
     fn var_declaration(&mut self) -> Result<(), ParseError> {
+        // global is 0 and won't be used if the variable is local
         let global = self.parse_var()?;
+        // dbg!(global);
 
         if self.matches(TokenType::Equal) {
             self.expression()?;
@@ -126,15 +130,22 @@ impl<'token> Parser<'token> {
             self.expression_statement()
         }
     }
-    
+    fn resolve_local(&mut self, name: Token<'token>) -> Option<u8> {
+        //TODO: shadowing now doesn't remove the old var
+        for i in (0..self.compiler.local_count).rev() {
+            // dbg!(self.compiler.locals[i]);
+            if self.compiler.locals[i].name.lexeme == name.lexeme {
+                return Some(i as u8);
+            }
+        }
+        None
+    }
+
     fn end_scope(&mut self) {
         self.compiler.scope_depth -= 1;
 
         while self.compiler.local_count > 0
-            && self.compiler.locals[self.compiler.local_count - 1]
-                .unwrap()
-                .depth
-                > 0
+            && self.compiler.locals[self.compiler.local_count - 1].depth > self.compiler.scope_depth
         {
             self.emit_byte(OpCode::Pop as u8);
             self.compiler.local_count -= 1;
@@ -191,9 +202,10 @@ impl<'token> Parser<'token> {
             let msg = "Too many local variables in function.";
             return Err(ParseError::new(name.line, msg));
         }
+
         let local = Local::new(name, self.compiler.scope_depth);
 
-        self.compiler.locals[self.compiler.local_count] = Some(local);
+        self.compiler.locals[self.compiler.local_count] = local;
         self.compiler.local_count += 1;
         Ok(())
     }
@@ -363,18 +375,27 @@ impl<'token> Parser<'token> {
     }
 
     fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
-        self.named_variable(self.previous().lexeme.to_string(), can_assign)
+        self.named_variable(self.previous(), can_assign)
     }
 
-    fn named_variable(&mut self, lexeme: String, can_assign: bool) -> Result<(), ParseError> {
-        let arg = self.identifier_constant(lexeme)?;
+    fn named_variable(&mut self, name: Token<'token>, can_assign: bool) -> Result<(), ParseError> {
+        let arg = self.resolve_local(name);
+
+        let (arg, get_op, set_op) = if let Some(arg) = arg {
+            (arg, OpCode::GetLocal, OpCode::SetLocal)
+        } else {
+            let new_arg = self.identifier_constant(name.lexeme.to_string())?;
+            (new_arg, OpCode::GetGlobal, OpCode::SetGlobal)
+        };
 
         if can_assign && self.matches(TokenType::Equal) {
             self.expression()?;
-            self.emit_bytes(OpCode::SetGlobal as u8, arg);
+            self.emit_bytes(set_op as u8, arg);
         } else {
-            self.emit_bytes(OpCode::GetGlobal as u8, arg);
+            dbg!(arg);
+            self.emit_bytes(get_op as u8, arg);
         }
+        // self.emit_bytes(OpCode::GetGlobal as u8, arg);
         Ok(())
     }
 

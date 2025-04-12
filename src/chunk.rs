@@ -56,9 +56,12 @@ impl Chunk {
             OpCode::Pop => Self::simple_instruction("OP_POP", offset),
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
+
             OpCode::DefineGlobal => self.constant_instruction("OP_DEFINE_GLOBAL", offset, objects),
             OpCode::GetGlobal => self.constant_instruction("OP_GET_GLOBAL", offset, objects),
             OpCode::SetGlobal => self.constant_instruction("OP_SET_GLOBAL", offset, objects),
+            OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset, objects),
+            OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset, objects),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
