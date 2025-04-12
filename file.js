@@ -5,11 +5,15 @@
 //     print "nuh-uh"; 
 // }
 //
-let i = 0;
-while i < 1000 {
-    print i; 
-    i = i + 1;
+// print 5;
+for (let i = 0; i < 10; i = i + 1) {
+    print i;
 }
+// let i = 0;
+// while i < 100000000 {
+//     i = i + 1;
+// }
+// print i; 
 // {
 //     let x = 4 + 3;
 //     print x;

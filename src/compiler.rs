@@ -81,8 +81,10 @@ impl<'token> Parser<'token> {
             self.if_statement()
         } else if self.matches(TokenType::While) {
             self.while_statement()
+        } else if self.matches(TokenType::For) {
+            self.for_statement()
         } else if self.matches(TokenType::LeftBrace) {
-            self.compiler.scope_depth += 1;
+            self.begin_scope();
             self.block()?;
             self.end_scope();
             Ok(())
@@ -123,6 +125,54 @@ impl<'token> Parser<'token> {
 
         self.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
         self.chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        Ok(())
+    }
+
+    fn for_statement(&mut self) -> Result<(), ParseError> {
+        self.begin_scope();
+
+        self.consume(TokenType::LeftParen, "Expected '(' after 'for'.")?;
+
+        if self.matches(TokenType::Semicolon) {
+        } else if self.matches(TokenType::Var) {
+            self.var_declaration()?;
+        } else {
+            self.expression_statement()?;
+        }
+
+        let mut loop_start = self.chunk.code.len();
+
+        let mut exit_jump = None;
+        if !self.matches(TokenType::Semicolon) {
+            self.expression()?;
+            self.consume(TokenType::Semicolon, "Expected ';' after loop condition.")?;
+
+            exit_jump = Some(self.emit_jump(OpCode::JumpIfFalse));
+            self.emit_byte(OpCode::Pop as u8);
+        }
+
+        if !self.matches(TokenType::RightParen) {
+            let body_jump = self.emit_jump(OpCode::Jump);
+            let increment_start = self.chunk.code.len();
+
+            self.expression()?;
+            self.emit_byte(OpCode::Pop as u8);
+            self.consume(TokenType::RightParen, "Expected ')' after for clauses.")?;
+
+            self.emit_loop(loop_start)?;
+            loop_start = increment_start;
+            self.patch_jump(body_jump)?;
+        }
+
+        self.statement()?;
+        self.emit_loop(loop_start)?;
+
+        if let Some(exit_jump) = exit_jump {
+            self.patch_jump(exit_jump)?;
+            self.emit_byte(OpCode::Pop as u8);
+        }
+
+        self.end_scope();
         Ok(())
     }
 
@@ -220,6 +270,10 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::RightBrace, "Expected '}' at end of block.")
     }
 
+    fn begin_scope(&mut self) {
+        self.compiler.scope_depth += 1;
+    }
+
     fn end_scope(&mut self) {
         self.compiler.scope_depth -= 1;
 
@@ -293,15 +347,15 @@ impl<'token> Parser<'token> {
 
         macro_rules! emit_op_code {
             ($op_char: expr, $op_code: ident) => {{
-                if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
-                    let lhs_type = lhs_type.to_string();
-                    let rhs_type = self.last_operand_type.to_string();
-                    let msg = &format!(
-                        "Operator '{}' expects two numbers, got types '{}' and '{}'.",
-                        $op_char, lhs_type, rhs_type
-                    );
-                    return Err(ParseError::new(self.peek().line, msg));
-                }
+                // if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
+                //     let lhs_type = lhs_type.to_string();
+                //     let rhs_type = self.last_operand_type.to_string();
+                //     let msg = &format!(
+                //         "Operator '{}' expects two numbers, got types '{}' and '{}'.",
+                //         $op_char, lhs_type, rhs_type
+                //     );
+                //     return Err(ParseError::new(self.peek().line, msg));
+                // }
                 self.emit_byte(OpCode::$op_code as u8);
             }};
         }
