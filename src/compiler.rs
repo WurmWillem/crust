@@ -61,7 +61,8 @@ impl<'token> Parser<'token> {
     }
 
     fn var_declaration(&mut self) -> Result<(), ParseError> {
-        self.parse_var()?;
+        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        let name = self.previous();
 
         if self.matches(TokenType::Equal) {
             self.expression()?;
@@ -69,6 +70,7 @@ impl<'token> Parser<'token> {
             self.emit_byte(OpCode::Null as u8);
         }
 
+        self.add_local(name, self.last_operand_type)?;
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
         Ok(())
     }
@@ -233,30 +235,25 @@ impl<'token> Parser<'token> {
         }
     }
 
-    fn parse_var(&mut self) -> Result<(), ParseError> {
-        self.consume(TokenType::Identifier, "Expected variable name.")?;
-        self.add_local(self.previous())
-    }
-
-    fn add_local(&mut self, name: Token<'token>) -> Result<(), ParseError> {
+    fn add_local(&mut self, name: Token<'token>, kind: ValueType) -> Result<(), ParseError> {
         if self.compiler.local_count == MAX_LOCAL_AMT {
             let msg = "Too many local variables in function.";
             return Err(ParseError::new(name.line, msg));
         }
 
-        let local = Local::new(name, self.compiler.scope_depth);
+        let local = Local::new(name, self.compiler.scope_depth, kind);
 
         self.compiler.locals[self.compiler.local_count] = local;
         self.compiler.local_count += 1;
         Ok(())
     }
 
-    fn resolve_local(&mut self, name: Token<'token>) -> Result<u8, ParseError> {
+    fn resolve_local(&mut self, name: Token<'token>) -> Result<(u8, ValueType), ParseError> {
         //TODO: shadowing now doesn't remove the old var
         for i in (0..self.compiler.local_count).rev() {
             // dbg!(self.compiler.locals[i]);
             if self.compiler.locals[i].name.lexeme == name.lexeme {
-                return Ok(i as u8);
+                return Ok((i as u8, self.compiler.locals[i].kind));
             }
         }
         let msg = format!("The variable with name '{}' does not exist.", name.lexeme);
@@ -313,6 +310,20 @@ impl<'token> Parser<'token> {
         self.parse_precedence(Precedence::Assignment)
     }
 
+    fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
+        let name = self.previous();
+        let (arg, kind) = self.resolve_local(name)?;
+
+        if can_assign && self.matches(TokenType::Equal) {
+            self.expression()?;
+            self.emit_bytes(OpCode::SetLocal as u8, arg);
+        } else {
+            self.emit_bytes(OpCode::GetLocal as u8, arg);
+            self.last_operand_type = kind;
+        }
+        Ok(())
+    }
+
     fn string(&mut self) -> Result<(), ParseError> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
@@ -347,15 +358,15 @@ impl<'token> Parser<'token> {
 
         macro_rules! emit_op_code {
             ($op_char: expr, $op_code: ident) => {{
-                // if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
-                //     let lhs_type = lhs_type.to_string();
-                //     let rhs_type = self.last_operand_type.to_string();
-                //     let msg = &format!(
-                //         "Operator '{}' expects two numbers, got types '{}' and '{}'.",
-                //         $op_char, lhs_type, rhs_type
-                //     );
-                //     return Err(ParseError::new(self.peek().line, msg));
-                // }
+                if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
+                    let lhs_type = lhs_type.to_string();
+                    let rhs_type = self.last_operand_type.to_string();
+                    let msg = &format!(
+                        "Operator '{}' expects two numbers, but got types '{}' and '{}'.",
+                        $op_char, lhs_type, rhs_type
+                    );
+                    return Err(ParseError::new(self.peek().line, msg));
+                }
                 self.emit_byte(OpCode::$op_code as u8);
             }};
         }
@@ -368,17 +379,17 @@ impl<'token> Parser<'token> {
 
         match op_type {
             TokenType::Plus => {
-                // if lhs_type != self.last_operand_type
-                //     || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
-                // {
-                //     let lhs_type = lhs_type.to_string();
-                //     let rhs_type = self.last_operand_type.to_string();
-                //     let msg = format!(
-                //         "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
-                //         lhs_type, rhs_type
-                //     );
-                //     return Err(ParseError::new(self.peek().line, &msg));
-                // }
+                if lhs_type != self.last_operand_type
+                    || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
+                {
+                    let lhs_type = lhs_type.to_string();
+                    let rhs_type = self.last_operand_type.to_string();
+                    let msg = format!(
+                        "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
+                        lhs_type, rhs_type
+                    );
+                    return Err(ParseError::new(self.peek().line, &msg));
+                }
                 self.emit_byte(OpCode::Add as u8);
             }
             TokenType::Minus => emit_op_code!('-', Sub),
@@ -436,19 +447,6 @@ impl<'token> Parser<'token> {
     fn grouping(&mut self) -> Result<(), ParseError> {
         self.expression()?;
         self.consume(TokenType::RightParen, "Expected ')' after expression.")
-    }
-
-    fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
-        let name = self.previous();
-        let arg = self.resolve_local(name)?;
-
-        if can_assign && self.matches(TokenType::Equal) {
-            self.expression()?;
-            self.emit_bytes(OpCode::SetLocal as u8, arg);
-        } else {
-            self.emit_bytes(OpCode::GetLocal as u8, arg);
-        }
-        Ok(())
     }
 
     fn literal(&mut self) {

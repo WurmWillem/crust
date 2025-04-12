@@ -1,13 +1,17 @@
-use crate::token::{Literal, Token, TokenType};
+use crate::{
+    token::{Literal, Token, TokenType},
+    value::ValueType,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Local<'a> {
     pub name: Token<'a>,
+    pub kind: ValueType,
     pub depth: usize,
 }
 impl<'a> Local<'a> {
-    pub fn new(name: Token<'a>, depth: usize) -> Self {
-        Self { name, depth }
+    pub fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
+        Self { name, depth, kind }
     }
 }
 
@@ -20,7 +24,7 @@ pub struct Compiler<'a> {
 impl<'a> Compiler<'a> {
     pub fn new() -> Self {
         let name = Token::new(TokenType::Equal, "", Literal::None, 0);
-        let local = Local::new(name, 0);
+        let local = Local::new(name, 0, ValueType::None);
         Self {
             locals: [local; MAX_LOCAL_AMT],
             local_count: 0,
@@ -28,7 +32,6 @@ impl<'a> Compiler<'a> {
         }
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
