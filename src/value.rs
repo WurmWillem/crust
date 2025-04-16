@@ -119,8 +119,8 @@ impl StackValue {
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(idx) => {
                 match &objects[*idx].value {
-                    ObjectValue::Str(s) => format!("\"{}\"", s),
-                    // handle other ObjectValue variants
+                    ObjectValue::Str(s) => format!("{}", s),
+                    ObjectValue::Func(f) => format!("<fn {}>", f.name),
                 }
             }
         }

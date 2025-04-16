@@ -1,5 +1,6 @@
 use crate::{object::Object, OpCode, StackValue};
 
+#[derive(Debug)]
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<StackValue>,

@@ -198,11 +198,17 @@ impl VM {
 
         let lhs_index = lhs;
         // let rhs_value = self.objects.swap_remove(rhs).value;
-        let rhs_value = self.objects[rhs].value.clone();
-        // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
-        let lhs_value = &mut self.objects[lhs].value;
+        // let rhs_value = self.objects[rhs].value.clone();
+        let ObjectValue::Str(ref rhs) = self.objects[rhs].value else {
+            unreachable!()
+        };
 
-        let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value);
+        // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
+        // let lhs_value = &mut self.objects[lhs].value;
+        let mut lhs = match &self.objects[lhs].value {
+            ObjectValue::Str(s) => s.clone(),
+            _ => unreachable!(),
+        };
 
         lhs.push_str(&rhs);
         StackValue::Obj(lhs_index)

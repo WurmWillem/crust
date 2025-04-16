@@ -1,11 +1,27 @@
-#[derive(Debug, Clone)]
+use crate::chunk::Chunk;
+
+#[derive(Debug, )]
 pub struct Object {
     pub value: ObjectValue,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum ObjectValue {
     Str(String),
+    Func(ObjFunction),
+}
+
+#[derive(Debug)]
+pub struct ObjFunction {
+    arity: u8,
+    chunk: Chunk,
+    pub name: String,
+}
+impl ObjFunction {
+    pub fn new() -> Self {
+        Self { arity: 0, chunk: Chunk::new(), name: "".to_string() }
+    }
+    
 }
 // #[repr(C)]
 // pub struct Object {
