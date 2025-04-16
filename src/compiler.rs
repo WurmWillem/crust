@@ -39,7 +39,7 @@ impl<'token> Parser<'token> {
             }
         }
         if had_error {
-            println!("{}", "Parse error(s) detected, terminate program.".red());
+            println!("{}", "Parse error(s) detected, terminate program.".purple());
             return None;
         }
 
