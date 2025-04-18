@@ -35,7 +35,7 @@ impl<'source> Scanner<'source> {
 
         Self {
             source: source_file,
-            tokens: Vec::with_capacity(source_len / 2),
+            tokens: Vec::with_capacity(source_len / 6),
             keywords,
             start: 0,
             current: 0,

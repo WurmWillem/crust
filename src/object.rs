@@ -39,6 +39,10 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
+            Object::Func(ptr) => {
+                let raw = ptr.ptr.as_ptr();
+                drop(Box::from_raw(raw));
+            }
         }
     }
 }
@@ -49,12 +53,13 @@ impl Drop for Heap {
         while let Some(object) = current {
             let next = match object {
                 Object::Str(ref ptr) => ptr.next.clone(),
+                Object::Func(ref ptr) => ptr.next.clone(),
             };
 
             unsafe {
                 self.dealloc(object);
             }
-            
+
             current = next;
         }
     }
@@ -92,11 +97,12 @@ pub struct GcData<T> {
 }
 
 type RefStr = Gc<String>;
-type RefFun = Gc<ObjFunc>;
+type RefFunc = Gc<ObjFunc>;
 
 #[derive(Debug, Clone)]
 pub enum Object {
     Str(RefStr),
+    Func(RefFunc),
 }
 
 #[derive(Debug)]

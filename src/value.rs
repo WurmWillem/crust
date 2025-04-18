@@ -113,7 +113,7 @@ impl StackValue {
             StackValue::Obj(o) => {
                 match o {
                     Object::Str(s) => format!("{:?}", s.data),
-                    // ObjectValue::Func(f) => format!("<fn {}>", f.name),
+                    Object::Func(f) => format!("<fn {:?}>", f.data.name),
                 }
             }
         }
