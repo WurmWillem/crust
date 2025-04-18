@@ -4,7 +4,7 @@ use crate::{
     chunk::Chunk,
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    object::{Object, ObjectValue},
+    object::Object,
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
@@ -325,18 +325,19 @@ impl<'token> Parser<'token> {
     }
 
     fn string(&mut self) -> Result<(), ParseError> {
-        let Literal::Str(value) = self.previous().literal else {
-            unreachable!();
-        };
-        let obj = Object {
-            value: ObjectValue::Str(value.to_string()),
-        };
-
-        self.objects.push(obj);
-        self.last_operand_type = ValueType::Str;
-
-        let len = self.objects.len() - 1;
-        self.emit_constant(StackValue::Obj(len))
+        todo!()
+        // let Literal::Str(value) = self.previous().literal else {
+        //     unreachable!();
+        // };
+        // let obj = Object {
+        //     value: ObjectValue::Str(value.to_string()),
+        // };
+        //
+        // self.objects.push(obj);
+        // self.last_operand_type = ValueType::Str;
+        //
+        // let len = self.objects.len() - 1;
+        // self.emit_constant(StackValue::Obj(len))
     }
 
     fn number(&mut self) -> Result<(), ParseError> {

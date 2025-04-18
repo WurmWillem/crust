@@ -3,7 +3,9 @@ use std::{
     ops::{Neg, Not},
 };
 
-use crate::object::{Object, ObjectValue};
+use crate::object::Object;
+
+// use crate::object::{, ObjectValue};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ValueType {
@@ -25,12 +27,12 @@ impl fmt::Display for ValueType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum StackValue {
     Null,
     Bool(bool),
     F64(f64),
-    Obj(usize),
+    Obj(Object),
 }
 
 macro_rules! add_num_operation {
@@ -118,10 +120,11 @@ impl StackValue {
             StackValue::Bool(b) => b.to_string(),
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(idx) => {
-                match &objects[*idx].value {
-                    ObjectValue::Str(s) => format!("{}", s),
-                    ObjectValue::Func(f) => format!("<fn {}>", f.name),
-                }
+                todo!()
+                // match &objects[*idx].value {
+                //     ObjectValue::Str(s) => format!("{}", s),
+                //     // ObjectValue::Func(f) => format!("<fn {}>", f.name),
+                // }
             }
         }
     }

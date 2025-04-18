@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::error::DEBUG_TRACE_EXECUTION;
-use crate::object::{Object, ObjectValue};
+use crate::object::Object;
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
 
 pub enum InterpretResult {
@@ -38,11 +38,11 @@ impl VM {
 
     fn stack_pop(&mut self) -> StackValue {
         self.stack_top -= 1;
-        self.stack[self.stack_top]
+        self.stack[self.stack_top].clone()
     }
 
     fn stack_peek(&mut self) -> StackValue {
-        self.stack[self.stack_top - 1]
+        self.stack[self.stack_top - 1].clone()
     }
 
     #[inline(always)]
@@ -99,7 +99,7 @@ impl VM {
                 }
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
-                    let constant = self.chunk.constants[index];
+                    let constant = self.chunk.constants[index].clone();
                     self.stack_push(constant);
                 }
                 OpCode::Pop => {
@@ -129,7 +129,7 @@ impl VM {
 
                 OpCode::GetLocal => {
                     let slot = self.read_byte();
-                    self.stack_push(self.stack[slot as usize]);
+                    self.stack_push(self.stack[slot as usize].clone());
                 }
                 OpCode::SetLocal => {
                     let slot = self.read_byte();
@@ -162,7 +162,8 @@ impl VM {
                     let new_value = match (lhs, rhs) {
                         (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs + rhs),
                         (StackValue::Obj(lhs), StackValue::Obj(rhs)) => {
-                            self.concatenate_strings(lhs, rhs)
+                            todo!()
+                            // self.concatenate_strings(lhs, rhs)
                         }
                         _ => unreachable!(),
                     };
@@ -192,6 +193,8 @@ impl VM {
     }
 
     fn concatenate_strings(&mut self, lhs: usize, rhs: usize) -> StackValue {
+        todo!();
+        /*
         // remove rhs so we can take ownership, but mutate lhs so we don't
         // have to remove and then push again
         assert_ne!(lhs, rhs, "lhs and rhs must not be the same object index");
@@ -212,5 +215,6 @@ impl VM {
 
         lhs.push_str(&rhs);
         StackValue::Obj(lhs_index)
+        */
     }
 }
