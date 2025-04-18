@@ -1,3 +1,5 @@
+let x = "hey";
+let y = "hallo";
+let z = x + y;
 
-
-print "hoi";
+print z;

@@ -2,9 +2,16 @@
 use std::ops;
 use std::ptr::NonNull;
 
-#[derive(Debug, Clone, Copy)]
+// TODO: look into making fields private
+
+#[derive(Debug, Copy)]
 pub struct Gc<T> {
-    ptr: NonNull<GcData<T>>,
+    pub ptr: NonNull<GcData<T>>,
+}
+impl<T> Clone for Gc<T> {
+    fn clone(&self) -> Self {
+        Gc { ptr: self.ptr }
+    }
 }
 impl<T> ops::Deref for Gc<T> {
     type Target = GcData<T>;
@@ -21,9 +28,9 @@ impl<T> ops::DerefMut for Gc<T> {
 
 #[derive(Debug)]
 pub struct GcData<T> {
-    marked: bool,
-    next: Option<Object>,
-    data: T,
+    pub marked: bool,
+    pub next: Option<Object>,
+    pub data: T,
 }
 
 type RefStr = Gc<String>;

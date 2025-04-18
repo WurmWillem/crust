@@ -1,29 +1,63 @@
+use std::ptr::NonNull;
+
 use colored::Colorize;
 
 use crate::{
     chunk::Chunk,
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    object::Object,
+    object::{Gc, GcData, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
 };
+
+pub struct Heap {
+    head: Option<Object>,
+}
+impl Heap {
+    pub fn new() -> Self {
+        Self { head: None }
+    }
+
+    pub fn alloc<T, F>(&mut self, data: T, map: F) -> Object
+    where
+        F: Fn(Gc<T>) -> Object,
+    {
+        let gc_data = Box::new(GcData {
+            marked: false,
+            next: self.head.clone(),
+            data,
+        });
+
+        let gc = Gc {
+            ptr: NonNull::new(Box::into_raw(gc_data)).unwrap(),
+        };
+
+        let object = map(gc);
+
+        self.head = Some(object.clone());
+
+        object
+    }
+}
 
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,
     chunk: Chunk,
     last_operand_type: ValueType,
+    heap: Heap,
     objects: Vec<Object>,
     compiler: Compiler<'token>,
 }
 impl<'token> Parser<'token> {
-    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(Chunk, Vec<Object>)> {
+    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(Chunk, Heap)> {
         let mut parser = Parser {
             tokens,
             chunk,
             current_token: 0,
+            heap: Heap::new(),
             last_operand_type: ValueType::None,
             objects: Vec::new(),
             compiler: Compiler::new(),
@@ -49,7 +83,7 @@ impl<'token> Parser<'token> {
         // compiler.chunk.disassemble("code");
 
         parser.emit_byte(OpCode::Return as u8);
-        Some((parser.chunk, parser.objects))
+        Some((parser.chunk, parser.heap))
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
@@ -325,19 +359,14 @@ impl<'token> Parser<'token> {
     }
 
     fn string(&mut self) -> Result<(), ParseError> {
-        todo!()
-        // let Literal::Str(value) = self.previous().literal else {
-        //     unreachable!();
-        // };
-        // let obj = Object {
-        //     value: ObjectValue::Str(value.to_string()),
-        // };
-        //
-        // self.objects.push(obj);
-        // self.last_operand_type = ValueType::Str;
-        //
-        // let len = self.objects.len() - 1;
-        // self.emit_constant(StackValue::Obj(len))
+        let Literal::Str(value) = self.previous().literal else {
+            unreachable!();
+        };
+        let object = self.heap.alloc(value.to_string(), Object::Str);
+        let stack_value = StackValue::Obj(object);
+
+        self.last_operand_type = ValueType::Str;
+        self.emit_constant(stack_value)
     }
 
     fn number(&mut self) -> Result<(), ParseError> {

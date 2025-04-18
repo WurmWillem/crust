@@ -38,7 +38,7 @@ impl Chunk {
     //     }
     // }
 
-    pub fn disassemble_instruction(&mut self, offset: usize, objects: &[Object]) -> usize {
+    pub fn disassemble_instruction(&mut self, offset: usize) -> usize {
         // print!("{}  ", offset);
         // dbg!(self.lines[offset]);
 
@@ -52,7 +52,7 @@ impl Chunk {
         // dbg!(instruction);
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
-            OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset, objects),
+            OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
             OpCode::Pop => Self::simple_instruction("OP_POP", offset),
             // TODO: update for jump and vars and loop
             OpCode::Jump => Self::simple_instruction("OP_POP", offset),
@@ -61,8 +61,8 @@ impl Chunk {
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 
-            OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset, objects),
-            OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset, objects),
+            OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
+            OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
@@ -90,12 +90,12 @@ impl Chunk {
         offset + 1
     }
 
-    fn constant_instruction(&self, name: &str, offset: usize, objects: &[Object]) -> usize {
+    fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant_index = self.code[offset + 1];
         print!("{}  {}:", name, constant_index);
         println!(
             " '{}'",
-            self.constants[constant_index as usize].display(objects)
+            self.constants[constant_index as usize].display()
         );
         // println!();
         offset + 2

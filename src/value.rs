@@ -104,27 +104,17 @@ impl Not for StackValue {
         }
     }
 }
-// trait DisplayWithContext {
-//     fn fmt_with(&self, objects: &Vec<Object>)  -> String;
-// }
-//
-// impl DisplayWithContext for StackValue {
-//     fn fmt_with(&self, objects: &Vec<Object>) -> String {
-//         self.display_with_context(objects)
-//     }
-// }
 impl StackValue {
-    pub fn display(&self, objects: &[Object]) -> String {
+    pub fn display(&self) -> String {
         match self {
             StackValue::Null => "null".to_string(),
             StackValue::Bool(b) => b.to_string(),
             StackValue::F64(f) => f.to_string(),
-            StackValue::Obj(idx) => {
-                todo!()
-                // match &objects[*idx].value {
-                //     ObjectValue::Str(s) => format!("{}", s),
-                //     // ObjectValue::Func(f) => format!("<fn {}>", f.name),
-                // }
+            StackValue::Obj(o) => {
+                match o {
+                    Object::Str(s) => format!("{:?}", s.data),
+                    // ObjectValue::Func(f) => format!("<fn {}>", f.name),
+                }
             }
         }
     }

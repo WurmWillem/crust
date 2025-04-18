@@ -1,5 +1,6 @@
 use colored::Colorize;
 
+use crate::compiler::Heap;
 use crate::error::DEBUG_TRACE_EXECUTION;
 use crate::object::Object;
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
@@ -16,14 +17,14 @@ pub struct VM {
     ip: *const u8,
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
-    objects: Vec<Object>,
+    heap: Heap,
 }
 impl VM {
-    pub fn interpret(chunk: Chunk, objects: Vec<Object>) -> InterpretResult {
+    pub fn interpret(chunk: Chunk, heap: Heap) -> InterpretResult {
         let ip = chunk.get_ptr();
         let mut vm = Self {
             chunk,
-            objects,
+            heap,
             ip,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
@@ -66,13 +67,13 @@ impl VM {
             if DEBUG_TRACE_EXECUTION {
                 print!("          ");
                 for stack_index in 0..self.stack_top {
-                    print!("[ {} ]", self.stack[stack_index].display(&self.objects))
+                    print!("[ {} ]", self.stack[stack_index].display())
                 }
                 println!();
 
                 let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
                 self.chunk
-                    .disassemble_instruction(debug_offset as usize, &self.objects);
+                    .disassemble_instruction(debug_offset as usize);
             }
 
             macro_rules! binary_op {
@@ -123,7 +124,7 @@ impl VM {
                 }
 
                 OpCode::Print => {
-                    let string = self.stack_pop().display(&self.objects).green();
+                    let string = self.stack_pop().display().green();
                     println!("{}", string);
                 }
 
@@ -162,8 +163,7 @@ impl VM {
                     let new_value = match (lhs, rhs) {
                         (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs + rhs),
                         (StackValue::Obj(lhs), StackValue::Obj(rhs)) => {
-                            todo!()
-                            // self.concatenate_strings(lhs, rhs)
+                            self.concatenate_strings(lhs, rhs)
                         }
                         _ => unreachable!(),
                     };
@@ -192,29 +192,19 @@ impl VM {
         // InterpretResult::RuntimeError
     }
 
-    fn concatenate_strings(&mut self, lhs: usize, rhs: usize) -> StackValue {
-        todo!();
-        /*
-        // remove rhs so we can take ownership, but mutate lhs so we don't
-        // have to remove and then push again
-        assert_ne!(lhs, rhs, "lhs and rhs must not be the same object index");
-
-        let lhs_index = lhs;
-        // let rhs_value = self.objects.swap_remove(rhs).value;
-        // let rhs_value = self.objects[rhs].value.clone();
-        let ObjectValue::Str(ref rhs) = self.objects[rhs].value else {
+    fn concatenate_strings(&mut self, lhs: Object, rhs: Object) -> StackValue {
+        let Object::Str(lhs) = lhs else {
             unreachable!()
         };
-
-        // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
-        // let lhs_value = &mut self.objects[lhs].value;
-        let mut lhs = match &self.objects[lhs].value {
-            ObjectValue::Str(s) => s.clone(),
-            _ => unreachable!(),
+        let Object::Str(rhs) = rhs else {
+            unreachable!()
         };
+        
+        let mut x = lhs.data.clone();
+        x.push_str(&rhs.data);
 
-        lhs.push_str(&rhs);
-        StackValue::Obj(lhs_index)
-        */
+        let object = self.heap.alloc(x, Object::Str);
+
+        StackValue::Obj(object)
     }
 }
