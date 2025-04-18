@@ -1,46 +1,14 @@
-use std::ptr::NonNull;
-
 use colored::Colorize;
 
 use crate::{
     chunk::Chunk,
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    object::{Gc, GcData, Object},
+    object::{Heap, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
 };
-
-pub struct Heap {
-    head: Option<Object>,
-}
-impl Heap {
-    pub fn new() -> Self {
-        Self { head: None }
-    }
-
-    pub fn alloc<T, F>(&mut self, data: T, map: F) -> Object
-    where
-        F: Fn(Gc<T>) -> Object,
-    {
-        let gc_data = Box::new(GcData {
-            marked: false,
-            next: self.head.clone(),
-            data,
-        });
-
-        let gc = Gc {
-            ptr: NonNull::new(Box::into_raw(gc_data)).unwrap(),
-        };
-
-        let object = map(gc);
-
-        self.head = Some(object.clone());
-
-        object
-    }
-}
 
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
@@ -48,7 +16,6 @@ pub struct Parser<'token> {
     chunk: Chunk,
     last_operand_type: ValueType,
     heap: Heap,
-    objects: Vec<Object>,
     compiler: Compiler<'token>,
 }
 impl<'token> Parser<'token> {
@@ -59,7 +26,6 @@ impl<'token> Parser<'token> {
             current_token: 0,
             heap: Heap::new(),
             last_operand_type: ValueType::None,
-            objects: Vec::new(),
             compiler: Compiler::new(),
         };
 

@@ -2,6 +2,64 @@
 use std::ops;
 use std::ptr::NonNull;
 
+use crate::chunk::Chunk;
+
+pub struct Heap {
+    head: Option<Object>,
+}
+impl Heap {
+    pub fn new() -> Self {
+        Self { head: None }
+    }
+
+    pub fn alloc<T, F>(&mut self, data: T, map: F) -> Object
+    where
+        F: Fn(Gc<T>) -> Object,
+    {
+        let gc_data = Box::new(GcData {
+            marked: false,
+            next: self.head.clone(),
+            data,
+        });
+
+        let gc = Gc {
+            ptr: NonNull::new(Box::into_raw(gc_data)).unwrap(),
+        };
+
+        let object = map(gc);
+
+        self.head = Some(object.clone());
+
+        object
+    }
+
+    unsafe fn dealloc(&mut self, object: Object) {
+        match object {
+            Object::Str(ptr) => {
+                let raw = ptr.ptr.as_ptr();
+                drop(Box::from_raw(raw));
+            }
+        }
+    }
+}
+impl Drop for Heap {
+    fn drop(&mut self) {
+        let mut current = self.head.take();
+
+        while let Some(object) = current {
+            let next = match object {
+                Object::Str(ref ptr) => ptr.next.clone(),
+            };
+
+            unsafe {
+                self.dealloc(object);
+            }
+            
+            current = next;
+        }
+    }
+}
+
 // TODO: look into making fields private
 
 #[derive(Debug, Copy)]
@@ -34,6 +92,7 @@ pub struct GcData<T> {
 }
 
 type RefStr = Gc<String>;
+type RefFun = Gc<ObjFunc>;
 
 #[derive(Debug, Clone)]
 pub enum Object {
@@ -41,23 +100,17 @@ pub enum Object {
 }
 
 #[derive(Debug)]
-pub struct ObjString {
-    pub chars: String,
-    pub hash: u32,
+pub struct ObjFunc {
+    arity: u8,
+    chunk: Chunk,
+    pub name: String,
 }
-//
-// #[derive(Debug)]
-// pub struct ObjFunction {
-//     arity: u8,
-//     chunk: Chunk,
-//     pub name: String,
-// }
-// impl ObjFunction {
-//     pub fn new() -> Self {
-//         Self {
-//             arity: 0,
-//             chunk: Chunk::new(),
-//             name: "".to_string(),
-//         }
-//     }
-// }
+impl ObjFunc {
+    pub fn new() -> Self {
+        Self {
+            arity: 0,
+            chunk: Chunk::new(),
+            name: "".to_string(),
+        }
+    }
+}

@@ -1,4 +1,4 @@
-use crate::{object::Object, OpCode, StackValue};
+use crate::{OpCode, StackValue};
 
 #[derive(Debug)]
 pub struct Chunk {
@@ -93,10 +93,7 @@ impl Chunk {
     fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant_index = self.code[offset + 1];
         print!("{}  {}:", name, constant_index);
-        println!(
-            " '{}'",
-            self.constants[constant_index as usize].display()
-        );
+        println!(" '{}'", self.constants[constant_index as usize].display());
         // println!();
         offset + 2
     }

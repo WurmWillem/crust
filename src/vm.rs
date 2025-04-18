@@ -1,6 +1,6 @@
+use crate::object::Heap;
 use colored::Colorize;
 
-use crate::compiler::Heap;
 use crate::error::DEBUG_TRACE_EXECUTION;
 use crate::object::Object;
 use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
@@ -72,8 +72,7 @@ impl VM {
                 println!();
 
                 let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                self.chunk
-                    .disassemble_instruction(debug_offset as usize);
+                self.chunk.disassemble_instruction(debug_offset as usize);
             }
 
             macro_rules! binary_op {
@@ -199,7 +198,7 @@ impl VM {
         let Object::Str(rhs) = rhs else {
             unreachable!()
         };
-        
+
         let mut x = lhs.data.clone();
         x.push_str(&rhs.data);
 
