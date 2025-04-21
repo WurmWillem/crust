@@ -1,4 +1,6 @@
-use crate::object::Heap;
+use std::mem::MaybeUninit;
+
+use crate::object::{Heap, ObjFunc};
 use colored::Colorize;
 
 use crate::error::DEBUG_TRACE_EXECUTION;
@@ -11,21 +13,39 @@ pub enum InterpretResult {
 }
 
 const STACK_SIZE: usize = 256;
+const FRAMES_SIZE: usize = 64;
+
+struct CallFrame {
+    func: ObjFunc,
+    ip: *const u8,
+    slots: *mut StackValue,
+}
 
 pub struct VM {
-    chunk: Chunk,
-    ip: *const u8,
+    frames: [MaybeUninit<CallFrame>; FRAMES_SIZE],
+    frame_count: usize,
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
     heap: Heap,
 }
 impl VM {
     pub fn interpret(chunk: Chunk, heap: Heap) -> InterpretResult {
-        let ip = chunk.get_ptr();
+        let frame = CallFrame {
+            ip: chunk.get_ptr(),
+            slots: std::ptr::null_mut(),
+            func: ObjFunc::new(),
+        };
+
+        let mut frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
+        unsafe {
+            frames = MaybeUninit::uninit().assume_init();
+            frames[0].as_mut_ptr().write(frame);
+        }
+
         let mut vm = Self {
-            chunk,
             heap,
-            ip,
+            frames,
+            frame_count: 0,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
         };
@@ -48,20 +68,23 @@ impl VM {
 
     #[inline(always)]
     unsafe fn read_byte(&mut self) -> u8 {
-        let byte = *self.ip;
-        self.ip = self.ip.add(1);
+        let ip = &mut self.frames[self.frame_count].assume_init_mut().ip;
+        let byte = **ip;
+        *ip = ip.add(1);
         byte
     }
 
     #[inline(always)]
     unsafe fn read_short(&mut self) -> u16 {
-        self.ip = self.ip.add(2);
-        let high = *self.ip.offset(-2);
-        let low = *self.ip.offset(-1);
+        let ip = &mut self.frames[self.frame_count].assume_init_mut().ip;
+        *ip = ip.add(2);
+        let high = ip.offset(-2);
+        let low = ip.offset(-1);
         ((high as u16) << 8) | (low as u16)
     }
 
     unsafe fn run(&mut self) -> InterpretResult {
+        let frame = self.frames[self.frame_count].as_mut_ptr();
         // consider making ip a local variable
         loop {
             if DEBUG_TRACE_EXECUTION {
@@ -70,9 +93,10 @@ impl VM {
                     print!("[ {} ]", self.stack[stack_index].display())
                 }
                 println!();
+                todo!()
 
-                let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                self.chunk.disassemble_instruction(debug_offset as usize);
+                // let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
+                // self.chunk.disassemble_instruction(debug_offset as usize);
             }
 
             macro_rules! binary_op {
@@ -99,7 +123,7 @@ impl VM {
                 }
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
-                    let constant = self.chunk.constants[index].clone();
+                    let constant = (*frame).func.chunk.constants[index].clone();
                     self.stack_push(constant);
                 }
                 OpCode::Pop => {
@@ -109,17 +133,17 @@ impl VM {
 
                 OpCode::Jump => {
                     let offset = self.read_short() as usize;
-                    self.ip = self.ip.add(offset);
+                    (*frame).ip = (*frame).ip.add(offset);
                 }
                 OpCode::JumpIfFalse => {
                     let offset = self.read_short() as usize;
                     if let StackValue::Bool(false) = self.stack_peek() {
-                        self.ip = self.ip.add(offset);
+                        (*frame).ip = (*frame).ip.add(offset);
                     }
                 }
                 OpCode::Loop => {
                     let offset = self.read_short() as usize;
-                    self.ip = self.ip.sub(offset);
+                    (*frame).ip = (*frame).ip.sub(offset);
                 }
 
                 OpCode::Print => {
@@ -128,12 +152,15 @@ impl VM {
                 }
 
                 OpCode::GetLocal => {
-                    let slot = self.read_byte();
-                    self.stack_push(self.stack[slot as usize].clone());
+                    let slot = self.read_byte() as usize;
+                    let value = (*(*frame).slots.wrapping_add(slot)).clone();
+                    self.stack_push(value);
                 }
                 OpCode::SetLocal => {
-                    let slot = self.read_byte();
-                    self.stack[slot as usize] = self.stack_peek();
+                    let slot = self.read_byte() as usize;
+                    let value = (*frame).slots.wrapping_add(slot);
+                    *value = self.stack_peek();
+                    // self.stack[slot as usize] = self.stack_peek();
                 }
 
                 OpCode::True => {

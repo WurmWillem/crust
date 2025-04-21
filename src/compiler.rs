@@ -9,7 +9,6 @@ use crate::{
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
 };
-
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,

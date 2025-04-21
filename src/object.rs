@@ -17,7 +17,7 @@ impl Heap {
         F: Fn(Gc<T>) -> Object,
     {
         let gc_data = Box::new(GcData {
-            marked: false,
+            // marked: false,
             next: self.head.clone(),
             data,
         });
@@ -91,7 +91,7 @@ impl<T> ops::DerefMut for Gc<T> {
 
 #[derive(Debug)]
 pub struct GcData<T> {
-    pub marked: bool,
+    // pub marked: bool,
     pub next: Option<Object>,
     pub data: T,
 }
@@ -108,7 +108,7 @@ pub enum Object {
 #[derive(Debug)]
 pub struct ObjFunc {
     arity: u8,
-    chunk: Chunk,
+    pub chunk: Chunk,
     pub name: String,
 }
 impl ObjFunc {
