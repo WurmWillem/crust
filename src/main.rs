@@ -21,7 +21,7 @@ mod vm;
 
 fn main() {
     let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
-    let source = std::fs::read_to_string("file.js").expect(msg);
+    let source = std::fs::read_to_string("file.crust").expect(msg);
 
     let scanner = Scanner::new(&source);
     let tokens = match scanner.scan_tokens() {
@@ -39,12 +39,12 @@ fn main() {
         println!();
     }
 
-    let (chunk, objects) = match Parser::compile(tokens, Chunk::new()) {
+    let (func, heap) = match Parser::compile(tokens, Chunk::new()) {
         None => {
             return;
         }
-        Some((chunk, objects)) => (chunk, objects),
+        Some((func, heap)) => (func, heap),
     };
 
-    VM::interpret(chunk, objects);
+    VM::interpret(func, heap);
 }

@@ -29,9 +29,9 @@ pub struct VM {
     heap: Heap,
 }
 impl VM {
-    pub fn interpret(chunk: Chunk, heap: Heap) -> InterpretResult {
+    pub fn interpret(func: ObjFunc, heap: Heap) -> InterpretResult {
         let frame = CallFrame {
-            ip: chunk.get_ptr(),
+            ip: func.chunk.get_ptr(),
             slots: std::ptr::null_mut(),
             func: ObjFunc::new(),
         };

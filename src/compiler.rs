@@ -4,7 +4,7 @@ use crate::{
     chunk::Chunk,
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    object::{Heap, Object},
+    object::{Heap, ObjFunc, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
@@ -18,7 +18,7 @@ pub struct Parser<'token> {
     compiler: Compiler<'token>,
 }
 impl<'token> Parser<'token> {
-    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(Chunk, Heap)> {
+    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(ObjFunc, Heap)> {
         let mut parser = Parser {
             tokens,
             chunk,
@@ -48,7 +48,8 @@ impl<'token> Parser<'token> {
         // compiler.chunk.disassemble("code");
 
         parser.emit_byte(OpCode::Return as u8);
-        Some((parser.chunk, parser.heap))
+        let func = parser.compiler.function;
+        Some((func, parser.heap))
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {

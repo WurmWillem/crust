@@ -1,7 +1,8 @@
 use crate::{
-    token::{Literal, Token, TokenType},
-    value::ValueType,
+    object::ObjFunc, token::{Literal, Token, TokenType}, value::ValueType
 };
+
+// TODO: see if you can restrict the visibility of some fields
 
 #[derive(Debug, Clone, Copy)]
 pub struct Local<'a> {
@@ -20,15 +21,19 @@ pub struct Compiler<'a> {
     pub locals: [Local<'a>; MAX_LOCAL_AMT],
     pub local_count: usize,
     pub scope_depth: usize,
+    pub function: ObjFunc,
 }
 impl<'a> Compiler<'a> {
     pub fn new() -> Self {
         let name = Token::new(TokenType::Equal, "", Literal::None, 0);
+
         let local = Local::new(name, 0, ValueType::None);
+        // let locals = [local; MAX_LOCAL_AMT];
         Self {
             locals: [local; MAX_LOCAL_AMT],
-            local_count: 0,
+            local_count: 1,
             scope_depth: 0,
+            function: ObjFunc::new(),
         }
     }
 }
