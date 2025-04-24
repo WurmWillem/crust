@@ -107,7 +107,7 @@ pub enum Object {
     Func(RefFunc),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ObjFunc {
     arity: u8,
     pub chunk: Chunk,

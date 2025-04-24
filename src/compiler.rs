@@ -15,7 +15,7 @@ pub struct Parser<'token> {
     chunk: Chunk,
     last_operand_type: ValueType,
     heap: Heap,
-    compiler: Compiler<'token>,
+    comps: CompilerStack<'token>,
 }
 impl<'token> Parser<'token> {
     pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(ObjFunc, Heap)> {
@@ -25,7 +25,7 @@ impl<'token> Parser<'token> {
             current_token: 0,
             heap: Heap::new(),
             last_operand_type: ValueType::None,
-            compiler: Compiler::new(),
+            comps: CompilerStack::new(),
         };
 
         let mut had_error = false;
@@ -48,9 +48,11 @@ impl<'token> Parser<'token> {
         // compiler.chunk.disassemble("code");
 
         parser.emit_byte(OpCode::Return as u8);
-        let func = parser.compiler.function;
+        let heap = parser.heap;
+        let func = &mut parser.comps.compilers[parser.comps.current].function;
 
-        Some((func.unwrap(), parser.heap))
+        // TODO: maybe fix so it won't clone anymore
+        Some((func.take().unwrap(), heap))
     }
 
     // fn end_compiler(&mut self) -> ObjFunc {
@@ -72,13 +74,11 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
-        
-
         self.add_local(name, self.last_operand_type)?;
         Ok(())
     }
     fn function(&mut self) -> Result<(), ParseError> {
-        self.compiler = Compiler::new();
+        // self.compiler = Compiler::new();
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
@@ -89,7 +89,10 @@ impl<'token> Parser<'token> {
 
         self.emit_byte(OpCode::Return as u8);
 
-        let func = self.compiler.function.take().unwrap();
+        let func = self.comps.compilers[self.comps.current]
+            .function
+            .take()
+            .unwrap();
         let (func_object, _) = self.heap.alloc(func, Object::Func);
 
         let func_constant = self.make_constant(StackValue::Obj(func_object))?;
@@ -273,24 +276,25 @@ impl<'token> Parser<'token> {
     }
 
     fn add_local(&mut self, name: Token<'token>, kind: ValueType) -> Result<(), ParseError> {
-        if self.compiler.local_count == MAX_LOCAL_AMT {
+        if self.comps.current().local_count == MAX_LOCAL_AMT {
             let msg = "Too many local variables in function.";
             return Err(ParseError::new(name.line, msg));
         }
 
-        let local = Local::new(name, self.compiler.scope_depth, kind);
+        let local = Local::new(name, self.comps.current().scope_depth, kind);
 
-        self.compiler.locals[self.compiler.local_count] = local;
-        self.compiler.local_count += 1;
+        let local_count = self.comps.current().local_count;
+        self.comps.compilers[self.comps.current].locals[local_count] = local;
+        self.comps.compilers[self.comps.current].local_count += 1;
         Ok(())
     }
 
     fn resolve_local(&mut self, name: Token<'token>) -> Result<(u8, ValueType), ParseError> {
         //TODO: shadowing now doesn't remove the old var
-        for i in (0..self.compiler.local_count).rev() {
+        for i in (0..self.comps.current().local_count).rev() {
             // dbg!(self.compiler.locals[i]);
-            if self.compiler.locals[i].name.lexeme == name.lexeme {
-                return Ok((i as u8, self.compiler.locals[i].kind));
+            if self.comps.current().locals[i].name.lexeme == name.lexeme {
+                return Ok((i as u8, self.comps.current().locals[i].kind));
             }
         }
         let msg = format!("The variable with name '{}' does not exist.", name.lexeme);
@@ -305,17 +309,18 @@ impl<'token> Parser<'token> {
     }
 
     fn begin_scope(&mut self) {
-        self.compiler.scope_depth += 1;
+        self.comps.compilers[self.comps.current].scope_depth += 1;
     }
 
     fn end_scope(&mut self) {
-        self.compiler.scope_depth -= 1;
+        self.comps.compilers[self.comps.current].scope_depth -= 1;
 
-        while self.compiler.local_count > 0
-            && self.compiler.locals[self.compiler.local_count - 1].depth > self.compiler.scope_depth
+        while self.comps.current().local_count > 0
+            && self.comps.current().locals[self.comps.current().local_count - 1].depth
+                > self.comps.current().scope_depth
         {
             self.emit_byte(OpCode::Pop as u8);
-            self.compiler.local_count -= 1;
+            self.comps.compilers[self.comps.current].local_count -= 1;
         }
     }
 

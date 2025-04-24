@@ -1,5 +1,7 @@
 use crate::{
-    object::ObjFunc, token::{Literal, Token, TokenType}, value::ValueType
+    object::ObjFunc,
+    token::{Literal, Token, TokenType},
+    value::ValueType,
 };
 
 // TODO: see if you can restrict the visibility of some fields
@@ -16,20 +18,56 @@ impl<'a> Local<'a> {
     }
 }
 
+pub struct CompilerStack<'a> {
+    pub compilers: Vec<Compiler<'a>>,
+    pub current: usize,
+}
+impl<'a> CompilerStack<'a> {
+    // Create a new stack with a root compiler (no parent)
+    pub fn new() -> Self {
+        let root = Compiler::new(None);
+        Self {
+            compilers: vec![root],
+            current: 0, // Root is at index 0
+        }
+    }
+
+    // Push a new compiler onto the stack, with the current compiler as its parent
+    pub fn push(&mut self) {
+        let new_compiler = Compiler::new(Some(self.current));
+        self.compilers.push(new_compiler);
+        self.current = self.compilers.len() - 1; // Update current to the new compiler
+    }
+
+    // Pop the current compiler and restore the enclosing one
+    pub fn pop(&mut self) {
+        if let Some(parent_idx) = self.compilers[self.current].enclosing {
+            self.current = parent_idx;
+        }
+    }
+
+    // Get the current compiler (immutable)
+    pub fn current(&self) -> &Compiler {
+        &self.compilers[self.current]
+    }
+}
+
 pub const MAX_LOCAL_AMT: usize = u8::MAX as usize;
 pub struct Compiler<'a> {
+    pub enclosing: Option<usize>,
     pub locals: [Local<'a>; MAX_LOCAL_AMT],
     pub local_count: usize,
     pub scope_depth: usize,
     pub function: Option<ObjFunc>,
 }
 impl<'a> Compiler<'a> {
-    pub fn new() -> Self {
+    pub fn new(enclosing: Option<usize>) -> Self {
         let name = Token::new(TokenType::Equal, "", Literal::None, 0);
 
         let local = Local::new(name, 0, ValueType::None);
         // let locals = [local; MAX_LOCAL_AMT];
         Self {
+            enclosing,
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,
             scope_depth: 0,
