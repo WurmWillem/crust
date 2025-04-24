@@ -21,7 +21,7 @@ pub struct Compiler<'a> {
     pub locals: [Local<'a>; MAX_LOCAL_AMT],
     pub local_count: usize,
     pub scope_depth: usize,
-    pub function: ObjFunc,
+    pub function: Option<ObjFunc>,
 }
 impl<'a> Compiler<'a> {
     pub fn new() -> Self {
@@ -33,7 +33,7 @@ impl<'a> Compiler<'a> {
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,
             scope_depth: 0,
-            function: ObjFunc::new(),
+            function: Some(ObjFunc::new()),
         }
     }
 }

@@ -1,11 +1,11 @@
 use std::mem::MaybeUninit;
 
-use crate::object::{Heap, ObjFunc};
+use crate::object::{Gc, Heap, ObjFunc};
 use colored::Colorize;
 
 use crate::error::DEBUG_TRACE_EXECUTION;
 use crate::object::Object;
-use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
+use crate::{opcode::OpCode, value::StackValue};
 
 pub enum InterpretResult {
     Ok,
@@ -13,10 +13,10 @@ pub enum InterpretResult {
 }
 
 const STACK_SIZE: usize = 256;
-const FRAMES_SIZE: usize = 64;
+const FRAMES_SIZE: usize = 32;
 
 struct CallFrame {
-    func: ObjFunc,
+    func: Gc<ObjFunc>,
     ip: *const u8,
     slots: *mut StackValue,
 }
@@ -29,16 +29,21 @@ pub struct VM {
     heap: Heap,
 }
 impl VM {
-    pub fn interpret(func: ObjFunc, heap: Heap) -> InterpretResult {
+    pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
+        let (func_object, gc_obj) = heap.alloc(func, Object::Func);
+        // let x = &gc_obj.data;
+
         let frame = CallFrame {
-            ip: func.chunk.get_ptr(),
+            ip: gc_obj.data.chunk.get_ptr(),
+            // TODO: this prob shouldn't be null
             slots: std::ptr::null_mut(),
-            func: ObjFunc::new(),
+            func: gc_obj,
         };
 
         let mut frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
         unsafe {
             frames = MaybeUninit::uninit().assume_init();
+
             frames[0].as_mut_ptr().write(frame);
         }
 
@@ -49,6 +54,9 @@ impl VM {
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
         };
+
+        vm.stack_push(StackValue::Obj(func_object));
+
         unsafe { vm.run() }
     }
 
@@ -123,7 +131,7 @@ impl VM {
                 }
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
-                    let constant = (*frame).func.chunk.constants[index].clone();
+                    let constant = (*frame).func.data.chunk.constants[index].clone();
                     self.stack_push(constant);
                 }
                 OpCode::Pop => {
@@ -226,10 +234,10 @@ impl VM {
             unreachable!()
         };
 
-        let mut x = lhs.data.clone();
-        x.push_str(&rhs.data);
+        let mut new_str = lhs.data.clone();
+        new_str.push_str(&rhs.data);
 
-        let object = self.heap.alloc(x, Object::Str);
+        let (object, _) = self.heap.alloc(new_str, Object::Str);
 
         StackValue::Obj(object)
     }

@@ -5,6 +5,7 @@ use std::ptr::NonNull;
 use crate::chunk::Chunk;
 
 pub struct Heap {
+    // TODO: maybe add support for Table so you won't have to reallocate every time
     head: Option<Object>,
 }
 impl Heap {
@@ -12,7 +13,7 @@ impl Heap {
         Self { head: None }
     }
 
-    pub fn alloc<T, F>(&mut self, data: T, map: F) -> Object
+    pub fn alloc<T, F>(&mut self, data: T, map: F) -> (Object, Gc<T>)
     where
         F: Fn(Gc<T>) -> Object,
     {
@@ -26,11 +27,12 @@ impl Heap {
             ptr: NonNull::new(Box::into_raw(gc_data)).unwrap(),
         };
 
-        let object = map(gc);
+        let object = map(gc.clone());
 
         self.head = Some(object.clone());
 
-        object
+        // TODO: maybe we shouldn't have to return gc actually
+        (object, gc)
     }
 
     unsafe fn dealloc(&mut self, object: Object) {

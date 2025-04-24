@@ -49,17 +49,54 @@ impl<'token> Parser<'token> {
 
         parser.emit_byte(OpCode::Return as u8);
         let func = parser.compiler.function;
-        Some((func, parser.heap))
+
+        Some((func.unwrap(), parser.heap))
     }
+
+    // fn end_compiler(&mut self) -> ObjFunc {
+    //     self.emit_byte(OpCode::Return as u8);
+    //     self.compiler.function
+    // }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
         if self.matches(TokenType::Var) {
             self.var_declaration()
+        } else if self.matches(TokenType::Fun) {
+            self.func_declaration()
         } else {
             self.statement()
         }
     }
 
+    fn func_declaration(&mut self) -> Result<(), ParseError> {
+        self.consume(TokenType::Identifier, "Expected function name.")?;
+        let name = self.previous();
+
+        
+
+        self.add_local(name, self.last_operand_type)?;
+        Ok(())
+    }
+    fn function(&mut self) -> Result<(), ParseError> {
+        self.compiler = Compiler::new();
+        self.begin_scope();
+
+        self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
+        self.consume(TokenType::RightParen, "Expected ')' after parameters.")?;
+        self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
+
+        self.block()?;
+
+        self.emit_byte(OpCode::Return as u8);
+
+        let func = self.compiler.function.take().unwrap();
+        let (func_object, _) = self.heap.alloc(func, Object::Func);
+
+        let func_constant = self.make_constant(StackValue::Obj(func_object))?;
+        self.emit_bytes(OpCode::Constant as u8, func_constant);
+
+        Ok(())
+    }
     fn var_declaration(&mut self) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
@@ -328,7 +365,7 @@ impl<'token> Parser<'token> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
         };
-        let object = self.heap.alloc(value.to_string(), Object::Str);
+        let (object, _) = self.heap.alloc(value.to_string(), Object::Str);
         let stack_value = StackValue::Obj(object);
 
         self.last_operand_type = ValueType::Str;
