@@ -20,6 +20,8 @@ mod value;
 mod vm;
 
 fn main() {
+    std::env::set_var("RUST_BACKTRACE", "1");
+
     let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
     let source = std::fs::read_to_string("file.crust").expect(msg);
 
@@ -39,7 +41,7 @@ fn main() {
         println!();
     }
 
-    let (func, heap) = match Parser::compile(tokens, Chunk::new()) {
+    let (func, heap) = match Parser::compile(tokens) {
         None => {
             return;
         }
@@ -47,4 +49,5 @@ fn main() {
     };
 
     VM::interpret(func, heap);
+    // todo!()
 }

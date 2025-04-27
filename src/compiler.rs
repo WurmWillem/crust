@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::{
-    chunk::Chunk,
+    // chunk::Chunk,
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     object::{Heap, ObjFunc, Object},
@@ -12,16 +12,21 @@ use crate::{
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,
-    chunk: Chunk,
+    // chunk: Chunk,
     last_operand_type: ValueType,
     heap: Heap,
     comps: CompilerStack<'token>,
 }
+macro_rules! chunk {
+    ($self: expr) => {
+        $self.comps.compilers[$self.comps.current].func.chunk
+    };
+}
 impl<'token> Parser<'token> {
-    pub fn compile(tokens: Vec<Token>, chunk: Chunk) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(tokens: Vec<Token>) -> Option<(ObjFunc, Heap)> {
         let mut parser = Parser {
             tokens,
-            chunk,
+            // chunk,
             current_token: 0,
             heap: Heap::new(),
             last_operand_type: ValueType::None,
@@ -47,12 +52,18 @@ impl<'token> Parser<'token> {
         }
         // compiler.chunk.disassemble("code");
 
-        parser.emit_byte(OpCode::Return as u8);
-        let heap = parser.heap;
-        let func = &mut parser.comps.compilers[parser.comps.current].function;
+        // parser.emit_byte(OpCode::Return as u8);
+        // let func = parser.comps.compilers[parser.comps.current].function.take().unwrap();
+        let func = parser.end_compiler();
+        // dbg!(&func);
 
         // TODO: maybe fix so it won't clone anymore
-        Some((func.take().unwrap(), heap))
+        Some((func, parser.heap))
+    }
+    fn end_compiler(&mut self) -> ObjFunc {
+        self.emit_byte(OpCode::Return as u8);
+        self.comps.pop().func
+        // self.comps.compilers[self.comps.current].function.take().unwrap()
     }
 
     // fn end_compiler(&mut self) -> ObjFunc {
@@ -74,11 +85,13 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
+        self.function()?;
+
         self.add_local(name, self.last_operand_type)?;
         Ok(())
     }
     fn function(&mut self) -> Result<(), ParseError> {
-        // self.compiler = Compiler::new();
+        self.comps.push();
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
@@ -89,10 +102,7 @@ impl<'token> Parser<'token> {
 
         self.emit_byte(OpCode::Return as u8);
 
-        let func = self.comps.compilers[self.comps.current]
-            .function
-            .take()
-            .unwrap();
+        let func = self.end_compiler();
         let (func_object, _) = self.heap.alloc(func, Object::Func);
 
         let func_constant = self.make_constant(StackValue::Obj(func_object))?;
@@ -134,11 +144,18 @@ impl<'token> Parser<'token> {
             self.expression_statement()
         }
     }
+    fn get_code_len(&self) -> usize {
+        self.comps.compilers[self.comps.current]
+            .func
+            .chunk
+            .code
+            .len()
+    }
 
     fn emit_loop(&mut self, loop_start: usize) -> Result<(), ParseError> {
         self.emit_byte(OpCode::Loop as u8);
 
-        let offset = self.chunk.code.len() - loop_start + 2;
+        let offset = self.get_code_len() - loop_start + 2;
         if offset > u16::MAX as usize {
             let msg = "Loop body too large.";
             return Err(ParseError::new(0, msg));
@@ -154,19 +171,21 @@ impl<'token> Parser<'token> {
         // placeholders
         self.emit_byte(0xFF);
         self.emit_byte(0xFF);
-        self.chunk.code.len() - 2
+        self.get_code_len() - 2
     }
 
     fn patch_jump(&mut self, offset: usize) -> Result<(), ParseError> {
-        let jump = self.chunk.code.len() - offset - 2;
+        let jump = self.get_code_len() - offset - 2;
 
         if jump > u16::MAX as usize {
             let msg = "Too much code to jump over.";
             return Err(ParseError::new(0, msg));
         }
+        // self.comps.compilers[self.comps.current].func.chunk;
+        chunk!(self).code[offset] = 3;
 
-        self.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
-        self.chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        // self.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        // self.chunk.code[offset + 1] = (jump & 0xFF) as u8;
         Ok(())
     }
 
@@ -181,8 +200,7 @@ impl<'token> Parser<'token> {
         } else {
             self.expression_statement()?;
         }
-
-        let mut loop_start = self.chunk.code.len();
+        let mut loop_start = self.get_code_len();
 
         let mut exit_jump = None;
         if !self.matches(TokenType::Semicolon) {
@@ -195,7 +213,7 @@ impl<'token> Parser<'token> {
 
         if !self.matches(TokenType::RightParen) {
             let body_jump = self.emit_jump(OpCode::Jump);
-            let increment_start = self.chunk.code.len();
+            let increment_start = self.get_code_len();
 
             self.expression()?;
             self.emit_byte(OpCode::Pop as u8);
@@ -219,7 +237,7 @@ impl<'token> Parser<'token> {
     }
 
     fn while_statement(&mut self) -> Result<(), ParseError> {
-        let loop_start = self.chunk.code.len();
+        let loop_start = self.get_code_len();
         self.expression()?;
 
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse);
@@ -528,7 +546,7 @@ impl<'token> Parser<'token> {
     }
 
     fn make_constant(&mut self, value: StackValue) -> Result<u8, ParseError> {
-        let const_index = self.chunk.add_constant(value);
+        let const_index = chunk!(self).add_constant(value);
         if const_index > u8::MAX.into() {
             let msg = "Too many constants in one chunk.";
             return Err(ParseError::new(self.peek().line, msg));
@@ -553,7 +571,10 @@ impl<'token> Parser<'token> {
     }
 
     fn emit_byte(&mut self, byte: u8) {
-        self.chunk.write_byte_to_chunk(byte, self.previous().line);
+        // chunk!()
+
+        let line = self.previous().line;
+        self.comps.compilers[self.comps.current].func.chunk.write_byte_to_chunk(byte, line);
     }
 
     fn emit_bytes(&mut self, byte_0: u8, byte_1: u8) {

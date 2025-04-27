@@ -39,7 +39,7 @@ impl Chunk {
     // }
 
     pub fn disassemble_instruction(&mut self, offset: usize) -> usize {
-        // print!("{}  ", offset);
+        dbg!(offset);
         // dbg!(self.lines[offset]);
 
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {

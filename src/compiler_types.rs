@@ -34,16 +34,19 @@ impl<'a> CompilerStack<'a> {
 
     // Push a new compiler onto the stack, with the current compiler as its parent
     pub fn push(&mut self) {
+        // dbg!(534345);
         let new_compiler = Compiler::new(Some(self.current));
         self.compilers.push(new_compiler);
         self.current = self.compilers.len() - 1; // Update current to the new compiler
     }
 
     // Pop the current compiler and restore the enclosing one
-    pub fn pop(&mut self) {
-        if let Some(parent_idx) = self.compilers[self.current].enclosing {
+    pub fn pop(&mut self) -> Compiler {
+        let c = self.compilers.pop().unwrap();
+        if let Some(parent_idx) = c.enclosing {
             self.current = parent_idx;
         }
+        c
     }
 
     // Get the current compiler (immutable)
@@ -58,7 +61,7 @@ pub struct Compiler<'a> {
     pub locals: [Local<'a>; MAX_LOCAL_AMT],
     pub local_count: usize,
     pub scope_depth: usize,
-    pub function: Option<ObjFunc>,
+    pub func: ObjFunc,
 }
 impl<'a> Compiler<'a> {
     pub fn new(enclosing: Option<usize>) -> Self {
@@ -71,7 +74,7 @@ impl<'a> Compiler<'a> {
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,
             scope_depth: 0,
-            function: Some(ObjFunc::new()),
+            func: ObjFunc::new(),
         }
     }
 }

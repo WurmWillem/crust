@@ -15,6 +15,7 @@ pub enum InterpretResult {
 const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 32;
 
+#[derive(Debug)]
 struct CallFrame {
     func: Gc<ObjFunc>,
     ip: *const u8,
@@ -30,21 +31,13 @@ pub struct VM {
 }
 impl VM {
     pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
+        // dbg!(func.name.clone());
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
         // let x = &gc_obj.data;
 
-        let frame = CallFrame {
-            ip: gc_obj.data.chunk.get_ptr(),
-            // TODO: this prob shouldn't be null
-            slots: std::ptr::null_mut(),
-            func: gc_obj,
-        };
-
-        let mut frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
+        let frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
         unsafe {
             frames = MaybeUninit::uninit().assume_init();
-
-            frames[0].as_mut_ptr().write(frame);
         }
 
         let mut vm = Self {
@@ -55,9 +48,19 @@ impl VM {
             stack_top: 0,
         };
 
+        let frame = CallFrame {
+            ip: gc_obj.data.chunk.get_ptr(),
+            // TODO: this prob shouldn't be null
+            slots: vm.stack.as_mut_ptr(),
+            func: gc_obj,
+        };
+
+        unsafe { vm.frames[0].as_mut_ptr().write(frame) }
+
         vm.stack_push(StackValue::Obj(func_object));
 
         unsafe { vm.run() }
+        // InterpretResult::Ok
     }
 
     fn stack_push(&mut self, value: StackValue) {
@@ -93,6 +96,8 @@ impl VM {
 
     unsafe fn run(&mut self) -> InterpretResult {
         let frame = self.frames[self.frame_count].as_mut_ptr();
+        // dbg!((*frame).slots);
+        // return InterpretResult::Ok;
         // consider making ip a local variable
         loop {
             if DEBUG_TRACE_EXECUTION {
@@ -101,10 +106,17 @@ impl VM {
                     print!("[ {} ]", self.stack[stack_index].display())
                 }
                 println!();
-                todo!()
+                // todo!()
 
-                // let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                // self.chunk.disassemble_instruction(debug_offset as usize);
+                let ip = self.frames[self.frame_count].assume_init_mut().ip;
+                let offset = (*frame).func.data.chunk.code.as_ptr();
+                let debug_offset = ip.offset_from(offset) as usize;
+
+                (*frame)
+                    .func
+                    .data
+                    .chunk
+                    .disassemble_instruction(debug_offset);
             }
 
             macro_rules! binary_op {
@@ -222,6 +234,7 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
             }
+            // break InterpretResult::Ok;
         }
         // InterpretResult::RuntimeError
     }
