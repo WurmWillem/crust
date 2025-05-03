@@ -1,11 +1,20 @@
 let x = 3;
-if x == 3 {
-  print x;
+
+fn fun() {
+   print "Hello World!"; 
 }
-print 2;
-if x == 3 {
+
+{
+    print 4 * 12;
+}
+print x;
+print x;
+//print 2;
+if true {
    print "yeah"; 
-} else {
+} 
+print 4;
+{
     print "nuh-uh"; 
 }
 

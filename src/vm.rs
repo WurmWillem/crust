@@ -108,7 +108,8 @@ impl VM {
                 println!();
                 // todo!()
 
-                let ip = self.frames[self.frame_count].assume_init_mut().ip;
+                let ip = (*frame).ip;
+                // dbg!(&(*frame).func.data.chunk.code);
                 let offset = (*frame).func.data.chunk.code.as_ptr();
                 let debug_offset = ip.offset_from(offset) as usize;
 

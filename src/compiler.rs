@@ -182,8 +182,8 @@ impl<'token> Parser<'token> {
             return Err(ParseError::new(0, msg));
         }
         // self.comps.compilers[self.comps.current].func.chunk;
-        chunk!(self).code[offset] = 3;
-
+        chunk!(self).code[offset] = ((jump >> 8) & 0xFF) as u8;
+        chunk!(self).code[offset + 1] = (jump & 0xFF) as u8;
         // self.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
         // self.chunk.code[offset + 1] = (jump & 0xFF) as u8;
         Ok(())
@@ -571,10 +571,8 @@ impl<'token> Parser<'token> {
     }
 
     fn emit_byte(&mut self, byte: u8) {
-        // chunk!()
-
         let line = self.previous().line;
-        self.comps.compilers[self.comps.current].func.chunk.write_byte_to_chunk(byte, line);
+        chunk!(self).write_byte_to_chunk(byte, line);
     }
 
     fn emit_bytes(&mut self, byte_0: u8, byte_1: u8) {
