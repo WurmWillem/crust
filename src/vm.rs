@@ -89,8 +89,10 @@ impl VM {
     unsafe fn read_short(&mut self) -> u16 {
         let ip = &mut self.frames[self.frame_count].assume_init_mut().ip;
         *ip = ip.add(2);
-        let high = ip.offset(-2);
-        let low = ip.offset(-1);
+
+        let high = *ip.offset(-2);
+        let low = *ip.offset(-1);
+
         ((high as u16) << 8) | (low as u16)
     }
 
@@ -99,8 +101,11 @@ impl VM {
         // dbg!((*frame).slots);
         // return InterpretResult::Ok;
         // consider making ip a local variable
+        let first = (*frame).ip;
         loop {
-            if DEBUG_TRACE_EXECUTION {
+            // dbg!((*frame).ip);
+
+            if false {
                 print!("          ");
                 for stack_index in 0..self.stack_top {
                     print!("[ {} ]", self.stack[stack_index].display())
@@ -112,6 +117,9 @@ impl VM {
                 // dbg!(&(*frame).func.data.chunk.code);
                 let offset = (*frame).func.data.chunk.code.as_ptr();
                 let debug_offset = ip.offset_from(offset) as usize;
+                // dbg!(offset);
+                // dbg!(ip);
+                // dbg!(debug_offset);
 
                 (*frame)
                     .func
@@ -138,7 +146,12 @@ impl VM {
             //     }};
             // }
 
-            match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
+            let off = first.offset_from((*frame).ip);
+            // dbg!(-off);
+            let x = std::mem::transmute::<u8, OpCode>(self.read_byte());
+            // dbg!(&x);
+
+            match x {
                 OpCode::Return => {
                     return InterpretResult::Ok;
                 }
@@ -148,12 +161,13 @@ impl VM {
                     self.stack_push(constant);
                 }
                 OpCode::Pop => {
-                    // dbg!(self.stack_top);
+                    // dbg!((*frame).ip);
                     self.stack_pop();
                 }
 
                 OpCode::Jump => {
                     let offset = self.read_short() as usize;
+                    dbg!(offset);
                     (*frame).ip = (*frame).ip.add(offset);
                 }
                 OpCode::JumpIfFalse => {
@@ -235,6 +249,7 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
             }
+            // frame = self.frames[self.frame_count - 1].assume_init_mut();
             // break InterpretResult::Ok;
         }
         // InterpretResult::RuntimeError

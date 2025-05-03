@@ -181,9 +181,12 @@ impl<'token> Parser<'token> {
             let msg = "Too much code to jump over.";
             return Err(ParseError::new(0, msg));
         }
+        dbg!(jump);
         // self.comps.compilers[self.comps.current].func.chunk;
         chunk!(self).code[offset] = ((jump >> 8) & 0xFF) as u8;
+        dbg!(chunk!(self).code[offset]);
         chunk!(self).code[offset + 1] = (jump & 0xFF) as u8;
+        dbg!(chunk!(self).code[offset + 1]);
         // self.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
         // self.chunk.code[offset + 1] = (jump & 0xFF) as u8;
         Ok(())
@@ -254,10 +257,12 @@ impl<'token> Parser<'token> {
         self.expression()?;
 
         let then_jump = self.emit_jump(OpCode::JumpIfFalse);
+        dbg!(then_jump);
         self.emit_byte(OpCode::Pop as u8);
         self.statement()?;
 
         let else_jump = self.emit_jump(OpCode::Jump);
+        dbg!(else_jump);
 
         self.patch_jump(then_jump)?;
         self.emit_byte(OpCode::Pop as u8);

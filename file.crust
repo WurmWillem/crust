@@ -1,41 +1,33 @@
 let x = 3;
 
-fn fun() {
-   print "Hello World!"; 
-}
-
-{
-    print 4 * 12;
-}
-print x;
-print x;
-//print 2;
 if true {
    print "yeah"; 
-} 
-print 4;
-{
-    print "nuh-uh"; 
+} else {
+   print "no"; 
 }
 
-//print x;
-//for (let i = 0; i < 10; i = i + 1) {
-//    print i;
-//}
-//let i = 0;
-//while i < 10000 {
-//    i = i + 1;
-//}
-//print i; 
-//{
-//    let x = 4 + 3;
-//    print x;
-//    {
-//        x = 2;
-//        let x = 4;
-//        {
-//            print x;
-//        }
-//    }
-//    print x;
-//}
+print 4;
+
+
+print x;
+for (let i = 0; i < 10; i = i + 1) {
+    print i;
+}
+let i = 0;
+while i < 10000 {
+    i = i + 1;
+}
+print i; 
+{
+    let x = 4 + 3;
+    print x;
+    {
+        x = 2;
+        let x = 4;
+        {
+            print x;
+        }
+    }
+    print x;
+}
+
