@@ -25,7 +25,7 @@ pub struct CompilerStack<'a> {
 impl<'a> CompilerStack<'a> {
     // Create a new stack with a root compiler (no parent)
     pub fn new() -> Self {
-        let root = Compiler::new(None);
+        let root = Compiler::new(None, "".to_string());
         Self {
             compilers: vec![root],
             current: 0, // Root is at index 0
@@ -33,9 +33,9 @@ impl<'a> CompilerStack<'a> {
     }
 
     // Push a new compiler onto the stack, with the current compiler as its parent
-    pub fn push(&mut self) {
+    pub fn push(&mut self, func_name: String) {
         // dbg!(534345);
-        let new_compiler = Compiler::new(Some(self.current));
+        let new_compiler = Compiler::new(Some(self.current), func_name);
         self.compilers.push(new_compiler);
         self.current = self.compilers.len() - 1; // Update current to the new compiler
     }
@@ -64,7 +64,7 @@ pub struct Compiler<'a> {
     pub func: ObjFunc,
 }
 impl<'a> Compiler<'a> {
-    pub fn new(enclosing: Option<usize>) -> Self {
+    pub fn new(enclosing: Option<usize>, func_name: String) -> Self {
         let name = Token::new(TokenType::Equal, "", Literal::None, 0);
 
         let local = Local::new(name, 0, ValueType::None);
@@ -74,7 +74,7 @@ impl<'a> Compiler<'a> {
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,
             scope_depth: 0,
-            func: ObjFunc::new(),
+            func: ObjFunc::new(func_name),
         }
     }
 }

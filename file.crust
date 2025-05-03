@@ -1,33 +1,14 @@
-let x = 3;
-
 if true {
    print "yeah"; 
 } else {
    print "no"; 
 }
 
-print 4;
-
-
-print x;
-for (let i = 0; i < 10; i = i + 1) {
-    print i;
-}
-let i = 0;
-while i < 10000 {
-    i = i + 1;
-}
-print i; 
-{
-    let x = 4 + 3;
-    print x;
-    {
-        x = 2;
-        let x = 4;
-        {
-            print x;
-        }
-    }
-    print x;
+fn greet() {
+    print "Hello World!";
 }
 
+//let i = 0;
+//while i < 10000 {
+//    i = i + 1;
+//}

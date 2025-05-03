@@ -114,11 +114,11 @@ pub struct ObjFunc {
     pub name: String,
 }
 impl ObjFunc {
-    pub fn new() -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             arity: 0,
             chunk: Chunk::new(),
-            name: "".to_string(),
+            name,
         }
     }
 }

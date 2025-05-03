@@ -98,14 +98,9 @@ impl VM {
 
     unsafe fn run(&mut self) -> InterpretResult {
         let frame = self.frames[self.frame_count].as_mut_ptr();
-        // dbg!((*frame).slots);
-        // return InterpretResult::Ok;
-        // consider making ip a local variable
-        let first = (*frame).ip;
-        loop {
-            // dbg!((*frame).ip);
 
-            if false {
+        loop {
+            if DEBUG_TRACE_EXECUTION {
                 print!("          ");
                 for stack_index in 0..self.stack_top {
                     print!("[ {} ]", self.stack[stack_index].display())
@@ -135,23 +130,8 @@ impl VM {
                     self.stack_push(lhs.$operation(rhs));
                 }};
             }
-            // macro_rules! get_var_name_from_next_byte {
-            //     () => {{
-            //         let constants_index = self.read_byte() as usize;
-            //         let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
-            //             unreachable!();
-            //         };
-            //         let ObjectValue::Str(var_name) = &self.objects[idx].value;
-            //         var_name
-            //     }};
-            // }
 
-            let off = first.offset_from((*frame).ip);
-            // dbg!(-off);
-            let x = std::mem::transmute::<u8, OpCode>(self.read_byte());
-            // dbg!(&x);
-
-            match x {
+            match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
                 OpCode::Return => {
                     return InterpretResult::Ok;
                 }
@@ -167,7 +147,6 @@ impl VM {
 
                 OpCode::Jump => {
                     let offset = self.read_short() as usize;
-                    dbg!(offset);
                     (*frame).ip = (*frame).ip.add(offset);
                 }
                 OpCode::JumpIfFalse => {

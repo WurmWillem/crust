@@ -85,13 +85,13 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
-        self.function()?;
+        self.function(name.lexeme.to_string())?;
 
         self.add_local(name, self.last_operand_type)?;
         Ok(())
     }
-    fn function(&mut self) -> Result<(), ParseError> {
-        self.comps.push();
+    fn function(&mut self, name: String) -> Result<(), ParseError> {
+        self.comps.push(name);
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
@@ -181,14 +181,11 @@ impl<'token> Parser<'token> {
             let msg = "Too much code to jump over.";
             return Err(ParseError::new(0, msg));
         }
-        dbg!(jump);
-        // self.comps.compilers[self.comps.current].func.chunk;
+
         chunk!(self).code[offset] = ((jump >> 8) & 0xFF) as u8;
-        dbg!(chunk!(self).code[offset]);
+        // dbg!(chunk!(self).code[offset]);
         chunk!(self).code[offset + 1] = (jump & 0xFF) as u8;
-        dbg!(chunk!(self).code[offset + 1]);
-        // self.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
-        // self.chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        // dbg!(chunk!(self).code[offset + 1]);
         Ok(())
     }
 
@@ -257,12 +254,10 @@ impl<'token> Parser<'token> {
         self.expression()?;
 
         let then_jump = self.emit_jump(OpCode::JumpIfFalse);
-        dbg!(then_jump);
         self.emit_byte(OpCode::Pop as u8);
         self.statement()?;
 
         let else_jump = self.emit_jump(OpCode::Jump);
-        dbg!(else_jump);
 
         self.patch_jump(then_jump)?;
         self.emit_byte(OpCode::Pop as u8);
