@@ -23,7 +23,7 @@ pub struct CompilerStack<'a> {
     pub current: usize,
 }
 impl<'a> CompilerStack<'a> {
-    // Create a new stack with a root compiler (no parent)
+    // create a new stack with a root compiler (no parent)
     pub fn new() -> Self {
         let root = Compiler::new(None, "".to_string());
         Self {
@@ -32,7 +32,7 @@ impl<'a> CompilerStack<'a> {
         }
     }
 
-    // Push a new compiler onto the stack, with the current compiler as its parent
+    // push a new compiler onto the stack, with the current compiler as its parent
     pub fn push(&mut self, func_name: String) {
         // dbg!(534345);
         let new_compiler = Compiler::new(Some(self.current), func_name);
@@ -40,7 +40,7 @@ impl<'a> CompilerStack<'a> {
         self.current = self.compilers.len() - 1; // Update current to the new compiler
     }
 
-    // Pop the current compiler and restore the enclosing one
+    // pop the current compiler and restore the enclosing one
     pub fn pop(&mut self) -> Compiler {
         let c = self.compilers.pop().unwrap();
         if let Some(parent_idx) = c.enclosing {
@@ -49,14 +49,16 @@ impl<'a> CompilerStack<'a> {
         c
     }
 
-    // Get the current compiler (immutable)
+    // get the current compiler (immutable)
     pub fn current(&self) -> &Compiler {
         &self.compilers[self.current]
     }
 }
 
+// TODO: reduce max local amt
 pub const MAX_LOCAL_AMT: usize = u8::MAX as usize;
 pub struct Compiler<'a> {
+    // TODO: maybe enclosing is unessecary actually
     pub enclosing: Option<usize>,
     pub locals: [Local<'a>; MAX_LOCAL_AMT],
     pub local_count: usize,

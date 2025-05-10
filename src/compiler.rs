@@ -95,6 +95,30 @@ impl<'token> Parser<'token> {
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
+
+        // parse parameters
+        if !self.check(TokenType::RightParen) {
+            self.consume(TokenType::Identifier, "Expected variable name.")?;
+            let name = self.previous();
+
+            // TODO: this probably shouldn't be none
+            self.add_local(name, ValueType::None)?;
+            self.comps.compilers[self.comps.current]
+                .func
+                .increment_arity();
+
+            while self.matches(TokenType::Comma) {
+                self.consume(TokenType::Identifier, "Expected variable name.")?;
+                let name = self.previous();
+
+                // TODO: this probably shouldn't be none
+                self.add_local(name, ValueType::None)?;
+                self.comps.compilers[self.comps.current]
+                    .func
+                    .increment_arity();
+            }
+        }
+
         self.consume(TokenType::RightParen, "Expected ')' after parameters.")?;
         self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
 
@@ -110,17 +134,19 @@ impl<'token> Parser<'token> {
 
         Ok(())
     }
+
     fn var_declaration(&mut self) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
 
         if self.matches(TokenType::Equal) {
             self.expression()?;
+            self.add_local(name, self.last_operand_type)?;
         } else {
             self.emit_byte(OpCode::Null as u8);
+            self.add_local(name, ValueType::Null)?;
         }
 
-        self.add_local(name, self.last_operand_type)?;
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
         Ok(())
     }

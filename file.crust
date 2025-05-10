@@ -1,4 +1,4 @@
-fn greet() {
+fn greet(hoi, hey, sdfds) {
     print 5;
 }
 

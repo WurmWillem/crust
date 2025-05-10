@@ -121,4 +121,7 @@ impl ObjFunc {
             name,
         }
     }
+    pub fn increment_arity(&mut self) {
+       self.arity += 1; 
+    }
 }
