@@ -166,18 +166,19 @@ impl VM {
                 }
 
                 OpCode::Call => {
-                    // continue;
-                    // println!("hoi");
                     let arg_count = self.read_byte() as usize;
+                    // dbg!(arg_count);
                     let value = &self.stack[self.stack_top - arg_count - 1];
+                    // dbg!((*value).clone());
 
                     if let StackValue::Obj(value) = value {
                         if let Object::Func(func) = value {
-                            // self.frames.
 
                             let func = func.clone();
-                            let slots = self.stack.as_mut_ptr().offset(arg_count as isize + 1);
-                            // let slots = self.stack.as_mut_ptr();
+                            // 0 to 0, 1-4 to 2
+                            // let slots = self.stack.as_mut_ptr().offset(arg_count as isize - 1);
+                            let slots = self.stack.as_mut_ptr().offset(2);
+                            dbg!(slots.read());
 
                             let frame = CallFrame {
                                 ip: func.data.chunk.get_ptr(),
@@ -185,8 +186,8 @@ impl VM {
                                 func,
                             };
 
+                            unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
                             self.frame_count += 1;
-                            unsafe { self.frames[self.frame_count - 1].as_mut_ptr().write(frame) }
                         }
                     }
                 }

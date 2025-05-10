@@ -28,7 +28,8 @@ impl<'source> Scanner<'source> {
         let keywords = create_keywords!(
             "en",And "of",Or "if",If "else",Else "while",While "for",For
             "true",True "false",False "null",Null "dit",This "ouder",Super
-            "klas",Class "fn",Fun "let",Var "geef",Return "print",Print
+            "klas",Class "fn",Fun "let",Var "geef",Return "print",Print 
+            "int",F64 "bool",Bool "str",Str
         );
 
         let source_len = source_file.len();

@@ -98,21 +98,39 @@ impl<'token> Parser<'token> {
 
         // parse parameters
         if !self.check(TokenType::RightParen) {
+            let var_type = match self.advance().kind.as_value_type() {
+                Some(var_type) => var_type,
+                _ => {
+                    return Err(ParseError::new(
+                        self.previous().line,
+                        "Expected type for parameter.",
+                    ));
+                }
+            };
+
             self.consume(TokenType::Identifier, "Expected variable name.")?;
             let name = self.previous();
 
-            // TODO: this probably shouldn't be none
-            self.add_local(name, ValueType::None)?;
+            self.add_local(name, var_type)?;
             self.comps.compilers[self.comps.current]
                 .func
                 .increment_arity();
 
             while self.matches(TokenType::Comma) {
+                let var_type = match self.advance().kind.as_value_type() {
+                    Some(var_type) => var_type,
+                    _ => {
+                        return Err(ParseError::new(
+                            self.previous().line,
+                            "Expected type for parameter.",
+                        ));
+                    }
+                };
+
                 self.consume(TokenType::Identifier, "Expected variable name.")?;
                 let name = self.previous();
 
-                // TODO: this probably shouldn't be none
-                self.add_local(name, ValueType::None)?;
+                self.add_local(name, var_type)?;
                 self.comps.compilers[self.comps.current]
                     .func
                     .increment_arity();
@@ -182,7 +200,7 @@ impl<'token> Parser<'token> {
         self.emit_byte(OpCode::Loop as u8);
 
         let offset = self.get_code_len() - loop_start + 2;
-        if offset > u16::MAX as usize {
+        if offset > u8::MAX as usize {
             let msg = "Loop body too large.";
             return Err(ParseError::new(0, msg));
         }
@@ -569,7 +587,6 @@ impl<'token> Parser<'token> {
     fn call(&mut self) -> Result<(), ParseError> {
         let arg_count = self.argument_list()?;
         self.emit_bytes(OpCode::Call as u8, arg_count);
-        // dbg!(arg_count);
         Ok(())
     }
     fn argument_list(&mut self) -> Result<u8, ParseError> {
@@ -596,7 +613,7 @@ impl<'token> Parser<'token> {
 
     fn make_constant(&mut self, value: StackValue) -> Result<u8, ParseError> {
         let const_index = chunk!(self).add_constant(value);
-        if const_index > u8::MAX.into() {
+        if const_index > u16::MAX.into() {
             let msg = "Too many constants in one chunk.";
             return Err(ParseError::new(self.peek().line, msg));
         }

@@ -1,3 +1,5 @@
+use crate::value::ValueType;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Literal<'source> {
     None,
@@ -79,6 +81,27 @@ pub enum TokenType {
     Var,
     While,
 
+    // var types
+    F64,
+    Bool,
+    Str,
+
     // end of file
     Eof,
+}
+impl TokenType {
+    // pub fn is_value_type(&self) -> bool {
+    //     match self {
+    //         TokenType::F64 | TokenType::Bool | TokenType::Str => true,
+    //         _ => false,
+    //     }
+    // }
+    pub fn as_value_type(&self) -> Option<ValueType> {
+        match self {
+            TokenType::F64 => Some(ValueType::Num),
+            TokenType::Bool => Some(ValueType::Bool),
+            TokenType::Str => Some(ValueType::Str),
+            _ => None,
+        }
+    }
 }

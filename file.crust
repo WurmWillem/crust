@@ -1,9 +1,16 @@
-fn greet(hoi, hey, sdfds) {
-    print 5;
-}
-
-
-greet();
+//fn sum(int a, int b) {
+//    print a + b;
+//}
+////sum("hoi", 2);
+//
+//fn greet(str msg) {
+//    print msg;
+//}
+//greet(3);
+//
+//
+////greet();
+//sum(1, 2, 3, 4);
 
 //let i = 0;
 //while i < 10000 {
