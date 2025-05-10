@@ -43,14 +43,13 @@ impl VM {
         let mut vm = Self {
             heap,
             frames,
-            frame_count: 0,
+            frame_count: 1,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
         };
 
         let frame = CallFrame {
             ip: gc_obj.data.chunk.get_ptr(),
-            // TODO: this prob shouldn't be null
             slots: vm.stack.as_mut_ptr(),
             func: gc_obj,
         };
@@ -79,7 +78,7 @@ impl VM {
 
     #[inline(always)]
     unsafe fn read_byte(&mut self) -> u8 {
-        let ip = &mut self.frames[self.frame_count].assume_init_mut().ip;
+        let ip = &mut self.frames[self.frame_count - 1].assume_init_mut().ip;
         let byte = **ip;
         *ip = ip.add(1);
         byte
@@ -87,7 +86,7 @@ impl VM {
 
     #[inline(always)]
     unsafe fn read_short(&mut self) -> u16 {
-        let ip = &mut self.frames[self.frame_count].assume_init_mut().ip;
+        let ip = &mut self.frames[self.frame_count - 1].assume_init_mut().ip;
         *ip = ip.add(2);
 
         let high = *ip.offset(-2);
@@ -97,7 +96,7 @@ impl VM {
     }
 
     unsafe fn run(&mut self) -> InterpretResult {
-        let frame = self.frames[self.frame_count].as_mut_ptr();
+        let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
 
         loop {
             if DEBUG_TRACE_EXECUTION {
@@ -131,7 +130,8 @@ impl VM {
                 }};
             }
 
-            match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
+            let opcode = std::mem::transmute::<u8, OpCode>(self.read_byte());
+            match opcode {
                 OpCode::Return => {
                     return InterpretResult::Ok;
                 }
@@ -163,6 +163,32 @@ impl VM {
                 OpCode::Print => {
                     let string = self.stack_pop().display().green();
                     println!("{}", string);
+                }
+
+                OpCode::Call => {
+                    // continue;
+                    // println!("hoi");
+                    let arg_count = self.read_byte() as usize;
+                    let value = &self.stack[self.stack_top - arg_count - 1];
+
+                    if let StackValue::Obj(value) = value {
+                        if let Object::Func(func) = value {
+                            // self.frames.
+
+                            let func = func.clone();
+                            let slots = self.stack.as_mut_ptr().offset(arg_count as isize + 1);
+                            // let slots = self.stack.as_mut_ptr();
+
+                            let frame = CallFrame {
+                                ip: func.data.chunk.get_ptr(),
+                                slots,
+                                func,
+                            };
+
+                            self.frame_count += 1;
+                            unsafe { self.frames[self.frame_count - 1].as_mut_ptr().write(frame) }
+                        }
+                    }
                 }
 
                 OpCode::GetLocal => {
@@ -228,7 +254,7 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
             }
-            // frame = self.frames[self.frame_count - 1].assume_init_mut();
+            frame = self.frames[self.frame_count - 1].assume_init_mut();
             // break InterpretResult::Ok;
         }
         // InterpretResult::RuntimeError

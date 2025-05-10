@@ -1,4 +1,3 @@
-use chunk::Chunk;
 use compiler::Parser;
 use error::PRINT_SCAN_TOKENS;
 use opcode::OpCode;

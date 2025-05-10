@@ -536,7 +536,30 @@ impl<'token> Parser<'token> {
                 Ok(())
             }
             FnType::Empty => Ok(()),
+            FnType::Call => self.call(),
         }
+    }
+
+    fn call(&mut self) -> Result<(), ParseError> {
+        let arg_count = self.argument_list()?;
+        self.emit_bytes(OpCode::Call as u8, arg_count);
+        // dbg!(arg_count);
+        Ok(())
+    }
+    fn argument_list(&mut self) -> Result<u8, ParseError> {
+        let mut arg_count = 0;
+
+        while !self.check(TokenType::RightParen) {
+            self.expression()?;
+            arg_count += 1;
+
+            if !self.matches(TokenType::Comma) {
+                break;
+            }
+        }
+
+        self.consume(TokenType::RightParen, "Expected ')' after argument list")?;
+        Ok(arg_count)
     }
 
     fn emit_constant(&mut self, value: StackValue) -> Result<(), ParseError> {

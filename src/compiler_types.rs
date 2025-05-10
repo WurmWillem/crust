@@ -115,6 +115,7 @@ impl std::convert::From<u8> for Precedence {
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum FnType {
+    Empty,
     Grouping,
     Unary,
     Binary,
@@ -122,12 +123,12 @@ pub enum FnType {
     String,
     Literal,
     Variable,
-    Empty,
+    Call,
 }
 
 #[derive(Clone, Copy)]
 pub struct ParseRule {
-    pub prefix: FnType,
+    pub prefix: FnType, // stores in what way can it be used as prefix (if used at all)
     pub infix: FnType,
     pub precedence: Precedence,
 }
@@ -145,7 +146,7 @@ pub const PARSE_RULES: [ParseRule; 39] = {
 
     [
         
-        ParseRule { prefix: Grouping, infix: Empty, precedence: P::None, }, // left paren
+        ParseRule { prefix: Grouping, infix: Call, precedence: P::Call, }, // left paren
         none!(), // right paren
         none!(), // left brace
         none!(), // right brace

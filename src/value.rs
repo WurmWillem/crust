@@ -110,12 +110,10 @@ impl StackValue {
             StackValue::Null => "null".to_string(),
             StackValue::Bool(b) => b.to_string(),
             StackValue::F64(f) => f.to_string(),
-            StackValue::Obj(o) => {
-                match o {
-                    Object::Str(s) => format!("{:?}", s.data),
-                    Object::Func(f) => format!("<fn {:?}>", f.data.name),
-                }
-            }
+            StackValue::Obj(o) => match o {
+                Object::Str(s) => format!("{:?}", s.data),
+                Object::Func(f) => format!("<fn {:?}>", f.data.name),
+            },
         }
     }
 }

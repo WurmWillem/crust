@@ -1,12 +1,9 @@
-if true {
-   print "yeah"; 
-} else {
-   print "no"; 
+fn greet() {
+    print 5;
 }
 
-fn greet() {
-    print "Hello World!";
-}
+
+greet();
 
 //let i = 0;
 //while i < 10000 {
