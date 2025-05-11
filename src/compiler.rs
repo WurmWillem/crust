@@ -193,6 +193,8 @@ impl<'token> Parser<'token> {
             self.while_statement()
         } else if self.matches(TokenType::For) {
             self.for_statement()
+        } else if self.matches(TokenType::Return) {
+            self.return_statement()
         } else if self.matches(TokenType::LeftBrace) {
             self.begin_scope();
             self.block()?;
@@ -244,6 +246,17 @@ impl<'token> Parser<'token> {
         // dbg!(chunk!(self).code[offset]);
         chunk!(self).code[offset + 1] = (jump & 0xFF) as u8;
         // dbg!(chunk!(self).code[offset + 1]);
+        Ok(())
+    }
+
+    fn return_statement(&mut self) -> Result<(), ParseError> {
+        if self.matches(TokenType::Semicolon) {
+            self.emit_return();
+        } else {
+            self.expression()?;
+            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+            self.emit_byte(OpCode::Return as u8);
+        }
         Ok(())
     }
 
@@ -365,21 +378,6 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
-    fn resolve_name(&mut self, name: Token<'token>) -> Result<(u8, ValueType), ParseError> {
-        if let Some(resolved) = self.resolve_local(&name.lexeme) {
-            return Ok(resolved);
-        }
-
-        if let Some(index) = self.resolve_func(&name.lexeme) {
-            return Ok((index, ValueType::None));
-        }
-
-        let msg = format!(
-            "The variable/function with name '{}' does not exist.",
-            name.lexeme
-        );
-        Err(ParseError::new(name.line, &msg))
-    }
     fn resolve_func(&mut self, name: &str) -> Option<u8> {
         for i in 0..self.declared_funcs.len() {
             if self.declared_funcs[i].name == name {
@@ -475,8 +473,6 @@ impl<'token> Parser<'token> {
             name.lexeme
         );
         Err(ParseError::new(name.line, &msg))
-
-        // Ok(())
     }
 
     fn string(&mut self) -> Result<(), ParseError> {
