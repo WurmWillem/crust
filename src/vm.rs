@@ -31,7 +31,6 @@ pub struct VM {
 }
 impl VM {
     pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
-        // dbg!(func.name.clone());
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
         // let x = &gc_obj.data;
 
@@ -69,11 +68,11 @@ impl VM {
 
     fn stack_pop(&mut self) -> StackValue {
         self.stack_top -= 1;
-        self.stack[self.stack_top].clone()
+        self.stack[self.stack_top]
     }
 
     fn stack_peek(&mut self) -> StackValue {
-        self.stack[self.stack_top - 1].clone()
+        self.stack[self.stack_top - 1]
     }
 
     #[inline(always)]
@@ -144,7 +143,7 @@ impl VM {
                 }
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
-                    let constant = (*frame).func.data.chunk.constants[index].clone();
+                    let constant = (*frame).func.data.chunk.constants[index];
                     self.stack_push(constant);
                 }
                 OpCode::Pop => {
@@ -176,11 +175,10 @@ impl VM {
                     let arg_count = self.read_byte() as usize;
                     // dbg!(arg_count);
                     let value = &self.stack[self.stack_top - arg_count - 1];
-                    // dbg!((*value).clone());
 
                     if let StackValue::Obj(value) = value {
                         if let Object::Func(func) = value {
-                            let func = func.clone();
+                            let func = *func;
                             let slots = self.stack_top - arg_count - 1;
 
                             let frame = CallFrame {
@@ -201,8 +199,7 @@ impl VM {
 
                 OpCode::GetLocal => {
                     let slot = self.read_byte() as usize;
-                    // let value = (*(*frame).slots.wrapping_add(slot)).clone();
-                    let value = self.stack[(*frame).slots + slot].clone();
+                    let value = self.stack[(*frame).slots + slot];
                     // dbg!(slot);
                     self.stack_push(value);
                 }
@@ -216,7 +213,7 @@ impl VM {
 
                 OpCode::GetFunc => {
                     let slot = self.read_byte() as usize;
-                    let value = self.stack[slot].clone();
+                    let value = self.stack[slot];
                     self.stack_push(value);
                 }
 

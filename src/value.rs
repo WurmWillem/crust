@@ -27,7 +27,7 @@ impl fmt::Display for ValueType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum StackValue {
     Null,
     Bool(bool),

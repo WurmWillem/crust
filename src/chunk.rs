@@ -38,7 +38,7 @@ impl Chunk {
     //     }
     // }
 
-    pub fn disassemble_instruction(&mut self, offset: usize) -> usize {
+    pub fn disassemble_instruction(&self, offset: usize) -> usize {
         // dbg!(offset);
         // dbg!(self.lines[offset]);
 

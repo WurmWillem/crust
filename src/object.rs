@@ -69,10 +69,11 @@ impl Drop for Heap {
 
 // TODO: look into making fields private
 
-#[derive(Debug, Copy)]
+#[derive(Debug)]
 pub struct Gc<T> {
-    pub ptr: NonNull<GcData<T>>,
+    ptr: NonNull<GcData<T>>,
 }
+impl<T> Copy for Gc<T> {}
 impl<T> Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc { ptr: self.ptr }
@@ -85,11 +86,11 @@ impl<T> ops::Deref for Gc<T> {
         unsafe { self.ptr.as_ref() }
     }
 }
-impl<T> ops::DerefMut for Gc<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { self.ptr.as_mut() }
-    }
-}
+// impl<T> ops::DerefMut for Gc<T> {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         unsafe { self.ptr.as_mut() }
+//     }
+// }
 
 #[derive(Debug)]
 pub struct GcData<T> {
@@ -101,7 +102,7 @@ pub struct GcData<T> {
 type RefStr = Gc<String>;
 type RefFunc = Gc<ObjFunc>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Object {
     Str(RefStr),
     Func(RefFunc),
