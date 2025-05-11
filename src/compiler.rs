@@ -374,12 +374,16 @@ impl<'token> Parser<'token> {
             return Ok((index, ValueType::None));
         }
 
-        let msg = format!("The variable/function with name '{}' does not exist.", name.lexeme);
+        let msg = format!(
+            "The variable/function with name '{}' does not exist.",
+            name.lexeme
+        );
         Err(ParseError::new(name.line, &msg))
     }
     fn resolve_func(&mut self, name: &str) -> Option<u8> {
         for i in 0..self.declared_funcs.len() {
             if self.declared_funcs[i].name == name {
+                // dbg!(name);
                 // dbg!(i);
                 return Some(i as u8 + 1);
             }
@@ -449,16 +453,30 @@ impl<'token> Parser<'token> {
 
     fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
-        let (arg, kind) = self.resolve_name(name)?;
 
-        if can_assign && self.matches(TokenType::Equal) {
-            self.expression()?;
-            self.emit_bytes(OpCode::SetLocal as u8, arg);
-        } else {
-            self.emit_bytes(OpCode::GetLocal as u8, arg);
-            self.last_operand_type = kind;
+        if let Some((arg, kind)) = self.resolve_local(&name.lexeme) {
+            if can_assign && self.matches(TokenType::Equal) {
+                self.expression()?;
+                self.emit_bytes(OpCode::SetLocal as u8, arg);
+            } else {
+                self.emit_bytes(OpCode::GetLocal as u8, arg);
+                self.last_operand_type = kind;
+            }
+            return Ok(());
         }
-        Ok(())
+
+        if let Some(arg) = self.resolve_func(&name.lexeme) {
+            self.emit_bytes(OpCode::GetFunc as u8, arg);
+            return Ok(());
+        }
+
+        let msg = format!(
+            "The variable/function with name '{}' does not exist.",
+            name.lexeme
+        );
+        Err(ParseError::new(name.line, &msg))
+
+        // Ok(())
     }
 
     fn string(&mut self) -> Result<(), ParseError> {

@@ -13,7 +13,7 @@ pub enum InterpretResult {
 }
 
 const STACK_SIZE: usize = 256;
-const FRAMES_SIZE: usize = 32;
+const FRAMES_SIZE: usize = 64;
 
 #[derive(Debug)]
 struct CallFrame {
@@ -181,11 +181,7 @@ impl VM {
                     if let StackValue::Obj(value) = value {
                         if let Object::Func(func) = value {
                             let func = func.clone();
-                            // 0 to 0, 1-4 to 2
-                            // let slots = self.stack.as_mut_ptr().offset(arg_count as isize - 1);
-                            // let slots = self.stack.as_mut_ptr().offset(2);
                             let slots = self.stack_top - arg_count - 1;
-                            // dbg!(slots.read());
 
                             let frame = CallFrame {
                                 ip: func.data.chunk.get_ptr(),
@@ -195,7 +191,11 @@ impl VM {
 
                             unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
                             self.frame_count += 1;
+                        } else {
+                            unreachable!()
                         }
+                    } else {
+                        unreachable!()
                     }
                 }
 
@@ -203,6 +203,7 @@ impl VM {
                     let slot = self.read_byte() as usize;
                     // let value = (*(*frame).slots.wrapping_add(slot)).clone();
                     let value = self.stack[(*frame).slots + slot].clone();
+                    // dbg!(slot);
                     self.stack_push(value);
                 }
                 OpCode::SetLocal => {
@@ -211,6 +212,12 @@ impl VM {
                     self.stack[(*frame).slots + slot] = self.stack_peek();
                     // *value = self.stack_peek();
                     // self.stack[slot as usize] = self.stack_peek();
+                }
+
+                OpCode::GetFunc => {
+                    let slot = self.read_byte() as usize;
+                    let value = self.stack[slot].clone();
+                    self.stack_push(value);
                 }
 
                 OpCode::True => {
