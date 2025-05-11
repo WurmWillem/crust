@@ -61,15 +61,15 @@ impl<'token> Parser<'token> {
         Some((func, parser.heap))
     }
     fn end_compiler(&mut self) -> ObjFunc {
-        self.emit_byte(OpCode::Return as u8);
+        self.emit_return();
         self.comps.pop().func
         // self.comps.compilers[self.comps.current].function.take().unwrap()
     }
 
-    // fn end_compiler(&mut self) -> ObjFunc {
-    //     self.emit_byte(OpCode::Return as u8);
-    //     self.compiler.function
-    // }
+    fn emit_return(&mut self) {
+        self.emit_byte(OpCode::Null as u8);
+        self.emit_byte(OpCode::Return as u8);
+    }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
         if self.matches(TokenType::Var) {
@@ -142,7 +142,7 @@ impl<'token> Parser<'token> {
 
         self.block()?;
 
-        self.emit_byte(OpCode::Return as u8);
+        self.emit_return();
 
         let func = self.end_compiler();
         let (func_object, _) = self.heap.alloc(func, Object::Func);

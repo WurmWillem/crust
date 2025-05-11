@@ -19,7 +19,7 @@ const FRAMES_SIZE: usize = 32;
 struct CallFrame {
     func: Gc<ObjFunc>,
     ip: *const u8,
-    slots: *mut StackValue,
+    slots: usize,
 }
 
 pub struct VM {
@@ -50,7 +50,7 @@ impl VM {
 
         let frame = CallFrame {
             ip: gc_obj.data.chunk.get_ptr(),
-            slots: vm.stack.as_mut_ptr(),
+            slots: 0,
             func: gc_obj,
         };
 
@@ -108,12 +108,8 @@ impl VM {
                 // todo!()
 
                 let ip = (*frame).ip;
-                // dbg!(&(*frame).func.data.chunk.code);
                 let offset = (*frame).func.data.chunk.code.as_ptr();
                 let debug_offset = ip.offset_from(offset) as usize;
-                // dbg!(offset);
-                // dbg!(ip);
-                // dbg!(debug_offset);
 
                 (*frame)
                     .func
@@ -133,7 +129,18 @@ impl VM {
             let opcode = std::mem::transmute::<u8, OpCode>(self.read_byte());
             match opcode {
                 OpCode::Return => {
-                    return InterpretResult::Ok;
+                    let result = self.stack_pop();
+
+                    self.frame_count -= 1;
+                    if self.frame_count == 0 {
+                        self.stack_pop();
+                        return InterpretResult::Ok;
+                    }
+
+                    self.stack_top = (*frame).slots;
+                    self.stack_push(result);
+                    // frame = self.frames[self.frame_count - 1].assume_init_mut();
+                    // self.stack_top
                 }
                 OpCode::Constant => {
                     let index = self.read_byte() as usize;
@@ -173,12 +180,12 @@ impl VM {
 
                     if let StackValue::Obj(value) = value {
                         if let Object::Func(func) = value {
-
                             let func = func.clone();
                             // 0 to 0, 1-4 to 2
                             // let slots = self.stack.as_mut_ptr().offset(arg_count as isize - 1);
-                            let slots = self.stack.as_mut_ptr().offset(2);
-                            dbg!(slots.read());
+                            // let slots = self.stack.as_mut_ptr().offset(2);
+                            let slots = self.stack_top - arg_count - 1;
+                            // dbg!(slots.read());
 
                             let frame = CallFrame {
                                 ip: func.data.chunk.get_ptr(),
@@ -194,13 +201,15 @@ impl VM {
 
                 OpCode::GetLocal => {
                     let slot = self.read_byte() as usize;
-                    let value = (*(*frame).slots.wrapping_add(slot)).clone();
+                    // let value = (*(*frame).slots.wrapping_add(slot)).clone();
+                    let value = self.stack[(*frame).slots + slot].clone();
                     self.stack_push(value);
                 }
                 OpCode::SetLocal => {
                     let slot = self.read_byte() as usize;
-                    let value = (*frame).slots.wrapping_add(slot);
-                    *value = self.stack_peek();
+                    // let value = (*frame).slots.wrapping_add(slot);
+                    self.stack[(*frame).slots + slot] = self.stack_peek();
+                    // *value = self.stack_peek();
                     // self.stack[slot as usize] = self.stack_peek();
                 }
 
