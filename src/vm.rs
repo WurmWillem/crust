@@ -16,6 +16,7 @@ const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 64;
 
 #[derive(Debug)]
+#[repr(C)]
 struct CallFrame {
     func: Gc<ObjFunc>,
     ip: *const u8,
@@ -92,8 +93,8 @@ impl VM {
     }
 
     #[inline(always)]
-    unsafe fn read_short(&mut self) -> u16 {
-        let ip = &mut self.frames[self.frame_count - 1].assume_init_mut().ip;
+    unsafe fn read_short(&mut self, frame: *mut CallFrame) -> u16 {
+        let ip = &mut (*frame).ip;
         *ip = ip.add(2);
 
         let high = *ip.offset(-2);
@@ -160,17 +161,17 @@ impl VM {
                 }
 
                 OpCode::Jump => {
-                    let offset = self.read_short() as usize;
+                    let offset = self.read_short(frame) as usize;
                     (*frame).ip = (*frame).ip.add(offset);
                 }
                 OpCode::JumpIfFalse => {
-                    let offset = self.read_short() as usize;
+                    let offset = self.read_short(frame) as usize;
                     if let StackValue::Bool(false) = self.stack_peek() {
                         (*frame).ip = (*frame).ip.add(offset);
                     }
                 }
                 OpCode::Loop => {
-                    let offset = self.read_short() as usize;
+                    let offset = self.read_short(frame) as usize;
                     (*frame).ip = (*frame).ip.sub(offset);
                 }
 
