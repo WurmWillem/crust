@@ -108,22 +108,7 @@ impl VM {
 
         loop {
             if DEBUG_TRACE_EXECUTION {
-                print!("          ");
-                for stack_index in 0..self.stack_top {
-                    print!("[ {} ]", self.stack[stack_index].display())
-                }
-                println!();
-                // todo!()
-
-                let ip = (*frame).ip;
-                let offset = (*frame).func.data.chunk.code.as_ptr();
-                let debug_offset = ip.offset_from(offset) as usize;
-
-                (*frame)
-                    .func
-                    .data
-                    .chunk
-                    .disassemble_instruction(debug_offset);
+                self.debug_trace(frame)
             }
 
             macro_rules! binary_op {
@@ -184,9 +169,8 @@ impl VM {
                     let arg_count = self.read_byte(frame) as usize;
                     // dbg!(arg_count);
                     let value = &self.stack[self.stack_top - arg_count - 1];
-
-                    if let StackValue::Obj(value) = value {
-                        if let Object::Func(func) = value {
+                    match value {
+                        StackValue::Obj(Object::Func(func)) => {
                             let func = *func;
                             let slots = self.stack_top - arg_count - 1;
 
@@ -198,11 +182,8 @@ impl VM {
 
                             unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
                             self.frame_count += 1;
-                        } else {
-                            unreachable!()
                         }
-                    } else {
-                        unreachable!()
+                        _ => unreachable!()
                     }
                 }
 
@@ -281,6 +262,25 @@ impl VM {
             // break InterpretResult::Ok;
         }
         // InterpretResult::RuntimeError
+    }
+
+    unsafe fn debug_trace(&self, frame: *mut CallFrame) {
+        print!("          ");
+        for stack_index in 0..self.stack_top {
+            print!("[ {} ]", self.stack[stack_index].display())
+        }
+        println!();
+        // todo!()
+
+        let ip = (*frame).ip;
+        let offset = (*frame).func.data.chunk.code.as_ptr();
+        let debug_offset = ip.offset_from(offset) as usize;
+
+        (*frame)
+            .func
+            .data
+            .chunk
+            .disassemble_instruction(debug_offset);
     }
 
     fn concatenate_strings(&mut self, lhs: Object, rhs: Object) -> StackValue {
