@@ -1,12 +1,16 @@
 fn sum(int a, int b) {
+    sum(1, 2);
     print a + b;
 }
-//print -12;
-//print sum(1, 4);
-//
-fn greet(str msg) {
-    print msg;
+
+fn g() {
+    print "hoi";
 }
+
+sum(1, 2);
+sum(1, 2);
+sum(1, 2);
+//
 //greet("hoi");
 //sum(1, 2);
 //

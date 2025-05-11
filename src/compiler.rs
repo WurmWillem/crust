@@ -12,15 +12,23 @@ use crate::{
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,
-    // chunk: Chunk,
     last_operand_type: ValueType,
     heap: Heap,
     comps: CompilerStack<'token>,
+    declared_funcs: Vec<DeclaredFunc>,
 }
 macro_rules! chunk {
     ($self: expr) => {
         $self.comps.compilers[$self.comps.current].func.chunk
     };
+}
+struct DeclaredFunc {
+    name: String,
+}
+impl DeclaredFunc {
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
 }
 impl<'token> Parser<'token> {
     pub fn compile(tokens: Vec<Token>) -> Option<(ObjFunc, Heap)> {
@@ -31,6 +39,7 @@ impl<'token> Parser<'token> {
             heap: Heap::new(),
             last_operand_type: ValueType::None,
             comps: CompilerStack::new(),
+            declared_funcs: Vec::new(),
         };
 
         let mut had_error = false;
@@ -60,10 +69,10 @@ impl<'token> Parser<'token> {
         // TODO: maybe fix so it won't clone anymore
         Some((func, parser.heap))
     }
+
     fn end_compiler(&mut self) -> ObjFunc {
         self.emit_return();
         self.comps.pop().func
-        // self.comps.compilers[self.comps.current].function.take().unwrap()
     }
 
     fn emit_return(&mut self) {
@@ -85,9 +94,14 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
-        self.function(name.lexeme.to_string())?;
+        // dbg!(self.last_operand_type);
+        self.declared_funcs
+            .push(DeclaredFunc::new(name.lexeme.to_string()));
 
-        self.add_local(name, self.last_operand_type)?;
+        // self.add_local(name, self.last_operand_type)?;
+        self.function(name.lexeme.to_string())?;
+        // dbg!(self.comps.current);
+
         Ok(())
     }
     fn function(&mut self, name: String) -> Result<(), ParseError> {
@@ -351,16 +365,35 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
-    fn resolve_local(&mut self, name: Token<'token>) -> Result<(u8, ValueType), ParseError> {
-        //TODO: shadowing now doesn't remove the old var
-        for i in (0..self.comps.current().local_count).rev() {
-            // dbg!(self.compiler.locals[i]);
-            if self.comps.current().locals[i].name.lexeme == name.lexeme {
-                return Ok((i as u8, self.comps.current().locals[i].kind));
+    fn resolve_name(&mut self, name: Token<'token>) -> Result<(u8, ValueType), ParseError> {
+        if let Some(resolved) = self.resolve_local(&name.lexeme) {
+            return Ok(resolved);
+        }
+
+        if let Some(index) = self.resolve_func(&name.lexeme) {
+            return Ok((index, ValueType::None));
+        }
+
+        let msg = format!("The variable/function with name '{}' does not exist.", name.lexeme);
+        Err(ParseError::new(name.line, &msg))
+    }
+    fn resolve_func(&mut self, name: &str) -> Option<u8> {
+        for i in 0..self.declared_funcs.len() {
+            if self.declared_funcs[i].name == name {
+                // dbg!(i);
+                return Some(i as u8 + 1);
             }
         }
-        let msg = format!("The variable with name '{}' does not exist.", name.lexeme);
-        Err(ParseError::new(name.line, &msg))
+        None
+    }
+    fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
+        // TODO: shadowing doesn't remove the old var as of now
+        for i in (0..self.comps.current().local_count).rev() {
+            if self.comps.current().locals[i].name.lexeme == name {
+                return Some((i as u8, self.comps.current().locals[i].kind));
+            }
+        }
+        None
     }
 
     fn block(&mut self) -> Result<(), ParseError> {
@@ -416,7 +449,7 @@ impl<'token> Parser<'token> {
 
     fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
-        let (arg, kind) = self.resolve_local(name)?;
+        let (arg, kind) = self.resolve_name(name)?;
 
         if can_assign && self.matches(TokenType::Equal) {
             self.expression()?;
