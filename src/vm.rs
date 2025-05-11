@@ -84,10 +84,10 @@ impl VM {
     }
 
     #[inline(always)]
-    unsafe fn read_byte(&mut self) -> u8 {
-        let ip = &mut self.frames[self.frame_count - 1].assume_init_mut().ip;
-        let byte = **ip;
-        *ip = ip.add(1);
+    unsafe fn read_byte(&mut self, frame: *mut CallFrame) -> u8 {
+        // let mut ip = frame.ip;
+        let byte = *(*frame).ip;
+        (*frame).ip = (*frame).ip.add(1);
         byte
     }
 
@@ -133,7 +133,7 @@ impl VM {
                 }};
             }
 
-            let opcode = std::mem::transmute::<u8, OpCode>(self.read_byte());
+            let opcode = std::mem::transmute::<u8, OpCode>(self.read_byte(frame));
             match opcode {
                 OpCode::Return => {
                     let result = self.stack_pop();
@@ -150,7 +150,7 @@ impl VM {
                     // self.stack_top
                 }
                 OpCode::Constant => {
-                    let index = self.read_byte() as usize;
+                    let index = self.read_byte(frame) as usize;
                     let constant = (*frame).func.data.chunk.constants[index];
                     self.stack_push(constant);
                 }
@@ -180,7 +180,7 @@ impl VM {
                 }
 
                 OpCode::Call => {
-                    let arg_count = self.read_byte() as usize;
+                    let arg_count = self.read_byte(frame) as usize;
                     // dbg!(arg_count);
                     let value = &self.stack[self.stack_top - arg_count - 1];
 
@@ -206,13 +206,13 @@ impl VM {
                 }
 
                 OpCode::GetLocal => {
-                    let slot = self.read_byte() as usize;
+                    let slot = self.read_byte(frame) as usize;
                     let value = self.stack[(*frame).slots + slot];
                     // dbg!(slot);
                     self.stack_push(value);
                 }
                 OpCode::SetLocal => {
-                    let slot = self.read_byte() as usize;
+                    let slot = self.read_byte(frame) as usize;
                     // let value = (*frame).slots.wrapping_add(slot);
                     self.stack[(*frame).slots + slot] = self.stack_peek();
                     // *value = self.stack_peek();
@@ -220,7 +220,7 @@ impl VM {
                 }
 
                 OpCode::GetFunc => {
-                    let slot = self.read_byte() as usize;
+                    let slot = self.read_byte(frame) as usize;
                     let value = self.stack[slot];
                     self.stack_push(value);
                 }
