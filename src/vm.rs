@@ -61,18 +61,26 @@ impl VM {
         // InterpretResult::Ok
     }
 
+    #[inline(always)]
     fn stack_push(&mut self, value: StackValue) {
-        self.stack[self.stack_top] = value;
-        self.stack_top += 1;
+        unsafe {
+            let top = self.stack.as_mut_ptr().add(self.stack_top);
+            top.write(value);
+            self.stack_top += 1;
+        }
     }
 
+    #[inline(always)]
     fn stack_pop(&mut self) -> StackValue {
-        self.stack_top -= 1;
-        self.stack[self.stack_top]
+        unsafe {
+            self.stack_top -= 1;
+            self.stack.as_ptr().add(self.stack_top).read()
+        }
     }
 
+    #[inline(always)]
     fn stack_peek(&mut self) -> StackValue {
-        self.stack[self.stack_top - 1]
+        unsafe { self.stack.as_ptr().add(self.stack_top - 1).read() }
     }
 
     #[inline(always)]
