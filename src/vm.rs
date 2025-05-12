@@ -65,9 +65,9 @@ impl VM {
     #[inline(always)]
     fn stack_push(&mut self, value: StackValue) {
         unsafe {
-            let top = self.stack.as_mut_ptr().add(self.stack_top);
-            top.write(value);
-            self.stack_top += 1;
+            let base = self.stack.as_mut_ptr();
+            base.add(self.stack_top).write(value);
+            self.stack_top = self.stack_top.wrapping_add(1);
         }
     }
 
