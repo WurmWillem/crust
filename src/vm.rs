@@ -138,7 +138,6 @@ impl VM {
                     self.stack_top = (*frame).slots;
                     self.stack_push(result);
                     // frame = self.frames[self.frame_count - 1].assume_init_mut();
-                    // self.stack_top
                 }
                 OpCode::Constant => {
                     let index = self.read_byte(frame) as usize;
@@ -194,7 +193,6 @@ impl VM {
                 OpCode::GetLocal => {
                     let slot = self.read_byte(frame) as usize;
                     let value = self.stack[(*frame).slots + slot];
-                    // dbg!(slot);
                     self.stack_push(value);
                 }
                 OpCode::SetLocal => {

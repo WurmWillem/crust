@@ -97,6 +97,7 @@ impl<'token> Parser<'token> {
         // dbg!(self.last_operand_type);
         self.declared_funcs
             .push(DeclaredFunc::new(name.lexeme.to_string()));
+        // self.add_local(name.clone(), ValueType::None)?;
 
         // self.add_local(name, self.last_operand_type)?;
         self.function(name.lexeme.to_string())?;
@@ -392,7 +393,8 @@ impl<'token> Parser<'token> {
         // TODO: shadowing doesn't remove the old var as of now
         for i in (0..self.comps.current().local_count).rev() {
             if self.comps.current().locals[i].name.lexeme == name {
-                return Some((i as u8, self.comps.current().locals[i].kind));
+                let index = i as u8 + self.declared_funcs.len() as u8;
+                return Some((index, self.comps.current().locals[i].kind));
             }
         }
         None
@@ -465,6 +467,7 @@ impl<'token> Parser<'token> {
 
         if let Some(arg) = self.resolve_func(&name.lexeme) {
             self.emit_bytes(OpCode::GetFunc as u8, arg);
+            // self.emit_byte(OpCode::Pop as u8);
             return Ok(());
         }
 
