@@ -14,7 +14,7 @@ pub enum InterpretResult {
 
 const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 64;
-const FUNC_SIZE: usize = 64;
+pub const MAX_FUNC_AMT: usize = 64;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -30,10 +30,14 @@ pub struct VM {
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
     heap: Heap,
-    funcs: Vec<StackValue>,
+    funcs: [StackValue; MAX_FUNC_AMT],
 }
 impl VM {
-    pub fn interpret(func: ObjFunc, mut heap: Heap, funcs: Vec<StackValue>) -> InterpretResult {
+    pub fn interpret(
+        func: ObjFunc,
+        mut heap: Heap,
+        funcs: [StackValue; MAX_FUNC_AMT],
+    ) -> InterpretResult {
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
         // let x = &gc_obj.data;
 

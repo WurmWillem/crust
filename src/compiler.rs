@@ -7,32 +7,34 @@ use crate::{
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
-    value::{StackValue, ValueType},
+    value::{StackValue, ValueType}, vm::MAX_FUNC_AMT,
 };
+macro_rules! chunk {
+    ($self: expr) => {
+        $self.comps.compilers[$self.comps.current].func.chunk
+    };
+}
+#[derive(Debug, Clone, Copy)]
+pub struct DeclaredFunc<'a> {
+    name: &'a str,
+    value: Option<StackValue>,
+}
+impl<'a> DeclaredFunc<'a> {
+    pub fn new(name: &'a str, value: Option<StackValue>) -> Self {
+        Self { name, value }
+    }
+}
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,
     last_operand_type: ValueType,
     heap: Heap,
     comps: CompilerStack<'token>,
-    declared_funcs: Vec<DeclaredFunc>,
-}
-macro_rules! chunk {
-    ($self: expr) => {
-        $self.comps.compilers[$self.comps.current].func.chunk
-    };
-}
-struct DeclaredFunc {
-    name: String,
-    value: Option<StackValue>,
-}
-impl DeclaredFunc {
-    pub fn new(name: String, value: Option<StackValue>) -> Self {
-        Self { name, value }
-    }
+    declared_funcs: [DeclaredFunc<'token>; MAX_FUNC_AMT],
+    declared_funcs_top: usize,
 }
 impl<'token> Parser<'token> {
-    pub fn compile(tokens: Vec<Token>) -> Option<(ObjFunc, Heap, Vec<StackValue>)> {
+    pub fn compile(tokens: Vec<Token<'token>>) -> Option<(ObjFunc, Heap, [StackValue; MAX_FUNC_AMT])> {
         let mut parser = Parser {
             tokens,
             // chunk,
@@ -40,7 +42,8 @@ impl<'token> Parser<'token> {
             heap: Heap::new(),
             last_operand_type: ValueType::None,
             comps: CompilerStack::new(),
-            declared_funcs: Vec::new(),
+            declared_funcs: [DeclaredFunc::new("", None); MAX_FUNC_AMT],
+            declared_funcs_top: 0,
         };
 
         let mut had_error = false;
@@ -66,7 +69,7 @@ impl<'token> Parser<'token> {
         // let func = parser.comps.compilers[parser.comps.current].function.take().unwrap();
         let func = parser.end_compiler();
         
-        let funcs: Vec<StackValue> = parser.declared_funcs.iter().map(|func| func.value.unwrap()).collect();
+        let funcs: [StackValue; MAX_FUNC_AMT] = parser.declared_funcs.map(|func| func.value.unwrap_or(StackValue::Null));
         // dbg!(&func);
 
         // TODO: maybe fix so it won't clone anymore
@@ -97,13 +100,8 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
-        // dbg!(self.last_operand_type);
-        // self.add_local(name.clone(), ValueType::None)?;
-        self.declared_funcs.push(DeclaredFunc::new(name.lexeme.to_string(), None));
-
-        // self.add_local(name, self.last_operand_type)?;
+        self.declared_funcs[self.declared_funcs_top].name = name.lexeme;
         self.function(name.lexeme.to_string())?;
-        // dbg!(self.comps.current);
 
         Ok(())
     }
@@ -165,8 +163,8 @@ impl<'token> Parser<'token> {
         let (func_object, _) = self.heap.alloc(func, Object::Func);
 
         let value = StackValue::Obj(func_object);
-        let index = self.declared_funcs.len() - 1;
-        self.declared_funcs[index].value = Some(value);
+        self.declared_funcs[self.declared_funcs_top].value = Some(value);
+        self.declared_funcs_top += 1;
         // self.declared_funcs.push(DeclaredFunc::new(name, value));
         // self.emit_bytes(OpCode::Constant as u8, func_constant);
 
