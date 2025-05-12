@@ -1,8 +1,5 @@
 use crate::{
-    object::ObjFunc,
-    token::{Literal, Token, TokenType},
-    value::{StackValue, ValueType},
-    vm::MAX_FUNC_AMT,
+    error::ParseError, object::ObjFunc, token::{Literal, Token, TokenType}, value::{StackValue, ValueType}, vm::MAX_FUNC_AMT
 };
 
 pub struct DeclaredFuncStack<'a> {
@@ -16,9 +13,11 @@ impl<'a> DeclaredFuncStack<'a> {
             top: 0,
         }
     }
+
     pub fn edit_name(&mut self, name: &'a str) {
         self.funcs[self.top].name = name;
     }
+
     pub fn edit_value_and_increment_top(&mut self, value: StackValue) {
         self.funcs[self.top].value = Some(value);
         self.top += 1;
@@ -40,12 +39,12 @@ impl<'a> DeclaredFuncStack<'a> {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct DeclaredFunc<'a> {
+struct DeclaredFunc<'a> {
     name: &'a str,
     value: Option<StackValue>,
 }
 impl<'a> DeclaredFunc<'a> {
-    pub fn new(name: &'a str, value: Option<StackValue>) -> Self {
+    fn new(name: &'a str, value: Option<StackValue>) -> Self {
         Self { name, value }
     }
 }
@@ -64,8 +63,8 @@ impl<'a> Local<'a> {
 }
 
 pub struct CompilerStack<'a> {
-    pub compilers: Vec<Compiler<'a>>,
-    pub current: usize,
+    compilers: Vec<Compiler<'a>>,
+    current: usize,
 }
 impl<'a> CompilerStack<'a> {
     // create a new stack with a root compiler (no parent)
@@ -77,6 +76,69 @@ impl<'a> CompilerStack<'a> {
         }
     }
 
+    pub fn increment_scope_depth(&mut self) {
+       self.compilers[self.current].scope_depth += 1; 
+    }
+
+    // pub fn increment_local_count(&mut self) {
+    //    self.compilers[self.current].local_count += 1; 
+    // }
+
+    pub fn decrement_scope_depth(&mut self) {
+       self.compilers[self.current].scope_depth -= 1; 
+    }
+
+    pub fn decrement_local_count(&mut self) {
+       self.compilers[self.current].local_count -= 1; 
+    }
+
+    pub fn add_constant(&mut self, value: StackValue) -> usize {
+        self.compilers[self.current].func.chunk.add_constant(value)
+    }
+
+    pub fn write_byte_to_chunk(&mut self, byte: u8, line: u32) {
+        self.compilers[self.current].func.chunk.write_byte_to_chunk(byte, line);
+    }
+
+    pub fn increment_arity(&mut self) {
+       self.compilers[self.current].func.increment_arity(); 
+    }
+
+    pub fn get_code_len(&self) -> usize {
+        self.compilers[self.current]
+            .func
+            .chunk
+            .code
+            .len()
+    }
+
+    pub fn add_local(&mut self, name: Token<'a>, kind: ValueType) -> Result<(), ParseError> {
+        if self.current().local_count == MAX_LOCAL_AMT {
+            let msg = "Too many local variables in function.";
+            return Err(ParseError::new(name.line, msg));
+        }
+
+        let local = Local::new(name, self.current().scope_depth, kind);
+
+        let local_count = self.current().local_count;
+        self.compilers[self.current].locals[local_count] = local;
+        self.compilers[self.current].local_count += 1;
+        Ok(())
+    }
+
+    pub fn patch_jump(&mut self, offset: usize) -> Result<(), ParseError> {
+        let jump = self.get_code_len() - offset - 2;
+
+        if jump > u16::MAX as usize {
+            let msg = "Too much code to jump over.";
+            return Err(ParseError::new(0, msg));
+        }
+
+        self.compilers[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        self.compilers[self.current].func.chunk.code[offset + 1]  = (jump & 0xFF) as u8;
+        // dbg!(chunk!(self).code[offset + 1]);
+        Ok(())
+    }
     // push a new compiler onto the stack, with the current compiler as its parent
     pub fn push(&mut self, func_name: String) {
         // dbg!(534345);
@@ -94,7 +156,7 @@ impl<'a> CompilerStack<'a> {
         c
     }
 
-    // get the current compiler (immutable)
+    // TODO: make this private
     pub fn current(&self) -> &Compiler {
         &self.compilers[self.current]
     }
@@ -104,7 +166,7 @@ impl<'a> CompilerStack<'a> {
 pub const MAX_LOCAL_AMT: usize = u8::MAX as usize;
 pub struct Compiler<'a> {
     // TODO: maybe enclosing is unessecary actually
-    pub enclosing: Option<usize>,
+    enclosing: Option<usize>,
     pub locals: [Local<'a>; MAX_LOCAL_AMT],
     pub local_count: usize,
     pub scope_depth: usize,

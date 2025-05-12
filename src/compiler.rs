@@ -10,11 +10,11 @@ use crate::{
     value::{StackValue, ValueType},
     vm::MAX_FUNC_AMT,
 };
-macro_rules! chunk {
-    ($self: expr) => {
-        $self.comps.compilers[$self.comps.current].func.chunk
-    };
-}
+// macro_rules! chunk {
+//     ($self: expr) => {
+//         $self.comps.compilers[$self.comps.current].func.chunk
+//     };
+// }
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,
@@ -110,10 +110,8 @@ impl<'token> Parser<'token> {
             self.consume(TokenType::Identifier, "Expected variable name.")?;
             let name = self.previous();
 
-            self.add_local(name, var_type)?;
-            self.comps.compilers[self.comps.current]
-                .func
-                .increment_arity();
+            self.comps.add_local(name, var_type)?;
+            self.comps.increment_arity();
 
             while self.matches(TokenType::Comma) {
                 let var_type = match self.advance().kind.as_value_type() {
@@ -129,10 +127,8 @@ impl<'token> Parser<'token> {
                 self.consume(TokenType::Identifier, "Expected variable name.")?;
                 let name = self.previous();
 
-                self.add_local(name, var_type)?;
-                self.comps.compilers[self.comps.current]
-                    .func
-                    .increment_arity();
+                self.comps.add_local(name, var_type)?;
+                self.comps.increment_arity();
             }
         }
 
@@ -160,10 +156,10 @@ impl<'token> Parser<'token> {
 
         if self.matches(TokenType::Equal) {
             self.expression()?;
-            self.add_local(name, self.last_operand_type)?;
+            self.comps.add_local(name, self.last_operand_type)?;
         } else {
             self.emit_byte(OpCode::Null as u8);
-            self.add_local(name, ValueType::Null)?;
+            self.comps.add_local(name, ValueType::Null)?;
         }
 
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
@@ -191,18 +187,11 @@ impl<'token> Parser<'token> {
             self.expression_statement()
         }
     }
-    fn get_code_len(&self) -> usize {
-        self.comps.compilers[self.comps.current]
-            .func
-            .chunk
-            .code
-            .len()
-    }
 
     fn emit_loop(&mut self, loop_start: usize) -> Result<(), ParseError> {
         self.emit_byte(OpCode::Loop as u8);
 
-        let offset = self.get_code_len() - loop_start + 2;
+        let offset = self.comps.get_code_len() - loop_start + 2;
         if offset > u8::MAX as usize {
             let msg = "Loop body too large.";
             return Err(ParseError::new(0, msg));
@@ -218,22 +207,7 @@ impl<'token> Parser<'token> {
         // placeholders
         self.emit_byte(0xFF);
         self.emit_byte(0xFF);
-        self.get_code_len() - 2
-    }
-
-    fn patch_jump(&mut self, offset: usize) -> Result<(), ParseError> {
-        let jump = self.get_code_len() - offset - 2;
-
-        if jump > u16::MAX as usize {
-            let msg = "Too much code to jump over.";
-            return Err(ParseError::new(0, msg));
-        }
-
-        chunk!(self).code[offset] = ((jump >> 8) & 0xFF) as u8;
-        // dbg!(chunk!(self).code[offset]);
-        chunk!(self).code[offset + 1] = (jump & 0xFF) as u8;
-        // dbg!(chunk!(self).code[offset + 1]);
-        Ok(())
+        self.comps.get_code_len() - 2
     }
 
     fn return_statement(&mut self) -> Result<(), ParseError> {
@@ -258,7 +232,7 @@ impl<'token> Parser<'token> {
         } else {
             self.expression_statement()?;
         }
-        let mut loop_start = self.get_code_len();
+        let mut loop_start = self.comps.get_code_len();
 
         let mut exit_jump = None;
         if !self.matches(TokenType::Semicolon) {
@@ -271,7 +245,7 @@ impl<'token> Parser<'token> {
 
         if !self.matches(TokenType::RightParen) {
             let body_jump = self.emit_jump(OpCode::Jump);
-            let increment_start = self.get_code_len();
+            let increment_start = self.comps.get_code_len();
 
             self.expression()?;
             self.emit_byte(OpCode::Pop as u8);
@@ -279,14 +253,14 @@ impl<'token> Parser<'token> {
 
             self.emit_loop(loop_start)?;
             loop_start = increment_start;
-            self.patch_jump(body_jump)?;
+            self.comps.patch_jump(body_jump)?;
         }
 
         self.statement()?;
         self.emit_loop(loop_start)?;
 
         if let Some(exit_jump) = exit_jump {
-            self.patch_jump(exit_jump)?;
+            self.comps.patch_jump(exit_jump)?;
             self.emit_byte(OpCode::Pop as u8);
         }
 
@@ -295,7 +269,7 @@ impl<'token> Parser<'token> {
     }
 
     fn while_statement(&mut self) -> Result<(), ParseError> {
-        let loop_start = self.get_code_len();
+        let loop_start = self.comps.get_code_len();
         self.expression()?;
 
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse);
@@ -303,7 +277,7 @@ impl<'token> Parser<'token> {
         self.statement()?;
         self.emit_loop(loop_start)?;
 
-        self.patch_jump(exit_jump)?;
+        self.comps.patch_jump(exit_jump)?;
         self.emit_byte(OpCode::Pop as u8);
         Ok(())
     }
@@ -317,13 +291,13 @@ impl<'token> Parser<'token> {
 
         let else_jump = self.emit_jump(OpCode::Jump);
 
-        self.patch_jump(then_jump)?;
+        self.comps.patch_jump(then_jump)?;
         self.emit_byte(OpCode::Pop as u8);
 
         if self.matches(TokenType::Else) {
             self.statement()?;
         }
-        self.patch_jump(else_jump)
+        self.comps.patch_jump(else_jump)
     }
 
     fn print_statement(&mut self) -> Result<(), ParseError> {
@@ -351,20 +325,6 @@ impl<'token> Parser<'token> {
         }
     }
 
-    fn add_local(&mut self, name: Token<'token>, kind: ValueType) -> Result<(), ParseError> {
-        if self.comps.current().local_count == MAX_LOCAL_AMT {
-            let msg = "Too many local variables in function.";
-            return Err(ParseError::new(name.line, msg));
-        }
-
-        let local = Local::new(name, self.comps.current().scope_depth, kind);
-
-        let local_count = self.comps.current().local_count;
-        self.comps.compilers[self.comps.current].locals[local_count] = local;
-        self.comps.compilers[self.comps.current].local_count += 1;
-        Ok(())
-    }
-
     fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
         // TODO: shadowing doesn't remove the old var as of now
         for i in (0..self.comps.current().local_count).rev() {
@@ -383,18 +343,18 @@ impl<'token> Parser<'token> {
     }
 
     fn begin_scope(&mut self) {
-        self.comps.compilers[self.comps.current].scope_depth += 1;
+        self.comps.increment_scope_depth();
     }
 
     fn end_scope(&mut self) {
-        self.comps.compilers[self.comps.current].scope_depth -= 1;
+        self.comps.decrement_scope_depth();
 
         while self.comps.current().local_count > 0
             && self.comps.current().locals[self.comps.current().local_count - 1].depth
                 > self.comps.current().scope_depth
         {
             self.emit_byte(OpCode::Pop as u8);
-            self.comps.compilers[self.comps.current].local_count -= 1;
+            self.comps.decrement_local_count()
         }
     }
 
@@ -636,7 +596,7 @@ impl<'token> Parser<'token> {
     }
 
     fn make_constant(&mut self, value: StackValue) -> Result<u8, ParseError> {
-        let const_index = chunk!(self).add_constant(value);
+        let const_index = self.comps.add_constant(value);
         if const_index > u16::MAX.into() {
             let msg = "Too many constants in one chunk.";
             return Err(ParseError::new(self.peek().line, msg));
@@ -662,7 +622,7 @@ impl<'token> Parser<'token> {
 
     fn emit_byte(&mut self, byte: u8) {
         let line = self.previous().line;
-        chunk!(self).write_byte_to_chunk(byte, line);
+        self.comps.write_byte_to_chunk(byte, line);
     }
 
     fn emit_bytes(&mut self, byte_0: u8, byte_1: u8) {
