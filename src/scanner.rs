@@ -142,7 +142,7 @@ impl<'source> Scanner<'source> {
                 if c.is_ascii_digit() {
                     self.add_num_token()
                 } else if c.is_alphabetic() || c == '_' {
-                    while self.peek().is_alphanumeric() {
+                    while self.peek().is_alphanumeric() || self.peek() == '_' {
                         self.current += 1;
                     }
 

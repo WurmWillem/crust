@@ -44,7 +44,7 @@ fn main() {
         None => {
             return;
         }
-        Some((func, heap, funcs)) => ((func, heap, funcs)),
+        Some((func, heap, funcs)) => (func, heap, funcs),
     };
 
     VM::interpret(func, heap, funcs);

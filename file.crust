@@ -5,9 +5,7 @@ fn fib(int n) {
     }
     return fib(n - 2) + fib(n - 1);
 }
-let x = 3;
-print x;
-print fib(30);
+let x3 = 3;
 
 //sum(1, 2);
 //
