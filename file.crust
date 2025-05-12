@@ -5,12 +5,7 @@ fn fib(int n) {
     }
     return fib(n - 2) + fib(n - 1);
 }
-fn greet() {
-    print "hoi";
-}
-print greet();
-print fib(8);
-let x3 = 3;
+print fib(40);
 
 //sum(1, 2);
 //

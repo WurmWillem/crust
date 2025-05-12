@@ -39,8 +39,6 @@ impl VM {
         funcs: [StackValue; MAX_FUNC_AMT],
     ) -> InterpretResult {
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
-        // let x = &gc_obj.data;
-
         let frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
         unsafe {
             frames = MaybeUninit::uninit().assume_init();
@@ -66,7 +64,6 @@ impl VM {
         vm.stack_push(StackValue::Obj(func_object));
 
         unsafe { vm.run() }
-        // InterpretResult::Ok
     }
 
     #[inline(always)]

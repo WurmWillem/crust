@@ -1,11 +1,56 @@
 use crate::{
     object::ObjFunc,
     token::{Literal, Token, TokenType},
-    value::ValueType,
+    value::{StackValue, ValueType},
+    vm::MAX_FUNC_AMT,
 };
 
-// TODO: see if you can restrict the visibility of some fields
+pub struct DeclaredFuncStack<'a> {
+    funcs: [DeclaredFunc<'a>; MAX_FUNC_AMT],
+    top: usize,
+}
+impl<'a> DeclaredFuncStack<'a> {
+    pub fn new() -> Self {
+        Self {
+            funcs: [DeclaredFunc::new("", None); MAX_FUNC_AMT],
+            top: 0,
+        }
+    }
+    pub fn edit_name(&mut self, name: &'a str) {
+        self.funcs[self.top].name = name;
+    }
+    pub fn edit_value_and_increment_top(&mut self, value: StackValue) {
+        self.funcs[self.top].value = Some(value);
+        self.top += 1;
+    }
 
+    pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
+        self.funcs
+            .map(|func| func.value.unwrap_or(StackValue::Null))
+    }
+
+    pub fn resolve_func(&mut self, name: &str) -> Option<u8> {
+        for i in 0..self.funcs.len() {
+            if self.funcs[i].name == name {
+                return Some(i as u8);
+            }
+        }
+        None
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct DeclaredFunc<'a> {
+    name: &'a str,
+    value: Option<StackValue>,
+}
+impl<'a> DeclaredFunc<'a> {
+    pub fn new(name: &'a str, value: Option<StackValue>) -> Self {
+        Self { name, value }
+    }
+}
+
+// TODO: see if you can restrict the visibility of some fields
 #[derive(Debug, Clone, Copy)]
 pub struct Local<'a> {
     pub name: Token<'a>,
