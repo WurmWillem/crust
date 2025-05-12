@@ -14,6 +14,7 @@ pub enum InterpretResult {
 
 const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 64;
+const FUNC_SIZE: usize = 64;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -29,9 +30,10 @@ pub struct VM {
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
     heap: Heap,
+    funcs: Vec<StackValue>,
 }
 impl VM {
-    pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
+    pub fn interpret(func: ObjFunc, mut heap: Heap, funcs: Vec<StackValue>) -> InterpretResult {
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
         // let x = &gc_obj.data;
 
@@ -46,6 +48,7 @@ impl VM {
             frame_count: 1,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
+            funcs,
         };
 
         let frame = CallFrame {
@@ -205,7 +208,7 @@ impl VM {
 
                 OpCode::GetFunc => {
                     let slot = self.read_byte(frame) as usize;
-                    let value = self.stack[slot];
+                    let value = self.funcs[slot];
                     self.stack_push(value);
                 }
 

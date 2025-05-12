@@ -24,14 +24,15 @@ macro_rules! chunk {
 }
 struct DeclaredFunc {
     name: String,
+    value: Option<StackValue>,
 }
 impl DeclaredFunc {
-    pub fn new(name: String) -> Self {
-        Self { name }
+    pub fn new(name: String, value: Option<StackValue>) -> Self {
+        Self { name, value }
     }
 }
 impl<'token> Parser<'token> {
-    pub fn compile(tokens: Vec<Token>) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(tokens: Vec<Token>) -> Option<(ObjFunc, Heap, Vec<StackValue>)> {
         let mut parser = Parser {
             tokens,
             // chunk,
@@ -64,10 +65,12 @@ impl<'token> Parser<'token> {
         // parser.emit_byte(OpCode::Return as u8);
         // let func = parser.comps.compilers[parser.comps.current].function.take().unwrap();
         let func = parser.end_compiler();
+        
+        let funcs: Vec<StackValue> = parser.declared_funcs.iter().map(|func| func.value.unwrap()).collect();
         // dbg!(&func);
 
         // TODO: maybe fix so it won't clone anymore
-        Some((func, parser.heap))
+        Some((func, parser.heap, funcs))
     }
 
     fn end_compiler(&mut self) -> ObjFunc {
@@ -95,9 +98,8 @@ impl<'token> Parser<'token> {
         let name = self.previous();
 
         // dbg!(self.last_operand_type);
-        self.declared_funcs
-            .push(DeclaredFunc::new(name.lexeme.to_string()));
         // self.add_local(name.clone(), ValueType::None)?;
+        self.declared_funcs.push(DeclaredFunc::new(name.lexeme.to_string(), None));
 
         // self.add_local(name, self.last_operand_type)?;
         self.function(name.lexeme.to_string())?;
@@ -106,7 +108,7 @@ impl<'token> Parser<'token> {
         Ok(())
     }
     fn function(&mut self, name: String) -> Result<(), ParseError> {
-        self.comps.push(name);
+        self.comps.push(name.clone());
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
@@ -162,8 +164,11 @@ impl<'token> Parser<'token> {
         let func = self.end_compiler();
         let (func_object, _) = self.heap.alloc(func, Object::Func);
 
-        let func_constant = self.make_constant(StackValue::Obj(func_object))?;
-        self.emit_bytes(OpCode::Constant as u8, func_constant);
+        let value = StackValue::Obj(func_object);
+        let index = self.declared_funcs.len() - 1;
+        self.declared_funcs[index].value = Some(value);
+        // self.declared_funcs.push(DeclaredFunc::new(name, value));
+        // self.emit_bytes(OpCode::Constant as u8, func_constant);
 
         Ok(())
     }
@@ -382,9 +387,7 @@ impl<'token> Parser<'token> {
     fn resolve_func(&mut self, name: &str) -> Option<u8> {
         for i in 0..self.declared_funcs.len() {
             if self.declared_funcs[i].name == name {
-                // dbg!(name);
-                // dbg!(i);
-                return Some(i as u8 + 1);
+                return Some(i as u8);
             }
         }
         None
@@ -393,8 +396,7 @@ impl<'token> Parser<'token> {
         // TODO: shadowing doesn't remove the old var as of now
         for i in (0..self.comps.current().local_count).rev() {
             if self.comps.current().locals[i].name.lexeme == name {
-                let index = i as u8 + self.declared_funcs.len() as u8;
-                return Some((index, self.comps.current().locals[i].kind));
+                return Some((i as u8, self.comps.current().locals[i].kind));
             }
         }
         None
@@ -467,7 +469,6 @@ impl<'token> Parser<'token> {
 
         if let Some(arg) = self.resolve_func(&name.lexeme) {
             self.emit_bytes(OpCode::GetFunc as u8, arg);
-            // self.emit_byte(OpCode::Pop as u8);
             return Ok(());
         }
 

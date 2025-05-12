@@ -40,13 +40,13 @@ fn main() {
         println!();
     }
 
-    let (func, heap) = match Parser::compile(tokens) {
+    let (func, heap, funcs) = match Parser::compile(tokens) {
         None => {
             return;
         }
-        Some((func, heap)) => (func, heap),
+        Some((func, heap, funcs)) => ((func, heap, funcs)),
     };
 
-    VM::interpret(func, heap);
+    VM::interpret(func, heap, funcs);
     // todo!()
 }
