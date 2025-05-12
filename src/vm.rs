@@ -80,6 +80,11 @@ impl VM {
     }
 
     #[inline(always)]
+    fn pop_no_return(&mut self) {
+        self.stack_top -= 1;
+    }
+
+    #[inline(always)]
     fn stack_peek(&mut self) -> StackValue {
         unsafe { self.stack.as_ptr().add(self.stack_top - 1).read() }
     }
@@ -126,7 +131,7 @@ impl VM {
 
                     self.frame_count -= 1;
                     if self.frame_count == 0 {
-                        self.stack_pop();
+                        self.pop_no_return();
                         return InterpretResult::Ok;
                     }
 
@@ -141,8 +146,7 @@ impl VM {
                     self.stack_push(constant);
                 }
                 OpCode::Pop => {
-                    // dbg!((*frame).ip);
-                    self.stack_pop();
+                    self.pop_no_return();
                 }
 
                 OpCode::Jump => {
@@ -183,7 +187,7 @@ impl VM {
                             unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
                             self.frame_count += 1;
                         }
-                        _ => unreachable!()
+                        _ => unreachable!(),
                     }
                 }
 
