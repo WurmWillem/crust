@@ -173,25 +173,7 @@ impl VM {
                 }
 
                 OpCode::Call => {
-                    let arg_count = self.read_byte(frame) as usize;
-                    // dbg!(arg_count);
-                    let value = &self.stack[self.stack_top - arg_count - 1];
-                    match value {
-                        StackValue::Obj(Object::Func(func)) => {
-                            let func = *func;
-                            let slots = self.stack_top - arg_count - 1;
-
-                            let frame = CallFrame {
-                                ip: func.data.chunk.get_ptr(),
-                                slots,
-                                func,
-                            };
-
-                            unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
-                            self.frame_count += 1;
-                        }
-                        _ => unreachable!(),
-                    }
+                    self.call(frame);
                 }
 
                 OpCode::GetLocal => {
@@ -201,10 +183,7 @@ impl VM {
                 }
                 OpCode::SetLocal => {
                     let slot = self.read_byte(frame) as usize;
-                    // let value = (*frame).slots.wrapping_add(slot);
                     self.stack[(*frame).slots + slot] = self.stack_peek();
-                    // *value = self.stack_peek();
-                    // self.stack[slot as usize] = self.stack_peek();
                 }
 
                 OpCode::GetFunc => {
@@ -268,6 +247,28 @@ impl VM {
             // break InterpretResult::Ok;
         }
         // InterpretResult::RuntimeError
+    }
+
+    unsafe fn call(&mut self, frame: *mut CallFrame) {
+        let arg_count = self.read_byte(frame) as usize;
+        let value = &self.stack[self.stack_top - arg_count];
+
+        match value {
+            StackValue::Obj(Object::Func(func)) => {
+                let func = *func;
+                let slots = self.stack_top - arg_count;
+
+                let frame = CallFrame {
+                    ip: func.data.chunk.get_ptr(),
+                    slots,
+                    func,
+                };
+
+                unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
+                self.frame_count += 1;
+            }
+            _ => unreachable!(),
+        }
     }
 
     unsafe fn debug_trace(&self, frame: *mut CallFrame) {

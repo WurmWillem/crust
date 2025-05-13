@@ -559,7 +559,8 @@ impl<'token> Parser<'token> {
 
     fn call(&mut self) -> Result<(), ParseError> {
         let arg_count = self.argument_list()?;
-        self.emit_bytes(OpCode::Call as u8, arg_count);
+        dbg!(arg_count);
+        self.emit_bytes(OpCode::Call as u8, arg_count + 1);
         Ok(())
     }
     fn argument_list(&mut self) -> Result<u8, ParseError> {
