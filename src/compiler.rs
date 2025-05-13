@@ -62,7 +62,7 @@ impl<'token> Parser<'token> {
 
     fn end_compiler(&mut self) -> ObjFunc {
         self.emit_return();
-        self.comps.pop().func
+        self.comps.pop().get_func()
     }
 
     fn emit_return(&mut self) {

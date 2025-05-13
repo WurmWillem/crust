@@ -4,7 +4,7 @@ use crate::{OpCode, StackValue};
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<StackValue>,
-    pub lines: Vec<u32>,
+    lines: Vec<u32>,
 }
 impl Chunk {
     pub fn new() -> Self {

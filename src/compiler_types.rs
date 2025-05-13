@@ -84,10 +84,6 @@ impl<'a> CompilerStack<'a> {
         self.compilers[self.current].scope_depth += 1;
     }
 
-    // pub fn increment_local_count(&mut self) {
-    //    self.compilers[self.current].local_count += 1;
-    // }
-
     pub fn decrement_scope_depth(&mut self) {
         self.compilers[self.current].scope_depth -= 1;
     }
@@ -174,21 +170,19 @@ impl<'a> CompilerStack<'a> {
         self.current().local_count > 0 && depth > self.current().scope_depth
     }
 
-    // TODO: make this private
     fn current(&self) -> &Compiler {
         &self.compilers[self.current]
     }
 }
 
-// TODO: reduce max local amt
-pub const MAX_LOCAL_AMT: usize = u8::MAX as usize;
+const MAX_LOCAL_AMT: usize = u8::MAX as usize;
 pub struct Compiler<'a> {
     // TODO: maybe enclosing is unessecary actually
     enclosing: Option<usize>,
-    pub locals: [Local<'a>; MAX_LOCAL_AMT],
-    pub local_count: usize,
-    pub scope_depth: usize,
-    pub func: ObjFunc,
+    locals: [Local<'a>; MAX_LOCAL_AMT],
+    local_count: usize,
+    scope_depth: usize,
+    func: ObjFunc,
 }
 impl<'a> Compiler<'a> {
     pub fn new(enclosing: Option<usize>, func_name: String) -> Self {
@@ -203,6 +197,10 @@ impl<'a> Compiler<'a> {
             scope_depth: 0,
             func: ObjFunc::new(func_name),
         }
+    }
+
+    pub fn get_func(self) -> ObjFunc {
+        self.func
     }
 }
 

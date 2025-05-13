@@ -31,7 +31,6 @@ impl Heap {
 
         self.head = Some(object.clone());
 
-        // TODO: maybe we shouldn't have to return gc actually
         (object, gc)
     }
 
@@ -67,8 +66,6 @@ impl Drop for Heap {
     }
 }
 
-// TODO: look into making fields private
-
 #[derive(Debug)]
 pub struct Gc<T> {
     ptr: NonNull<GcData<T>>,
@@ -95,7 +92,7 @@ impl<T> ops::Deref for Gc<T> {
 #[derive(Debug)]
 pub struct GcData<T> {
     // pub marked: bool,
-    pub next: Option<Object>,
+    next: Option<Object>,
     pub data: T,
 }
 
@@ -112,7 +109,7 @@ pub enum Object {
 pub struct ObjFunc {
     arity: u8,
     pub chunk: Chunk,
-    pub name: String,
+    name: String,
 }
 impl ObjFunc {
     pub fn new(name: String) -> Self {
@@ -124,5 +121,8 @@ impl ObjFunc {
     }
     pub fn increment_arity(&mut self) {
        self.arity += 1; 
+    }
+    pub fn get_name(&self) -> &String {
+        &self.name
     }
 }

@@ -276,7 +276,6 @@ impl VM {
             print!("[ {} ]", self.stack[stack_index].display())
         }
         println!();
-        // todo!()
 
         let ip = (*frame).ip;
         let offset = (*frame).func.data.chunk.code.as_ptr();

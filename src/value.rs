@@ -112,7 +112,7 @@ impl StackValue {
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => format!("{:?}", s.data),
-                Object::Func(f) => format!("<fn {:?}>", f.data.name),
+                Object::Func(f) => format!("<fn {:?}>", f.data.get_name()),
             },
         }
     }

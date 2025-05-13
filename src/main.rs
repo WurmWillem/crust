@@ -48,5 +48,4 @@ fn main() {
     };
 
     VM::interpret(func, heap, funcs);
-    // todo!()
 }
