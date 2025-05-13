@@ -1,5 +1,9 @@
 use crate::{
-    error::ParseError, object::ObjFunc, token::{Literal, Token, TokenType}, value::{StackValue, ValueType}, vm::MAX_FUNC_AMT
+    error::ParseError,
+    object::ObjFunc,
+    token::{Literal, Token, TokenType},
+    value::{StackValue, ValueType},
+    vm::MAX_FUNC_AMT,
 };
 
 pub struct DeclaredFuncStack<'a> {
@@ -77,19 +81,19 @@ impl<'a> CompilerStack<'a> {
     }
 
     pub fn increment_scope_depth(&mut self) {
-       self.compilers[self.current].scope_depth += 1; 
+        self.compilers[self.current].scope_depth += 1;
     }
 
     // pub fn increment_local_count(&mut self) {
-    //    self.compilers[self.current].local_count += 1; 
+    //    self.compilers[self.current].local_count += 1;
     // }
 
     pub fn decrement_scope_depth(&mut self) {
-       self.compilers[self.current].scope_depth -= 1; 
+        self.compilers[self.current].scope_depth -= 1;
     }
 
     pub fn decrement_local_count(&mut self) {
-       self.compilers[self.current].local_count -= 1; 
+        self.compilers[self.current].local_count -= 1;
     }
 
     pub fn add_constant(&mut self, value: StackValue) -> usize {
@@ -97,19 +101,18 @@ impl<'a> CompilerStack<'a> {
     }
 
     pub fn write_byte_to_chunk(&mut self, byte: u8, line: u32) {
-        self.compilers[self.current].func.chunk.write_byte_to_chunk(byte, line);
-    }
-
-    pub fn increment_arity(&mut self) {
-       self.compilers[self.current].func.increment_arity(); 
-    }
-
-    pub fn get_code_len(&self) -> usize {
         self.compilers[self.current]
             .func
             .chunk
-            .code
-            .len()
+            .write_byte_to_chunk(byte, line);
+    }
+
+    pub fn increment_arity(&mut self) {
+        self.compilers[self.current].func.increment_arity();
+    }
+
+    pub fn get_code_len(&self) -> usize {
+        self.compilers[self.current].func.chunk.code.len()
     }
 
     pub fn add_local(&mut self, name: Token<'a>, kind: ValueType) -> Result<(), ParseError> {
@@ -135,7 +138,7 @@ impl<'a> CompilerStack<'a> {
         }
 
         self.compilers[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
-        self.compilers[self.current].func.chunk.code[offset + 1]  = (jump & 0xFF) as u8;
+        self.compilers[self.current].func.chunk.code[offset + 1] = (jump & 0xFF) as u8;
         // dbg!(chunk!(self).code[offset + 1]);
         Ok(())
     }
@@ -156,8 +159,23 @@ impl<'a> CompilerStack<'a> {
         c
     }
 
+    pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
+        // TODO: shadowing doesn't remove the old var as of now
+        for i in (0..self.current().local_count).rev() {
+            if self.current().locals[i].name.lexeme == name {
+                return Some((i as u8, self.current().locals[i].kind));
+            }
+        }
+        None
+    }
+
+    pub fn should_remove_local(&self) -> bool {
+        let depth = self.current().locals[self.current().local_count - 1].depth;
+        self.current().local_count > 0 && depth > self.current().scope_depth
+    }
+
     // TODO: make this private
-    pub fn current(&self) -> &Compiler {
+    fn current(&self) -> &Compiler {
         &self.compilers[self.current]
     }
 }

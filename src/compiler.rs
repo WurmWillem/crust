@@ -325,16 +325,6 @@ impl<'token> Parser<'token> {
         }
     }
 
-    fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
-        // TODO: shadowing doesn't remove the old var as of now
-        for i in (0..self.comps.current().local_count).rev() {
-            if self.comps.current().locals[i].name.lexeme == name {
-                return Some((i as u8, self.comps.current().locals[i].kind));
-            }
-        }
-        None
-    }
-
     fn block(&mut self) -> Result<(), ParseError> {
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
             self.declaration()?;
@@ -349,9 +339,8 @@ impl<'token> Parser<'token> {
     fn end_scope(&mut self) {
         self.comps.decrement_scope_depth();
 
-        while self.comps.current().local_count > 0
-            && self.comps.current().locals[self.comps.current().local_count - 1].depth
-                > self.comps.current().scope_depth
+
+        while self.comps.should_remove_local()
         {
             self.emit_byte(OpCode::Pop as u8);
             self.comps.decrement_local_count()
@@ -389,7 +378,7 @@ impl<'token> Parser<'token> {
     fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
 
-        if let Some((arg, kind)) = self.resolve_local(&name.lexeme) {
+        if let Some((arg, kind)) = self.comps.resolve_local(&name.lexeme) {
             if can_assign && self.matches(TokenType::Equal) {
                 self.expression()?;
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
