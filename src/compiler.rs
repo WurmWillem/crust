@@ -41,7 +41,7 @@ impl<'token> Parser<'token> {
             if let Err(err) = parser.declaration() {
                 print_error(err.line, &err.msg);
 
-                had_error = true;
+               had_error = true;
                 parser.synchronize();
             }
         }
@@ -317,7 +317,33 @@ impl<'token> Parser<'token> {
     }
 
     fn synchronize(&mut self) {
-        // dbg!(self.comps.get_scope_depth());
+        self.advance();
+
+        while self.peek().kind != TokenType::Eof {
+            // if we just consumed a semicolon, we probably ended a statement
+            if self.previous().kind == TokenType::Semicolon {
+                dbg!("semi");
+                return;
+            }
+
+            // check if next token looks like the start of a new statement
+            match self.peek().kind {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => {
+                    dbg!(self.peek().kind);
+                    return
+                },
+                _ => (),
+            }
+
+            self.advance();
+        }
         if self.comps.get_scope_depth() == 0 {
             while self.peek().kind != TokenType::Eof && self.previous().kind != TokenType::Semicolon
             {

@@ -1,13 +1,15 @@
 
 
-fn fib(innt n) {
+fn fib(inn n) {
     if n < 2 {
         return n;
     }
     return fib(n - 2) + fib(n - 1);
 }
 
-le x = 3;
+let x = 3;
+let x = 3;
+let x = 3;
 //sum(1, 2);
 //
 //greet("hoi");
