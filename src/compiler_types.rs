@@ -80,6 +80,11 @@ impl<'a> CompilerStack<'a> {
         }
     }
 
+    pub fn get_scope_depth(&self) -> usize {
+        self.current().scope_depth
+    }
+
+
     pub fn increment_scope_depth(&mut self) {
         self.compilers[self.current].scope_depth += 1;
     }

@@ -35,7 +35,7 @@ fn main() {
 
     if PRINT_SCAN_TOKENS {
         for token in &tokens {
-            println!("{:?}", token);
+            println!("{:?} type: {:?}", token, token.kind as u8);
         }
         println!();
     }

@@ -28,7 +28,7 @@ impl<'source> Scanner<'source> {
         let keywords = create_keywords!(
             "en",And "of",Or "if",If "else",Else "while",While "for",For
             "true",True "false",False "null",Null "dit",This "ouder",Super
-            "klas",Class "fn",Fun "let",Var "return",Return "print",Print 
+            "klas",Class "fn",Fun "let",Var "return",Return "print",Print
             "int",F64 "bool",Bool "str",Str
         );
 
@@ -70,8 +70,8 @@ impl<'source> Scanner<'source> {
         self.current += 1;
 
         macro_rules! ternary {
-            ($c: expr, $t1: ident, $t2: ident) => {{
-                let token = if self.matches($c) {
+            ($t1: ident, $t2: ident) => {{
+                let token = if self.matches('=') {
                     self.current += 1;
                     TokenType::$t1
                 } else {
@@ -91,14 +91,14 @@ impl<'source> Scanner<'source> {
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
             '-' => self.add_token(TokenType::Minus),
-            '+' => self.add_token(TokenType::Plus),
             ';' => self.add_token(TokenType::Semicolon),
             '*' => self.add_token(TokenType::Star),
             // '^' => self.add_token(TokenType::Caret),
-            '!' => ternary!('=', BangEqual, Bang),
-            '=' => ternary!('=', EqualEqual, Equal),
-            '<' => ternary!('=', LessEqual, Less),
-            '>' => ternary!('=', GreaterEqual, Greater),
+            '!' => ternary!(BangEqual, Bang),
+            '=' => ternary!(EqualEqual, Equal),
+            '<' => ternary!(LessEqual, Less),
+            '>' => ternary!(GreaterEqual, Greater),
+            '+' => ternary!(PlusEqual, Plus),
 
             // comments
             '/' => {

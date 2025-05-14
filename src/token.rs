@@ -31,7 +31,6 @@ impl<'source> Token<'source> {
     }
 }
 
-#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
     // single-character tokens
@@ -88,6 +87,8 @@ pub enum TokenType {
 
     // end of file
     Eof,
+    // TODO: look into why moving this up crashes
+    PlusEqual,
 }
 impl TokenType {
     // pub fn is_value_type(&self) -> bool {

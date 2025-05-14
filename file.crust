@@ -1,6 +1,13 @@
-print 3;
 
 
+fn fib(innt n) {
+    if n < 2 {
+        return n;
+    }
+    return fib(n - 2) + fib(n - 1);
+}
+
+le x = 3;
 //sum(1, 2);
 //
 //greet("hoi");

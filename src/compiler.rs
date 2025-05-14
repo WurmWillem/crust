@@ -317,11 +317,26 @@ impl<'token> Parser<'token> {
     }
 
     fn synchronize(&mut self) {
-        while self.peek().kind != TokenType::Eof {
-            if self.previous().kind == TokenType::Semicolon {
-                return;
+        // dbg!(self.comps.get_scope_depth());
+        if self.comps.get_scope_depth() == 0 {
+            while self.peek().kind != TokenType::Eof && self.previous().kind != TokenType::Semicolon
+            {
+                self.advance();
             }
-            self.advance();
+        } else {
+            let mut brace_count = 0;
+            while self.peek().kind != TokenType::Eof {
+                if self.previous().kind == TokenType::LeftBrace {
+                    brace_count += 1;
+                }
+                if self.previous().kind == TokenType::RightBrace {
+                    brace_count -= 1;
+                }
+                if brace_count < 0 {
+                    break;
+                }
+                self.advance();
+            }
         }
     }
 
@@ -339,9 +354,7 @@ impl<'token> Parser<'token> {
     fn end_scope(&mut self) {
         self.comps.decrement_scope_depth();
 
-
-        while self.comps.should_remove_local()
-        {
+        while self.comps.should_remove_local() {
             self.emit_byte(OpCode::Pop as u8);
             self.comps.decrement_local_count()
         }
