@@ -1,15 +1,16 @@
-
-
-fn fib(int n) {
-    if n < 2 {
-        return n;
-    }
-    return fib(n - 2) + fib(n - 1);
-}
-
 let x = 3;
-let x = 3;
-let x = 3;
+x += 2;
+print x;
+
+//fn fib(int n) {
+//    if n < 2 {
+//        return n;
+//    }
+//    return fib(n - 2) + fib(n - 1);
+//}
+//
+//let x = 3;
+//let x = 3;
 //sum(1, 2);
 //
 //greet("hoi");

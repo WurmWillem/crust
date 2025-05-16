@@ -88,7 +88,7 @@ pub enum TokenType {
     Str,
 
     // end of file
-    Eof,
+    EOF,
 }
 impl TokenType {
     // pub fn is_value_type(&self) -> bool {

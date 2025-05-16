@@ -32,11 +32,11 @@ impl<'token> Parser<'token> {
         };
 
         let mut had_error = false;
-        while !parser.matches(TokenType::Eof) {
+        while !parser.matches(TokenType::EOF) {
             if let Err(err) = parser.declaration() {
                 print_error(err.line, &err.msg);
 
-               had_error = true;
+                had_error = true;
                 parser.synchronize();
             }
         }
@@ -312,7 +312,7 @@ impl<'token> Parser<'token> {
     fn synchronize(&mut self) {
         self.advance();
 
-        while self.peek().kind != TokenType::Eof {
+        while self.peek().kind != TokenType::EOF {
             // if we just consumed a semicolon, we probably ended a statement
             if self.previous().kind == TokenType::Semicolon {
                 dbg!("semi");
@@ -330,21 +330,21 @@ impl<'token> Parser<'token> {
                 | TokenType::Print
                 | TokenType::Return => {
                     dbg!(self.peek().kind);
-                    return
-                },
+                    return;
+                }
                 _ => (),
             }
 
             self.advance();
         }
         if self.comps.get_scope_depth() == 0 {
-            while self.peek().kind != TokenType::Eof && self.previous().kind != TokenType::Semicolon
+            while self.peek().kind != TokenType::EOF && self.previous().kind != TokenType::Semicolon
             {
                 self.advance();
             }
         } else {
             let mut brace_count = 0;
-            while self.peek().kind != TokenType::Eof {
+            while self.peek().kind != TokenType::EOF {
                 if self.previous().kind == TokenType::LeftBrace {
                     brace_count += 1;
                 }
@@ -360,7 +360,7 @@ impl<'token> Parser<'token> {
     }
 
     fn block(&mut self) -> Result<(), ParseError> {
-        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::EOF) {
             self.declaration()?;
         }
         self.consume(TokenType::RightBrace, "Expected '}' at end of block.")
@@ -413,6 +413,11 @@ impl<'token> Parser<'token> {
         if let Some((arg, kind)) = self.comps.resolve_local(&name.lexeme) {
             if can_assign && self.matches(TokenType::Equal) {
                 self.expression()?;
+                self.emit_bytes(OpCode::SetLocal as u8, arg);
+            } else if can_assign && self.matches(TokenType::PlusEqual) {
+                self.expression()?;
+                self.emit_bytes(OpCode::GetLocal as u8, arg);
+                self.emit_byte(OpCode::Add as u8);
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
             } else {
                 self.emit_bytes(OpCode::GetLocal as u8, arg);
@@ -666,7 +671,7 @@ impl<'token> Parser<'token> {
     }
 
     fn advance(&mut self) -> Token<'token> {
-        if self.peek().kind != TokenType::Eof {
+        if self.peek().kind != TokenType::EOF {
             self.current_token += 1;
         }
         self.previous()
