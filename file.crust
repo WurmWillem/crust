@@ -1,5 +1,5 @@
 let x = 12;
-x /= 3;
+x /= "sd";
 print x;
 
 //fn fib(int n) {

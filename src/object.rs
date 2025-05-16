@@ -19,7 +19,7 @@ impl Heap {
     {
         let gc_data = Box::new(GcData {
             // marked: false,
-            next: self.head.clone(),
+            next: self.head,
             data,
         });
 
@@ -27,9 +27,9 @@ impl Heap {
             ptr: NonNull::new(Box::into_raw(gc_data)).unwrap(),
         };
 
-        let object = map(gc.clone());
+        let object = map(gc);
 
-        self.head = Some(object.clone());
+        self.head = Some(object);
 
         (object, gc)
     }
@@ -53,8 +53,8 @@ impl Drop for Heap {
 
         while let Some(object) = current {
             let next = match object {
-                Object::Str(ref ptr) => ptr.next.clone(),
-                Object::Func(ref ptr) => ptr.next.clone(),
+                Object::Str(ref ptr) => ptr.next,
+                Object::Func(ref ptr) => ptr.next,
             };
 
             unsafe {
@@ -73,7 +73,7 @@ pub struct Gc<T> {
 impl<T> Copy for Gc<T> {}
 impl<T> Clone for Gc<T> {
     fn clone(&self) -> Self {
-        Gc { ptr: self.ptr }
+        *self
     }
 }
 impl<T> ops::Deref for Gc<T> {
@@ -120,7 +120,7 @@ impl ObjFunc {
         }
     }
     pub fn increment_arity(&mut self) {
-       self.arity += 1; 
+        self.arity += 1;
     }
     pub fn get_name(&self) -> &String {
         &self.name

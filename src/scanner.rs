@@ -52,7 +52,7 @@ impl<'source> Scanner<'source> {
         }
 
         self.tokens
-            .push(Token::new(TokenType::EOF, "", Literal::None, self.line));
+            .push(Token::new(TokenType::Eof, "", Literal::None, self.line));
 
         if self.had_error {
             Err(())
