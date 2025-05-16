@@ -315,7 +315,6 @@ impl<'token> Parser<'token> {
         while self.peek().kind != TokenType::EOF {
             // if we just consumed a semicolon, we probably ended a statement
             if self.previous().kind == TokenType::Semicolon {
-                dbg!("semi");
                 return;
             }
 
@@ -416,6 +415,19 @@ impl<'token> Parser<'token> {
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
             } else if can_assign && self.matches(TokenType::PlusEqual) {
                 self.expression()?;
+
+                if kind != self.last_operand_type
+                    || (kind != ValueType::Num && kind != ValueType::Str)
+                {
+                    let kind = kind.to_string();
+                    let rhs_type = self.last_operand_type.to_string();
+                    let msg = format!(
+                        "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
+                        kind, rhs_type
+                    );
+                    return Err(ParseError::new(self.peek().line, &msg));
+                }
+
                 self.emit_bytes(OpCode::GetLocal as u8, arg);
                 self.emit_byte(OpCode::Add as u8);
                 self.emit_bytes(OpCode::SetLocal as u8, arg);

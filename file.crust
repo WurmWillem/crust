@@ -1,4 +1,4 @@
-let x = 3;
+let x = "sdf";
 x += 2;
 print x;
 
