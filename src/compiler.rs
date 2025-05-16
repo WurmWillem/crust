@@ -92,38 +92,9 @@ impl<'token> Parser<'token> {
 
         // parse parameters
         if !self.check(TokenType::RightParen) {
-            let var_type = match self.advance().kind.as_value_type() {
-                Some(var_type) => var_type,
-                _ => {
-                    return Err(ParseError::new(
-                        self.previous().line,
-                        "Expected type for parameter.",
-                    ));
-                }
-            };
-
-            self.consume(TokenType::Identifier, "Expected variable name.")?;
-            let name = self.previous();
-
-            self.comps.add_local(name, var_type)?;
-            self.comps.increment_arity();
-
+            self.parse_parameter()?;
             while self.matches(TokenType::Comma) {
-                let var_type = match self.advance().kind.as_value_type() {
-                    Some(var_type) => var_type,
-                    _ => {
-                        return Err(ParseError::new(
-                            self.previous().line,
-                            "Expected type for parameter.",
-                        ));
-                    }
-                };
-
-                self.consume(TokenType::Identifier, "Expected variable name.")?;
-                let name = self.previous();
-
-                self.comps.add_local(name, var_type)?;
-                self.comps.increment_arity();
+                self.parse_parameter()?;
             }
         }
 
@@ -140,6 +111,22 @@ impl<'token> Parser<'token> {
         let value = StackValue::Obj(func_object);
         self.funcs.edit_value_and_increment_top(value);
 
+        Ok(())
+    }
+    fn parse_parameter(&mut self) -> Result<(), ParseError> {
+        let var_type = match self.advance().kind.as_value_type() {
+            Some(var_type) => var_type,
+            _ => {
+                return Err(ParseError::new(
+                    self.previous().line,
+                    "Expected type for parameter.",
+                ));
+            }
+        };
+        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        let name = self.previous();
+        self.comps.add_local(name, var_type)?;
+        self.comps.increment_arity();
         Ok(())
     }
 
@@ -632,7 +619,6 @@ impl<'token> Parser<'token> {
 
     fn call(&mut self) -> Result<(), ParseError> {
         let arg_count = self.argument_list()?;
-        dbg!(arg_count);
         self.emit_bytes(OpCode::Call as u8, arg_count + 1);
         Ok(())
     }
