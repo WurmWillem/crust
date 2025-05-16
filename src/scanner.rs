@@ -26,9 +26,9 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "en",And "of",Or "if",If "else",Else "while",While "for",For
-            "true",True "false",False "null",Null "dit",This "ouder",Super
-            "klas",Class "fn",Fun "let",Var "return",Return "print",Print
+            "and",And "or",Or "if",If "else",Else "while",While "for",For
+            "true",True "false",False "null",Null "this",This "parent",Super
+            "class",Class "fn",Fun "let",Var "return",Return "print",Print
             "int",F64 "bool",Bool "str",Str
         );
 
@@ -123,7 +123,7 @@ impl<'source> Scanner<'source> {
                     self.current += 1;
                 }
                 if self.at_end_input() {
-                    print_error(self.line, "Ongetermineerde reeks.");
+                    print_error(self.line, "Unterminated sequence of characters.");
                     self.had_error = true;
                     return;
                 }
@@ -155,7 +155,7 @@ impl<'source> Scanner<'source> {
 
                     self.add_token(kind);
                 } else {
-                    let msg = format!("'{}' is een ongeldig karakter.", c);
+                    let msg = format!("'{}' is an unvalid character.", c);
                     print_error(self.line, &msg);
                     self.had_error = true;
                 }
