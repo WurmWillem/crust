@@ -56,12 +56,12 @@ impl<'a> DeclaredFunc<'a> {
 // TODO: see if you can restrict the visibility of some fields
 #[derive(Debug, Clone, Copy)]
 pub struct Local<'a> {
-    pub name: Token<'a>,
-    pub kind: ValueType,
-    pub depth: usize,
+    name: Token<'a>,
+    kind: ValueType,
+    depth: usize,
 }
 impl<'a> Local<'a> {
-    pub fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
+    fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
         Self { name, depth, kind }
     }
 }
