@@ -21,7 +21,7 @@ mod vm;
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
 
-    let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
+    let msg = "Could not find file.crust. The file should be in the same directory as either the executable file or Cargo.toml.";
     let source = std::fs::read_to_string("file.crust").expect(msg);
 
     let scanner = Scanner::new(&source);
