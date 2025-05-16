@@ -325,26 +325,6 @@ impl<'token> Parser<'token> {
 
             self.advance();
         }
-        if self.comps.get_scope_depth() == 0 {
-            while self.peek().kind != TokenType::Eof && self.previous().kind != TokenType::Semicolon
-            {
-                self.advance();
-            }
-        } else {
-            let mut brace_count = 0;
-            while self.peek().kind != TokenType::Eof {
-                if self.previous().kind == TokenType::LeftBrace {
-                    brace_count += 1;
-                }
-                if self.previous().kind == TokenType::RightBrace {
-                    brace_count -= 1;
-                }
-                if brace_count < 0 {
-                    break;
-                }
-                self.advance();
-            }
-        }
     }
 
     fn block(&mut self) -> Result<(), ParseError> {

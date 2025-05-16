@@ -80,7 +80,7 @@ impl<'a> CompilerStack<'a> {
         }
     }
 
-    pub fn get_scope_depth(&self) -> usize {
+    pub fn _get_scope_depth(&self) -> usize {
         self.current().scope_depth
     }
 
