@@ -32,7 +32,7 @@ impl<'token> Parser<'token> {
         };
 
         let mut had_error = false;
-        while !parser.matches(TokenType::Eof) {
+        while !parser.check(TokenType::Eof) {
             if let Err(err) = parser.declaration() {
                 print_error(err.line, &err.msg);
 
@@ -40,12 +40,13 @@ impl<'token> Parser<'token> {
                 parser.synchronize();
             }
         }
+        parser.current_token += 1;
         if had_error {
             println!("{}", "Parse error(s) detected, terminate program.".purple());
             return None;
         }
 
-        if parser.current_token != parser.tokens.len() - 1 {
+        if parser.current_token != parser.tokens.len() {
             println!("{}", "Not all tokens were parsed.".red());
         }
 
@@ -92,36 +93,9 @@ impl<'token> Parser<'token> {
 
         // parse parameters
         if !self.check(TokenType::RightParen) {
-            let var_type = match self.advance().kind.as_value_type() {
-                Some(var_type) => var_type,
-                _ => {
-                    let line = self.previous().line;
-                    self.dont_parse_scope(false);
-                    return Err(ParseError::new(line, "Expected type for parameter."));
-                }
-            };
-
-            self.consume(TokenType::Identifier, "Expected variable name.")?;
-            let name = self.previous();
-
-            self.comps.add_local(name, var_type)?;
-            self.comps.increment_arity();
-
+            self.parse_parameter()?;
             while self.matches(TokenType::Comma) {
-                let var_type = match self.advance().kind.as_value_type() {
-                    Some(var_type) => var_type,
-                    _ => {
-                        let line = self.previous().line;
-                        self.dont_parse_scope(false);
-                        return Err(ParseError::new(line, "Expected type for parameter."));
-                    }
-                };
-
-                self.consume(TokenType::Identifier, "Expected variable name.")?;
-                let name = self.previous();
-
-                self.comps.add_local(name, var_type)?;
-                self.comps.increment_arity();
+                self.parse_parameter()?;
             }
         }
 
@@ -138,6 +112,23 @@ impl<'token> Parser<'token> {
         let value = StackValue::Obj(func_object);
         self.funcs.edit_value_and_increment_top(value);
 
+        Ok(())
+    }
+    fn parse_parameter(&mut self) -> Result<(), ParseError> {
+        let var_type = match self.advance().kind.as_value_type() {
+            Some(var_type) => var_type,
+            _ => {
+                self.dont_parse_scope(false);
+                return Err(ParseError::new(
+                    self.previous().line,
+                    "Expected type for parameter.",
+                ));
+            }
+        };
+        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        let name = self.previous();
+        self.comps.add_local(name, var_type)?;
+        self.comps.increment_arity();
         Ok(())
     }
 
@@ -630,7 +621,6 @@ impl<'token> Parser<'token> {
 
     fn call(&mut self) -> Result<(), ParseError> {
         let arg_count = self.argument_list()?;
-        dbg!(arg_count);
         self.emit_bytes(OpCode::Call as u8, arg_count + 1);
         Ok(())
     }
