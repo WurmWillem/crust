@@ -381,9 +381,7 @@ impl<'token> Parser<'token> {
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<(), ParseError> {
         self.advance();
         let kind = self.previous().kind;
-        // dbg!(kind);
         let prefix = self.get_rule(kind).prefix;
-        // dbg!(prefix);
 
         if prefix == FnType::Empty {
             let msg = "Expected expression.";
@@ -409,6 +407,18 @@ impl<'token> Parser<'token> {
     fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
 
+        macro_rules! emit_operation_code {
+            ($op_code: expr, $arg: expr, $kind: expr, $op_char: expr) => {
+                self.emit_bytes(OpCode::GetLocal as u8, $arg);
+                self.expression()?;
+
+                self.check_if_operation_is_valid($kind, $op_char)?;
+
+                self.emit_byte($op_code as u8);
+                self.emit_bytes(OpCode::SetLocal as u8, $arg);
+            };
+        }
+
         if let Some((arg, kind)) = self.comps.resolve_local(&name.lexeme) {
             if can_assign && self.matches(TokenType::Equal) {
                 self.expression()?;
@@ -422,17 +432,11 @@ impl<'token> Parser<'token> {
                 self.emit_byte(OpCode::Add as u8);
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
             } else if can_assign && self.matches(TokenType::MinEqual) {
-                self.emit_bytes(OpCode::GetLocal as u8, arg);
-                self.expression()?;
-                self.check_if_operation_is_valid(kind, '-')?;
-                self.emit_byte(OpCode::Sub as u8);
-                self.emit_bytes(OpCode::SetLocal as u8, arg);
+                emit_operation_code!(OpCode::Sub, arg, kind, "-");
             } else if can_assign && self.matches(TokenType::MulEqual) {
-                self.emit_bytes(OpCode::GetLocal as u8, arg);
-                self.expression()?;
-                self.check_if_operation_is_valid(kind, '*')?;
-                self.emit_byte(OpCode::Mul as u8);
-                self.emit_bytes(OpCode::SetLocal as u8, arg);
+                emit_operation_code!(OpCode::Mul, arg, kind, "*");
+            } else if can_assign && self.matches(TokenType::DivEqual) {
+                emit_operation_code!(OpCode::Div, arg, kind, "/");
             } else {
                 self.emit_bytes(OpCode::GetLocal as u8, arg);
                 self.last_operand_type = kind;
@@ -489,24 +493,24 @@ impl<'token> Parser<'token> {
     fn emit_operation_op_code(
         &mut self,
         lhs_type: ValueType,
-        op_char: char,
+        op_str: &str,
         op_code: OpCode,
     ) -> Result<(), ParseError> {
-        self.check_if_operation_is_valid(lhs_type, op_char)?;
+        self.check_if_operation_is_valid(lhs_type, op_str)?;
         self.emit_byte(op_code as u8);
         Ok(())
     }
     fn check_if_operation_is_valid(
         &self,
         lhs_type: ValueType,
-        op_char: char,
+        op_str: &str,
     ) -> Result<(), ParseError> {
         if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
             let lhs_type = lhs_type.to_string();
             let rhs_type = self.last_operand_type.to_string();
             let msg = &format!(
                 "Operator '{}' expects two numbers, but got types '{}' and '{}'.",
-                op_char, lhs_type, rhs_type
+                op_str, lhs_type, rhs_type
             );
             return Err(ParseError::new(self.peek().line, msg));
         }
@@ -522,23 +526,9 @@ impl<'token> Parser<'token> {
         let new_precedence = (rule.precedence as u8 + 1).into();
         self.parse_precedence(new_precedence)?;
 
-        macro_rules! emit_op_code {
-            ($op_char: expr, $op_code: ident) => {{
-                if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
-                    let lhs_type = lhs_type.to_string();
-                    let rhs_type = self.last_operand_type.to_string();
-                    let msg = &format!(
-                        "Operator '{}' expects two numbers, but got types '{}' and '{}'.",
-                        $op_char, lhs_type, rhs_type
-                    );
-                    return Err(ParseError::new(self.peek().line, msg));
-                }
-                self.emit_byte(OpCode::$op_code as u8);
-            }};
-        }
         macro_rules! emit_and_update_last_operand {
-            ($op_char: expr, $op_code: ident) => {{
-                emit_op_code!($op_char, $op_code);
+            ($op_char: expr, $op_code: expr) => {{
+                self.emit_operation_op_code(lhs_type, $op_char, $op_code)?;
                 self.last_operand_type = ValueType::Bool;
             }};
         }
@@ -548,9 +538,9 @@ impl<'token> Parser<'token> {
                 self.check_if_add_op_is_valid(lhs_type)?;
                 self.emit_byte(OpCode::Add as u8);
             }
-            TokenType::Minus => self.emit_operation_op_code(lhs_type, '-', OpCode::Sub)?,
-            TokenType::Star => self.emit_operation_op_code(lhs_type, '*', OpCode::Mul)?,
-            TokenType::Slash => self.emit_operation_op_code(lhs_type, '/', OpCode::Div)?,
+            TokenType::Minus => self.emit_operation_op_code(lhs_type, "-", OpCode::Sub)?,
+            TokenType::Star => self.emit_operation_op_code(lhs_type, "*", OpCode::Mul)?,
+            TokenType::Slash => self.emit_operation_op_code(lhs_type, "/", OpCode::Div)?,
             TokenType::EqualEqual => {
                 if lhs_type != self.last_operand_type
                     || (lhs_type != ValueType::Num
@@ -563,11 +553,11 @@ impl<'token> Parser<'token> {
                 self.emit_byte(OpCode::Equal as u8);
                 self.last_operand_type = ValueType::Bool;
             }
-            TokenType::BangEqual => emit_and_update_last_operand!("!=", BangEqual),
-            TokenType::Greater => emit_and_update_last_operand!('>', Greater),
-            TokenType::GreaterEqual => emit_and_update_last_operand!(">=", GreaterEqual),
-            TokenType::Less => emit_and_update_last_operand!('<', Less),
-            TokenType::LessEqual => emit_and_update_last_operand!("<=", LessEqual),
+            TokenType::BangEqual => emit_and_update_last_operand!("!=", OpCode::BangEqual),
+            TokenType::Greater => emit_and_update_last_operand!(">", OpCode::Greater),
+            TokenType::GreaterEqual => emit_and_update_last_operand!(">=", OpCode::GreaterEqual),
+            TokenType::Less => emit_and_update_last_operand!("<", OpCode::Less),
+            TokenType::LessEqual => emit_and_update_last_operand!("<=", OpCode::LessEqual),
             _ => unreachable!(),
         }
         Ok(())
