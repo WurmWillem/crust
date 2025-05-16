@@ -1,7 +1,6 @@
 use colored::Colorize;
 
 use crate::{
-    // chunk::Chunk,
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     object::{Heap, ObjFunc, Object},
@@ -10,11 +9,7 @@ use crate::{
     value::{StackValue, ValueType},
     vm::MAX_FUNC_AMT,
 };
-// macro_rules! chunk {
-//     ($self: expr) => {
-//         $self.comps.compilers[$self.comps.current].func.chunk
-//     };
-// }
+
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,
@@ -144,8 +139,6 @@ impl<'token> Parser<'token> {
 
         let value = StackValue::Obj(func_object);
         self.funcs.edit_value_and_increment_top(value);
-        // self.declared_funcs.push(DeclaredFunc::new(name, value));
-        // self.emit_bytes(OpCode::Constant as u8, func_constant);
 
         Ok(())
     }

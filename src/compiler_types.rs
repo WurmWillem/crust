@@ -55,7 +55,7 @@ impl<'a> DeclaredFunc<'a> {
 
 // TODO: see if you can restrict the visibility of some fields
 #[derive(Debug, Clone, Copy)]
-pub struct Local<'a> {
+struct Local<'a> {
     name: Token<'a>,
     kind: ValueType,
     depth: usize,
@@ -83,7 +83,6 @@ impl<'a> CompilerStack<'a> {
     pub fn get_scope_depth(&self) -> usize {
         self.current().scope_depth
     }
-
 
     pub fn increment_scope_depth(&mut self) {
         self.compilers[self.current].scope_depth += 1;
@@ -264,7 +263,7 @@ pub struct ParseRule {
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 39] = {
+pub const PARSE_RULES: [ParseRule; 40] = {
     use FnType::*;
     use Precedence as P;
 
@@ -295,6 +294,9 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Greater equal
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less equal
+
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Plus equal
+
         ParseRule { prefix: Variable, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number

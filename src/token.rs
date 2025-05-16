@@ -56,6 +56,8 @@ pub enum TokenType {
     Less,
     LessEqual,
 
+    PlusEqual,
+
     // literals
     Identifier,
     String,
@@ -87,8 +89,6 @@ pub enum TokenType {
 
     // end of file
     Eof,
-    // TODO: look into why moving this up crashes
-    PlusEqual,
 }
 impl TokenType {
     // pub fn is_value_type(&self) -> bool {
