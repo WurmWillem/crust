@@ -32,7 +32,7 @@ impl<'token> Parser<'token> {
         };
 
         let mut had_error = false;
-        while !parser.matches(TokenType::Eof) {
+        while !parser.check(TokenType::Eof) {
             if let Err(err) = parser.declaration() {
                 print_error(err.line, &err.msg);
 
@@ -40,12 +40,13 @@ impl<'token> Parser<'token> {
                 parser.synchronize();
             }
         }
+        parser.current_token += 1;
         if had_error {
             println!("{}", "Parse error(s) detected, terminate program.".purple());
             return None;
         }
 
-        if parser.current_token != parser.tokens.len() - 1 {
+        if parser.current_token != parser.tokens.len() {
             println!("{}", "Not all tokens were parsed.".red());
         }
 
