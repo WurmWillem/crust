@@ -263,7 +263,7 @@ pub struct ParseRule {
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 40] = {
+pub const PARSE_RULES: [ParseRule; 43] = {
     use FnType::*;
     use Precedence as P;
 
@@ -295,7 +295,10 @@ pub const PARSE_RULES: [ParseRule; 40] = {
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less equal
 
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Plus equal
+        none!(), //Plus Equal
+        none!(), //Minus Equal
+        none!(), //Mul Equal
+        none!(), //Div Equal
 
         ParseRule { prefix: Variable, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string

@@ -90,17 +90,18 @@ impl<'source> Scanner<'source> {
             // ']' => self.add_token(TokenType::RightBracket),
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
-            '-' => self.add_token(TokenType::Minus),
             ';' => self.add_token(TokenType::Semicolon),
-            '*' => self.add_token(TokenType::Star),
             // '^' => self.add_token(TokenType::Caret),
             '!' => ternary!(BangEqual, Bang),
             '=' => ternary!(EqualEqual, Equal),
             '<' => ternary!(LessEqual, Less),
             '>' => ternary!(GreaterEqual, Greater),
-            '+' => ternary!(PlusEqual, Plus),
 
-            // comments
+            '+' => ternary!(PlusEqual, Plus),
+            '-' => ternary!(MinEqual, Minus),
+            '*' => ternary!(MulEqual, Star),
+
+            // comments, '/', or '/='
             '/' => {
                 if self.matches('/') {
                     while self.peek() != '\n' && !self.at_end_input() {
@@ -109,8 +110,7 @@ impl<'source> Scanner<'source> {
                 } else if self.matches('*') {
                     self.check_for_end_comment();
                 } else {
-                    self.add_token(TokenType::Slash);
-                    self.current += 1;
+                    ternary!(DivEqual, Slash);
                 }
             }
 

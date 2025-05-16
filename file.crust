@@ -1,5 +1,5 @@
-let x = "sdf";
-x += 2;
+let x = 12;
+x /= 3;
 print x;
 
 //fn fib(int n) {

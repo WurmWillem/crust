@@ -414,22 +414,24 @@ impl<'token> Parser<'token> {
                 self.expression()?;
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
             } else if can_assign && self.matches(TokenType::PlusEqual) {
+                self.emit_bytes(OpCode::GetLocal as u8, arg);
                 self.expression()?;
 
-                if kind != self.last_operand_type
-                    || (kind != ValueType::Num && kind != ValueType::Str)
-                {
-                    let kind = kind.to_string();
-                    let rhs_type = self.last_operand_type.to_string();
-                    let msg = format!(
-                        "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
-                        kind, rhs_type
-                    );
-                    return Err(ParseError::new(self.peek().line, &msg));
-                }
+                self.check_if_add_op_is_valid(kind)?;
 
-                self.emit_bytes(OpCode::GetLocal as u8, arg);
                 self.emit_byte(OpCode::Add as u8);
+                self.emit_bytes(OpCode::SetLocal as u8, arg);
+            } else if can_assign && self.matches(TokenType::MinEqual) {
+                self.emit_bytes(OpCode::GetLocal as u8, arg);
+                self.expression()?;
+                self.check_if_operation_is_valid(kind, '-')?;
+                self.emit_byte(OpCode::Sub as u8);
+                self.emit_bytes(OpCode::SetLocal as u8, arg);
+            } else if can_assign && self.matches(TokenType::MulEqual) {
+                self.emit_bytes(OpCode::GetLocal as u8, arg);
+                self.expression()?;
+                self.check_if_operation_is_valid(kind, '*')?;
+                self.emit_byte(OpCode::Mul as u8);
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
             } else {
                 self.emit_bytes(OpCode::GetLocal as u8, arg);
@@ -450,6 +452,21 @@ impl<'token> Parser<'token> {
         Err(ParseError::new(name.line, &msg))
     }
 
+    fn check_if_add_op_is_valid(&mut self, lhs_type: ValueType) -> Result<(), ParseError> {
+        if lhs_type != self.last_operand_type
+            || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
+        {
+            let kind = lhs_type.to_string();
+            let rhs_type = self.last_operand_type.to_string();
+            let msg = format!(
+                "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
+                kind, rhs_type
+            );
+            return Err(ParseError::new(self.peek().line, &msg));
+        }
+        Ok(())
+    }
+
     fn string(&mut self) -> Result<(), ParseError> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
@@ -467,6 +484,33 @@ impl<'token> Parser<'token> {
         };
         self.last_operand_type = ValueType::Num;
         self.emit_constant(StackValue::F64(value))
+    }
+
+    fn emit_operation_op_code(
+        &mut self,
+        lhs_type: ValueType,
+        op_char: char,
+        op_code: OpCode,
+    ) -> Result<(), ParseError> {
+        self.check_if_operation_is_valid(lhs_type, op_char)?;
+        self.emit_byte(op_code as u8);
+        Ok(())
+    }
+    fn check_if_operation_is_valid(
+        &self,
+        lhs_type: ValueType,
+        op_char: char,
+    ) -> Result<(), ParseError> {
+        if lhs_type != ValueType::Num || self.last_operand_type != ValueType::Num {
+            let lhs_type = lhs_type.to_string();
+            let rhs_type = self.last_operand_type.to_string();
+            let msg = &format!(
+                "Operator '{}' expects two numbers, but got types '{}' and '{}'.",
+                op_char, lhs_type, rhs_type
+            );
+            return Err(ParseError::new(self.peek().line, msg));
+        }
+        Ok(())
     }
 
     fn binary(&mut self) -> Result<(), ParseError> {
@@ -501,22 +545,12 @@ impl<'token> Parser<'token> {
 
         match op_type {
             TokenType::Plus => {
-                if lhs_type != self.last_operand_type
-                    || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
-                {
-                    let lhs_type = lhs_type.to_string();
-                    let rhs_type = self.last_operand_type.to_string();
-                    let msg = format!(
-                        "Operator '+' expects two numbers or two strings, but got types '{}' and '{}'.",
-                        lhs_type, rhs_type
-                    );
-                    return Err(ParseError::new(self.peek().line, &msg));
-                }
+                self.check_if_add_op_is_valid(lhs_type)?;
                 self.emit_byte(OpCode::Add as u8);
             }
-            TokenType::Minus => emit_op_code!('-', Sub),
-            TokenType::Star => emit_op_code!('*', Mul),
-            TokenType::Slash => emit_op_code!('/', Div),
+            TokenType::Minus => self.emit_operation_op_code(lhs_type, '-', OpCode::Sub)?,
+            TokenType::Star => self.emit_operation_op_code(lhs_type, '*', OpCode::Mul)?,
+            TokenType::Slash => self.emit_operation_op_code(lhs_type, '/', OpCode::Div)?,
             TokenType::EqualEqual => {
                 if lhs_type != self.last_operand_type
                     || (lhs_type != ValueType::Num
