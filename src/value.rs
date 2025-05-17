@@ -37,6 +37,7 @@ pub enum StackValue {
 
 macro_rules! add_num_operation {
     ($fun_name: ident, $op: tt) => {
+        #[inline(always)]
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
@@ -48,6 +49,7 @@ macro_rules! add_num_operation {
 
 macro_rules! add_num_comparison {
     ($fun_name: ident, $op: tt) => {
+        #[inline(always)]
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs $op rhs),
