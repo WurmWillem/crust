@@ -1,8 +1,29 @@
 /*
-let x = 3;
-/*
+let x = 12;
+x /= 3;
 print x;
-
 */
-// dsd
-print 2;
+
+fn fib(int n) { // typo here
+    if n < 2 {
+        return n;
+    }
+    return fib(n - 2) + fib(n - 1);
+}
+
+print fib(40);
+
+//let x = 3;
+//sum(1, 2);
+//
+//greet("hoi");
+//sum(1, 2);
+//
+//
+////greet();
+//sum(1, 2, 3, 4);
+
+//let i = 0;
+//while i < 10000 {
+//    i = i + 1;
+//}

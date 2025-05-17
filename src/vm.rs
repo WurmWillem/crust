@@ -251,13 +251,11 @@ impl VM {
 
     unsafe fn call(&mut self, frame: *mut CallFrame) {
         let arg_count = self.read_byte(frame) as usize;
-        let value = &self.stack[self.stack_top - arg_count];
+        let slots = self.stack_top - arg_count;
+        let value = self.stack[slots];
 
         match value {
             StackValue::Obj(Object::Func(func)) => {
-                let func = *func;
-                let slots = self.stack_top - arg_count;
-
                 let frame = CallFrame {
                     ip: func.data.chunk.get_ptr(),
                     slots,
