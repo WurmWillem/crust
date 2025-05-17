@@ -13,13 +13,14 @@ pub struct DeclaredFuncStack<'a> {
 impl<'a> DeclaredFuncStack<'a> {
     pub fn new() -> Self {
         Self {
-            funcs: [DeclaredFunc::new("", None); MAX_FUNC_AMT],
+            funcs: [DeclaredFunc::new("", None, 0); MAX_FUNC_AMT],
             top: 0,
         }
     }
 
-    pub fn edit_name(&mut self, name: &'a str) {
+    pub fn patch_func(&mut self, name: &'a str, arity: u8) {
         self.funcs[self.top].name = name;
+        self.funcs[self.top].arity = arity;
     }
 
     pub fn edit_value_and_increment_top(&mut self, value: StackValue) {
@@ -32,10 +33,11 @@ impl<'a> DeclaredFuncStack<'a> {
             .map(|func| func.value.unwrap_or(StackValue::Null))
     }
 
-    pub fn resolve_func(&mut self, name: &str) -> Option<u8> {
+    pub fn resolve_func(&mut self, name: &str) -> Option<(u8, u8)> {
         for i in 0..self.funcs.len() {
             if self.funcs[i].name == name {
-                return Some(i as u8);
+                let arity = self.funcs[i].arity;
+                return Some((i as u8, arity));
             }
         }
         None
@@ -45,11 +47,12 @@ impl<'a> DeclaredFuncStack<'a> {
 #[derive(Debug, Clone, Copy)]
 struct DeclaredFunc<'a> {
     name: &'a str,
+    arity: u8,
     value: Option<StackValue>,
 }
 impl<'a> DeclaredFunc<'a> {
-    fn new(name: &'a str, value: Option<StackValue>) -> Self {
-        Self { name, value }
+    fn new(name: &'a str, value: Option<StackValue>, arity: u8) -> Self {
+        Self { name, value, arity }
     }
 }
 
@@ -105,6 +108,10 @@ impl<'a> CompilerStack<'a> {
             .func
             .chunk
             .write_byte_to_chunk(byte, line);
+    }
+
+    pub fn get_arity(&self) -> u8 {
+        self.compilers[self.current].func.get_arity()
     }
 
     pub fn increment_arity(&mut self) {

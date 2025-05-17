@@ -122,6 +122,9 @@ impl ObjFunc {
     pub fn increment_arity(&mut self) {
         self.arity += 1;
     }
+    pub fn get_arity(&self) -> u8 {
+        self.arity
+    }
     pub fn get_name(&self) -> &String {
         &self.name
     }

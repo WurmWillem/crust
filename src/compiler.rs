@@ -17,6 +17,7 @@ pub struct Parser<'token> {
     heap: Heap,
     comps: CompilerStack<'token>,
     funcs: DeclaredFuncStack<'token>,
+    last_arity_found: u8,
 }
 impl<'token> Parser<'token> {
     pub fn compile(
@@ -29,6 +30,7 @@ impl<'token> Parser<'token> {
             last_operand_type: ValueType::None,
             comps: CompilerStack::new(),
             funcs: DeclaredFuncStack::new(),
+            last_arity_found: 0,
         };
 
         let mut had_error = false;
@@ -80,13 +82,12 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
-        self.funcs.edit_name(name.lexeme);
-        self.function(name.lexeme.to_string())?;
+        self.function(name.lexeme)?;
 
         Ok(())
     }
-    fn function(&mut self, name: String) -> Result<(), ParseError> {
-        self.comps.push(name.clone());
+    fn function(&mut self, name: &'token str) -> Result<(), ParseError> {
+        self.comps.push(name.to_string());
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
@@ -99,11 +100,13 @@ impl<'token> Parser<'token> {
             }
         }
 
+        let arity = self.comps.get_arity();
+        self.funcs.patch_func(name, arity);
+
         self.consume(TokenType::RightParen, "Expected ')' after parameters.")?;
         self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
 
         self.block()?;
-
         self.emit_return();
 
         let func = self.end_compiler();
@@ -119,16 +122,20 @@ impl<'token> Parser<'token> {
             Some(var_type) => var_type,
             _ => {
                 self.dont_parse_scope(false);
+
                 return Err(ParseError::new(
                     self.previous().line,
                     "Expected type for parameter.",
                 ));
             }
         };
+
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
+
         self.comps.add_local(name, var_type)?;
         self.comps.increment_arity();
+
         Ok(())
     }
 
@@ -393,7 +400,7 @@ impl<'token> Parser<'token> {
         self.parse_precedence(Precedence::Assignment)
     }
 
-    fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
+    fn var_or_func(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
 
         macro_rules! emit_operation_code {
@@ -433,8 +440,10 @@ impl<'token> Parser<'token> {
             return Ok(());
         }
 
-        if let Some(arg) = self.funcs.resolve_func(name.lexeme) {
+        if let Some((arg, arity)) = self.funcs.resolve_func(name.lexeme) {
+            self.last_arity_found = arity;
             self.emit_bytes(OpCode::GetFunc as u8, arg);
+            // dbg!("hoi");
             return Ok(());
         }
 
@@ -603,13 +612,14 @@ impl<'token> Parser<'token> {
     }
 
     fn execute_fn_type(&mut self, fn_type: FnType, can_assign: bool) -> Result<(), ParseError> {
+        // dbg!(fn_type);
         match fn_type {
             FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            FnType::Variable => self.variable(can_assign),
+            FnType::Variable => self.var_or_func(can_assign),
             FnType::Literal => {
                 self.literal();
                 Ok(())
@@ -621,6 +631,15 @@ impl<'token> Parser<'token> {
 
     fn call(&mut self) -> Result<(), ParseError> {
         let arg_count = self.argument_list()?;
+
+        if self.last_arity_found != arg_count {
+            let msg = format!(
+                "Function expected {} arguments, but got {}.",
+                self.last_arity_found, arg_count,
+            );
+            return Err(ParseError::new(self.peek().line, &msg));
+        }
+        
         self.emit_bytes(OpCode::Call as u8, arg_count + 1);
         Ok(())
     }
