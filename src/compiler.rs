@@ -44,7 +44,7 @@ impl<'token> Parser<'token> {
         }
         parser.current_token += 1;
         if had_error {
-            println!("{}", "Parse error(s) detected, terminate program.".purple());
+            println!("{}", "Compile error(s) detected, terminating program.".purple());
             return None;
         }
 
@@ -148,7 +148,7 @@ impl<'token> Parser<'token> {
             self.expression()?;
 
             if self.last_operand_type != var_type {
-                let msg = format!("Expected value of type {}, but found type {}.", var_type, self.last_operand_type);
+                let msg = format!("Expected value of type '{}', but found type '{}'.", var_type, self.last_operand_type);
                 return Err(ParseError::new(self.peek().line, &msg));
             }
             
@@ -163,7 +163,6 @@ impl<'token> Parser<'token> {
     }
 
     fn statement(&mut self) -> Result<(), ParseError> {
-        // dbg!(self.peek());
         if self.matches(TokenType::Print) {
             self.print_statement()
         } else if self.matches(TokenType::If) {
@@ -453,7 +452,9 @@ impl<'token> Parser<'token> {
         if let Some((arg, arity)) = self.funcs.resolve_func(name.lexeme) {
             self.last_arity_found = arity;
             self.emit_bytes(OpCode::GetFunc as u8, arg);
-            // dbg!("hoi");
+            // self.advance();
+            // self.execute_fn_type(FnType::Variable, false)?;
+            // dbg!(self.peek());
             return Ok(());
         }
 

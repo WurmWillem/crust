@@ -1,18 +1,10 @@
-int x = 3;
-
-/*
-x /= 3;
-print x;
-
 fn fib(int n) {
-    if n < 2 {
-        return n;
-    }
+    if n < 2 return n;
+
     return fib(n - 2) + fib(n - 1);
 }
 
-print fib(20);
-*/
+print fib(20) + "sdf";
 
 //let x = 3;
 //sum(1, 2);

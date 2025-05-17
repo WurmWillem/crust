@@ -181,7 +181,7 @@ impl<'source> Scanner<'source> {
         }
         
         let msg = "Unterminated comment, never found '*/'.";
-        print_error(self.line, &msg);
+        print_error(self.line, msg);
         self.had_error = true;
     }
 
