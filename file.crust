@@ -1,8 +1,10 @@
-/*
 let x = 3;
-/*
-print x;
+print 3;
 
-*/
-// dsd
-print 2;
+while y > 3 {
+    print 3;
+    print y;
+}
+
+let y = 4;
+print y;

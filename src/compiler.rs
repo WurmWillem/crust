@@ -418,10 +418,23 @@ impl<'token> Parser<'token> {
             return Ok(());
         }
 
+        // the variable/function does not exist
+        // skip some tokens to prevent error cascading
+        while !self.check(TokenType::Semicolon)
+            && !self.check(TokenType::LeftBrace)
+            && !self.check(TokenType::Eof)
+        {
+            self.advance();
+        }
+        if self.check(TokenType::Semicolon) {
+            self.advance();
+        }
+
         let msg = format!(
             "The variable/function with name '{}' does not exist.",
             name.lexeme
         );
+
         Err(ParseError::new(name.line, &msg))
     }
 
