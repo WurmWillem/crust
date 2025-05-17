@@ -1,8 +1,8 @@
+int x = 3;
+
 /*
-let x = 12;
 x /= 3;
 print x;
-*/
 
 fn fib(int n) {
     if n < 2 {
@@ -12,6 +12,7 @@ fn fib(int n) {
 }
 
 print fib(20);
+*/
 
 //let x = 3;
 //sum(1, 2);
@@ -27,3 +28,4 @@ print fib(20);
 //while i < 10000 {
 //    i = i + 1;
 //}
+

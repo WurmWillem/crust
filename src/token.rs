@@ -82,7 +82,6 @@ pub enum TokenType {
     Super,
     This,
     True,
-    Var,
     While,
 
     // var types

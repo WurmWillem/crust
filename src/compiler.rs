@@ -69,8 +69,9 @@ impl<'token> Parser<'token> {
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
-        if self.matches(TokenType::Var) {
-            self.var_declaration()
+        if let Some(var_type) = self.peek().kind.as_value_type() {
+            self.advance();
+            self.var_declaration(var_type)
         } else if self.matches(TokenType::Fun) {
             self.func_declaration()
         } else {
@@ -139,12 +140,18 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
-    fn var_declaration(&mut self) -> Result<(), ParseError> {
+    fn var_declaration(&mut self, var_type: ValueType) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
 
         if self.matches(TokenType::Equal) {
             self.expression()?;
+
+            if self.last_operand_type != var_type {
+                let msg = format!("Expected value of type {}, but found type {}.", var_type, self.last_operand_type);
+                return Err(ParseError::new(self.peek().line, &msg));
+            }
+            
             self.comps.add_local(name, self.last_operand_type)?;
         } else {
             self.emit_byte(OpCode::Null as u8);
@@ -216,8 +223,9 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::LeftParen, "Expected '(' after 'for'.")?;
 
         if self.matches(TokenType::Semicolon) {
-        } else if self.matches(TokenType::Var) {
-            self.var_declaration()?;
+        } else if let Some(var_type) = self.peek().kind.as_value_type() {
+            self.advance();
+            self.var_declaration(var_type)?;
         } else {
             self.expression_statement()?;
         }
@@ -318,7 +326,9 @@ impl<'token> Parser<'token> {
             match self.peek().kind {
                 TokenType::Class
                 | TokenType::Fun
-                | TokenType::Var
+                | TokenType::F64
+                | TokenType::Bool
+                | TokenType::Str
                 | TokenType::For
                 | TokenType::If
                 | TokenType::While
@@ -639,7 +649,7 @@ impl<'token> Parser<'token> {
             );
             return Err(ParseError::new(self.peek().line, &msg));
         }
-        
+
         self.emit_bytes(OpCode::Call as u8, arg_count + 1);
         Ok(())
     }
@@ -648,6 +658,7 @@ impl<'token> Parser<'token> {
 
         while !self.check(TokenType::RightParen) {
             self.expression()?;
+            // dbg!(self.last_operand_type);
             arg_count += 1;
 
             if !self.matches(TokenType::Comma) {

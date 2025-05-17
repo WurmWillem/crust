@@ -270,7 +270,7 @@ pub struct ParseRule {
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 43] = {
+pub const PARSE_RULES: [ParseRule; 42] = {
     use FnType::*;
     use Precedence as P;
 
@@ -324,7 +324,6 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         none!(), // super
         none!(), // this
         ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // true
-        none!(), // var
         none!(), // while
         none!(), // EOF
     ]
