@@ -118,6 +118,7 @@ impl<'token> Parser<'token> {
         let var_type = match self.advance().kind.as_value_type() {
             Some(var_type) => var_type,
             _ => {
+                self.dont_parse_scope(false);
                 return Err(ParseError::new(
                     self.previous().line,
                     "Expected type for parameter.",
@@ -706,5 +707,33 @@ impl<'token> Parser<'token> {
 
     fn previous(&self) -> Token<'token> {
         self.tokens[self.current_token - 1]
+    }
+
+    fn dont_parse_scope(&mut self, already_inside_scope: bool) {
+        // if not already inside the scope
+        if !already_inside_scope {
+            // skip tokens intil EOF or '{' is found
+            while self.peek().kind != TokenType::Eof && self.peek().kind != TokenType::LeftBrace {
+                self.advance();
+            }
+            // consume the '{'
+            if self.peek().kind != TokenType::Eof {
+                self.advance();
+            }
+        }
+
+        // our scope
+        let mut left_brace_count = 1;
+
+        // our loop that skips until we are out of this scope
+        while self.peek().kind != TokenType::Eof && left_brace_count > 0 {
+            if self.peek().kind == TokenType::LeftBrace {
+                left_brace_count += 1;
+            }
+            if self.peek().kind == TokenType::RightBrace {
+                left_brace_count -= 1;
+            }
+            self.advance();
+        }
     }
 }
