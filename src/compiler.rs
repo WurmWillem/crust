@@ -44,7 +44,10 @@ impl<'token> Parser<'token> {
         }
         parser.current_token += 1;
         if had_error {
-            println!("{}", "Compile error(s) detected, terminating program.".purple());
+            println!(
+                "{}",
+                "Compile error(s) detected, terminating program.".purple()
+            );
             return None;
         }
 
@@ -148,10 +151,13 @@ impl<'token> Parser<'token> {
             self.expression()?;
 
             if self.last_operand_type != var_type {
-                let msg = format!("Expected value of type '{}', but found type '{}'.", var_type, self.last_operand_type);
+                let msg = format!(
+                    "Expected value of type '{}', but found type '{}'.",
+                    var_type, self.last_operand_type
+                );
                 return Err(ParseError::new(self.peek().line, &msg));
             }
-            
+
             self.comps.add_local(name, self.last_operand_type)?;
         } else {
             self.emit_byte(OpCode::Null as u8);
@@ -412,6 +418,27 @@ impl<'token> Parser<'token> {
     fn var_or_func(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
 
+        if self.resolve_local(name.lexeme, can_assign)? {
+            return Ok(());
+        }
+
+        if let Some((arg, arity)) = self.funcs.resolve_func(name.lexeme) {
+            self.last_arity_found = arity;
+            self.emit_bytes(OpCode::GetFunc as u8, arg);
+            // self.advance();
+            // self.execute_fn_type(FnType::Variable, false)?;
+            // dbg!(self.peek());
+            return Ok(());
+        }
+
+        let msg = format!(
+            "The variable/function with name '{}' does not exist.",
+            name.lexeme
+        );
+        Err(ParseError::new(name.line, &msg))
+    }
+
+    fn resolve_local(&mut self, name: &str, can_assign: bool) -> Result<bool, ParseError> {
         macro_rules! emit_operation_code {
             ($op_code: expr, $arg: expr, $kind: expr, $op_char: expr) => {
                 self.emit_bytes(OpCode::GetLocal as u8, $arg);
@@ -424,7 +451,7 @@ impl<'token> Parser<'token> {
             };
         }
 
-        if let Some((arg, kind)) = self.comps.resolve_local(name.lexeme) {
+        if let Some((arg, kind)) = self.comps.resolve_local(name) {
             if can_assign && self.matches(TokenType::Equal) {
                 self.expression()?;
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
@@ -446,23 +473,9 @@ impl<'token> Parser<'token> {
                 self.emit_bytes(OpCode::GetLocal as u8, arg);
                 self.last_operand_type = kind;
             }
-            return Ok(());
+            return Ok(true);
         }
-
-        if let Some((arg, arity)) = self.funcs.resolve_func(name.lexeme) {
-            self.last_arity_found = arity;
-            self.emit_bytes(OpCode::GetFunc as u8, arg);
-            // self.advance();
-            // self.execute_fn_type(FnType::Variable, false)?;
-            // dbg!(self.peek());
-            return Ok(());
-        }
-
-        let msg = format!(
-            "The variable/function with name '{}' does not exist.",
-            name.lexeme
-        );
-        Err(ParseError::new(name.line, &msg))
+        Ok(false)
     }
 
     fn check_if_add_op_is_valid(&self, lhs_type: ValueType) -> Result<(), ParseError> {
