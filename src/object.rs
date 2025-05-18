@@ -115,10 +115,9 @@ pub struct ObjFunc {
 impl ObjFunc {
     pub fn new(name: String) -> Self {
         Self {
-            // arity: 0,
             chunk: Chunk::new(),
             name,
-            return_type: ValueType::Null,
+            return_type: ValueType::Null, // gets patched later
         }
     }
     pub fn get_name(&self) -> &String {

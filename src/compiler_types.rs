@@ -84,6 +84,10 @@ impl<'a> CompilerStack<'a> {
         self.current().scope_depth
     }
 
+    pub fn get_return_type(&self) -> ValueType {
+        self.current().func.return_type
+    }
+
     pub fn increment_scope_depth(&mut self) {
         self.compilers[self.current].scope_depth += 1;
     }

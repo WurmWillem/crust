@@ -230,7 +230,24 @@ impl<'token> Parser<'token> {
             self.emit_return();
         } else {
             self.expression()?;
-            // self.comps.
+
+            if self.last_operand_type != self.comps.get_return_type() {
+                // done to help with error synchronization
+
+                let msg = &format!(
+                    "Expected return type '{}', but found type '{}'",
+                    self.comps.get_return_type(),
+                    self.last_operand_type
+                );
+                let line = self.peek().line;
+
+                // if self.check(TokenType::Semicolon) {
+                    // self.advance();
+                // }
+
+                return Err(ParseError::new(line, msg));
+            }
+
             self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
             self.emit_byte(OpCode::Return as u8);
         }
@@ -354,7 +371,7 @@ impl<'token> Parser<'token> {
                 | TokenType::While
                 | TokenType::Print
                 | TokenType::Return => {
-                    dbg!(self.peek().kind);
+                    // dbg!(self.peek().kind);
                     return;
                 }
                 _ => (),
