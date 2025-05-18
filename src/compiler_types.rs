@@ -18,9 +18,10 @@ impl<'a> DeclaredFuncStack<'a> {
         }
     }
 
-    pub fn patch_func(&mut self, name: &'a str, parameters: Vec<ValueType>) {
+    pub fn patch_func(&mut self, name: &'a str, parameters: Vec<ValueType>, return_type: ValueType) {
         self.funcs[self.top].name = name;
         self.funcs[self.top].parameters = parameters;
+        self.funcs[self.top].return_type = return_type;
     }
 
     pub fn edit_value_and_increment_top(&mut self, value: StackValue) {
@@ -38,12 +39,13 @@ impl<'a> DeclaredFuncStack<'a> {
         arr
     }
 
-    pub fn resolve_func(&self, name: &str) -> Option<(u8, Vec<ValueType>)> {
+    pub fn resolve_func(&self, name: &str) -> Option<(u8, Vec<ValueType>, ValueType)> {
         for i in 0..self.funcs.len() {
             if self.funcs[i].name == name {
                 // TODO: only read access needed, maybe return reference?
                 let parameters = self.funcs[i].parameters.clone();
-                return Some((i as u8, parameters));
+                let return_type = self.funcs[i].return_type;
+                return Some((i as u8, parameters, return_type));
             }
         }
         None
@@ -55,6 +57,7 @@ struct DeclaredFunc<'a> {
     name: &'a str,
     parameters: Vec<ValueType>,
     value: Option<StackValue>,
+    return_type: ValueType,
 }
 impl<'a> DeclaredFunc<'a> {
     fn new(name: &'a str, value: Option<StackValue>) -> Self {
@@ -62,6 +65,7 @@ impl<'a> DeclaredFunc<'a> {
             name,
             value,
             parameters: Vec::new(),
+            return_type: ValueType::Null,
         }
     }
 }

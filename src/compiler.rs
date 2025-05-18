@@ -104,12 +104,11 @@ impl<'token> Parser<'token> {
             }
         }
 
-        self.funcs.patch_func(name, parameter_types);
-
+        let mut return_type = ValueType::Null;
         self.consume(TokenType::RightParen, "Expected')' after parameters.")?;
 
         if self.matches(TokenType::Colon) {
-            let return_type = match self.advance().kind.as_value_type() {
+            return_type = match self.advance().kind.as_value_type() {
                 Some(return_type) => return_type,
                 _ => {
                     return Err(ParseError::new(
@@ -120,6 +119,8 @@ impl<'token> Parser<'token> {
             };
             self.comps.patch_return_type(return_type);
         }
+        self.funcs.patch_func(name, parameter_types, return_type);
+
         self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
 
         self.block()?;
@@ -429,12 +430,12 @@ impl<'token> Parser<'token> {
             return Ok(());
         }
 
-        if let Some((arg, parameters)) = self.funcs.resolve_func(name.lexeme) {
+        if let Some((arg, parameters, return_type)) = self.funcs.resolve_func(name.lexeme) {
             self.emit_bytes(OpCode::GetFunc as u8, arg);
 
             self.advance();
             self.call(parameters)?;
-
+            self.last_operand_type = return_type;
             return Ok(());
         }
 
