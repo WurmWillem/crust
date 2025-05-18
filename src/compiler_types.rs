@@ -33,7 +33,7 @@ impl<'a> DeclaredFuncStack<'a> {
             .map(|func| func.value.unwrap_or(StackValue::Null))
     }
 
-    pub fn resolve_func(&mut self, name: &str) -> Option<(u8, u8)> {
+    pub fn resolve_func(&self, name: &str) -> Option<(u8, u8)> {
         for i in 0..self.funcs.len() {
             if self.funcs[i].name == name {
                 let arity = self.funcs[i].arity;

@@ -465,7 +465,7 @@ impl<'token> Parser<'token> {
         Err(ParseError::new(name.line, &msg))
     }
 
-    fn check_if_add_op_is_valid(&mut self, lhs_type: ValueType) -> Result<(), ParseError> {
+    fn check_if_add_op_is_valid(&self, lhs_type: ValueType) -> Result<(), ParseError> {
         if lhs_type != self.last_operand_type
             || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
         {
