@@ -41,6 +41,7 @@ impl<'token> Parser<'token> {
             }
         }
         parser.current_token += 1;
+
         if had_error {
             println!(
                 "{}",

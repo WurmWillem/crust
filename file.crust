@@ -9,7 +9,7 @@ fn greet() {
 
 fn d() {
   greet();
-  return fib(30);
+  return fib(40);
 }
 
 fn par(int a) {

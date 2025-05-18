@@ -29,13 +29,9 @@ impl<'a> DeclaredFuncStack<'a> {
     }
 
     pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
-        // self.funcs
-        //     .map(|func| func.value.unwrap_or(StackValue::Null))
         let mut arr = [StackValue::Null; MAX_FUNC_AMT];
         for (i, func) in self.funcs.iter().enumerate() {
-            if let Some(val) = &func.value {
-                arr[i] = *val;
-            }
+            arr[i] = func.value.unwrap_or(StackValue::Null);
         }
         arr
     }
@@ -65,19 +61,6 @@ impl<'a> DeclaredFunc<'a> {
             value,
             parameters: Vec::new(),
         }
-    }
-}
-
-// TODO: see if you can restrict the visibility of some fields
-#[derive(Debug, Clone, Copy)]
-struct Local<'a> {
-    name: Token<'a>,
-    kind: ValueType,
-    depth: usize,
-}
-impl<'a> Local<'a> {
-    fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
-        Self { name, depth, kind }
     }
 }
 
@@ -181,6 +164,18 @@ impl<'a> CompilerStack<'a> {
 
     fn current(&self) -> &Compiler {
         &self.compilers[self.current]
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Local<'a> {
+    name: Token<'a>,
+    kind: ValueType,
+    depth: usize,
+}
+impl<'a> Local<'a> {
+    fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
+        Self { name, depth, kind }
     }
 }
 

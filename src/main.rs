@@ -28,7 +28,10 @@ fn main() {
     let tokens = match scanner.scan_tokens() {
         Ok(tokens) => tokens,
         Err(_) => {
-            println!("{}", "Scan error(s) detected, terminating program.".purple());
+            println!(
+                "{}",
+                "Scan error(s) detected, terminating program.".purple()
+            );
             return;
         }
     };
