@@ -76,7 +76,7 @@ pub struct CompilerStack<'a> {
 impl<'a> CompilerStack<'a> {
     // create a new stack with a root compiler (no parent)
     pub fn new() -> Self {
-        let root = Compiler::new(None, "".to_string());
+        let root = Compiler::new("".to_string());
         Self {
             compilers: vec![root],
             current: 0, // Root is at index 0
@@ -146,24 +146,18 @@ impl<'a> CompilerStack<'a> {
 
         self.compilers[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
         self.compilers[self.current].func.chunk.code[offset + 1] = (jump & 0xFF) as u8;
-        // dbg!(chunk!(self).code[offset + 1]);
         Ok(())
     }
-    // push a new compiler onto the stack, with the current compiler as its parent
+
     pub fn push(&mut self, func_name: String) {
-        // dbg!(534345);
-        let new_compiler = Compiler::new(Some(self.current), func_name);
+        let new_compiler = Compiler::new(func_name);
         self.compilers.push(new_compiler);
-        self.current = self.compilers.len() - 1; // Update current to the new compiler
+        self.current = self.compilers.len() - 1;
     }
 
-    // pop the current compiler and restore the enclosing one
     pub fn pop(&mut self) -> Compiler {
-        let c = self.compilers.pop().unwrap();
-        if let Some(parent_idx) = c.enclosing {
-            self.current = parent_idx;
-        }
-        c
+        self.current = 0;
+        self.compilers.pop().unwrap()
     }
 
     pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
@@ -188,21 +182,17 @@ impl<'a> CompilerStack<'a> {
 
 const MAX_LOCAL_AMT: usize = u8::MAX as usize;
 pub struct Compiler<'a> {
-    // TODO: maybe enclosing is unessecary actually
-    enclosing: Option<usize>,
     locals: [Local<'a>; MAX_LOCAL_AMT],
     local_count: usize,
     scope_depth: usize,
     func: ObjFunc,
 }
 impl<'a> Compiler<'a> {
-    pub fn new(enclosing: Option<usize>, func_name: String) -> Self {
+    pub fn new(func_name: String) -> Self {
         let name = Token::new(TokenType::Equal, "", Literal::None, 0);
 
         let local = Local::new(name, 0, ValueType::None);
-        // let locals = [local; MAX_LOCAL_AMT];
         Self {
-            enclosing,
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,
             scope_depth: 0,

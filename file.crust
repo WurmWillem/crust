@@ -14,6 +14,20 @@ fn d() {
 
 print d();
 
+int x = 3;
+fn fun(int x) {
+  print x;
+  int x = 4;
+  {
+    int sdf = 3;
+  {
+    int sdf = 3;
+  }
+  }
+  print x;
+}
+fun(x);
+
 //let x = 3;
 //sum(1, 2);
 //
