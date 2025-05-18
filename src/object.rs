@@ -3,6 +3,7 @@ use std::ops;
 use std::ptr::NonNull;
 
 use crate::chunk::Chunk;
+use crate::value::ValueType;
 
 pub struct Heap {
     // TODO: maybe add support for Table so you won't have to reallocate every time
@@ -109,6 +110,7 @@ pub enum Object {
 pub struct ObjFunc {
     pub chunk: Chunk,
     name: String,
+    pub return_type: ValueType,
 }
 impl ObjFunc {
     pub fn new(name: String) -> Self {
@@ -116,6 +118,7 @@ impl ObjFunc {
             // arity: 0,
             chunk: Chunk::new(),
             name,
+            return_type: ValueType::Null,
         }
     }
     pub fn get_name(&self) -> &String {

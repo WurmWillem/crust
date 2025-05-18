@@ -3,20 +3,11 @@ fn fib(int n) {
     return fib(n - 2) + fib(n - 1);
 }
 
-fn greet() {
-  print "hoi";
+fn add(int a, int b): int {
+  return a + b;
 }
 
-fn d() {
-  greet();
-  return fib(40);
-}
-
-fn par(int a) {
-
-}
 //print par(false);
-print d();
 
 //let x = 3;
 //sum(1, 2);

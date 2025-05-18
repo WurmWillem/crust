@@ -38,11 +38,14 @@ pub enum TokenType {
     RightParen,
     LeftBrace,
     RightBrace,
+
     Comma,
     Dot,
+    Colon,
+    Semicolon,
+
     Minus,
     Plus,
-    Semicolon,
     Slash,
     Star,
 

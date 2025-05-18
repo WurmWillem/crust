@@ -106,7 +106,20 @@ impl<'token> Parser<'token> {
 
         self.funcs.patch_func(name, parameter_types);
 
-        self.consume(TokenType::RightParen, "Expected ')' after parameters.")?;
+        self.consume(TokenType::RightParen, "Expected')' after parameters.")?;
+
+        if self.matches(TokenType::Colon) {
+            let return_type = match self.advance().kind.as_value_type() {
+                Some(return_type) => return_type,
+                _ => {
+                    return Err(ParseError::new(
+                        self.previous().line,
+                        "Expected return type after finding ':'.",
+                    ));
+                }
+            };
+            self.comps.patch_return_type(return_type);
+        }
         self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
 
         self.block()?;
@@ -217,6 +230,7 @@ impl<'token> Parser<'token> {
             self.emit_return();
         } else {
             self.expression()?;
+            // self.comps.
             self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
             self.emit_byte(OpCode::Return as u8);
         }

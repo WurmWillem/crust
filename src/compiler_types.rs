@@ -31,7 +31,9 @@ impl<'a> DeclaredFuncStack<'a> {
     pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
         let mut arr = [StackValue::Null; MAX_FUNC_AMT];
         for (i, func) in self.funcs.iter().enumerate() {
-            arr[i] = func.value.unwrap_or(StackValue::Null);
+            if let Some(val) = &func.value {
+                arr[i] = *val;
+            }
         }
         arr
     }
@@ -136,6 +138,10 @@ impl<'a> CompilerStack<'a> {
         Ok(())
     }
 
+    pub fn patch_return_type(&mut self, return_type: ValueType) {
+        self.compilers[self.current].patch_return_type(return_type);
+    }
+
     pub fn push(&mut self, func_name: String) {
         let new_compiler = Compiler::new(func_name);
         self.compilers.push(new_compiler);
@@ -202,6 +208,10 @@ impl<'a> Compiler<'a> {
     pub fn get_func(self) -> ObjFunc {
         self.func
     }
+
+    pub fn patch_return_type(&mut self, return_type: ValueType) {
+        self.func.return_type = return_type;
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -259,7 +269,7 @@ pub struct ParseRule {
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 42] = {
+pub const PARSE_RULES: [ParseRule; 43] = {
     use FnType::*;
     use Precedence as P;
 
@@ -277,9 +287,10 @@ pub const PARSE_RULES: [ParseRule; 42] = {
         none!(), // right brace
         none!(), // comma
         none!(), // dot
+        none!(), // colon
+        none!(), // semicolon
         ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, }, // minus
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, }, // plus
-        none!(), // semicolon
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // slash
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // star
         ParseRule { prefix: Unary, infix: Empty, precedence: P::Factor, }, // bang
