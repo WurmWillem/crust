@@ -1,6 +1,6 @@
 use crate::{
     error::ParseError,
-    object::ObjFunc,
+    object::{Heap, ObjFunc, ObjNative, Object},
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
     vm::MAX_FUNC_AMT,
@@ -11,14 +11,28 @@ pub struct DeclaredFuncStack<'a> {
     top: usize,
 }
 impl<'a> DeclaredFuncStack<'a> {
-    pub fn new() -> Self {
-        Self {
-            funcs: std::array::from_fn(|_| DeclaredFunc::new("", None)),
-            top: 0,
-        }
+    pub fn new(heap: &mut Heap) -> Self {
+        let mut funcs = std::array::from_fn(|_| DeclaredFunc::new("", None));
+
+        let clock = ObjNative::new("clock".to_string());
+        let (clock, _) = heap.alloc(clock, Object::Native);
+        let value = Some(StackValue::Obj(clock));
+        let clock = DeclaredFunc::new("clock", value);
+
+        funcs[0] = clock;
+        Self { funcs, top: 1 }
     }
 
-    pub fn patch_func(&mut self, name: &'a str, parameters: Vec<ValueType>, return_type: ValueType) {
+    pub fn get_len(&self) -> usize {
+        self.top
+    }
+
+    pub fn patch_func(
+        &mut self,
+        name: &'a str,
+        parameters: Vec<ValueType>,
+        return_type: ValueType,
+    ) {
         self.funcs[self.top].name = name;
         self.funcs[self.top].parameters = parameters;
         self.funcs[self.top].return_type = return_type;
@@ -31,8 +45,8 @@ impl<'a> DeclaredFuncStack<'a> {
 
     pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
         let mut arr = [StackValue::Null; MAX_FUNC_AMT];
-        for (i, func) in self.funcs.iter().enumerate() {
-            if let Some(val) = &func.value {
+        for i in 0..=self.top {
+            if let Some(val) = &self.funcs[i].value {
                 arr[i] = *val;
             }
         }

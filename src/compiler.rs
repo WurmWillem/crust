@@ -22,13 +22,16 @@ impl<'token> Parser<'token> {
     pub fn compile(
         tokens: Vec<Token<'token>>,
     ) -> Option<(ObjFunc, Heap, [StackValue; MAX_FUNC_AMT])> {
+        let mut heap = Heap::new();
+        let funcs = DeclaredFuncStack::new(&mut heap);
+
         let mut parser = Parser {
             tokens,
             current_token: 0,
-            heap: Heap::new(),
+            heap,
             last_operand_type: ValueType::None,
             comps: CompilerStack::new(),
-            funcs: DeclaredFuncStack::new(),
+            funcs,
         };
 
         let mut had_error = false;
@@ -55,7 +58,7 @@ impl<'token> Parser<'token> {
         }
 
         let func = parser.end_compiler();
-        let funcs = parser.funcs.to_stack_value_arr();
+        let mut funcs = parser.funcs.to_stack_value_arr();
 
         Some((func, parser.heap, funcs))
     }
@@ -220,7 +223,6 @@ impl<'token> Parser<'token> {
 
     fn emit_jump(&mut self, instruction: OpCode) -> usize {
         self.emit_byte(instruction as u8);
-        // placeholders
         self.emit_byte(0xFF);
         self.emit_byte(0xFF);
         self.comps.get_code_len() - 2
