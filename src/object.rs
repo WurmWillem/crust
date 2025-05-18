@@ -107,23 +107,16 @@ pub enum Object {
 
 #[derive(Debug, Clone)]
 pub struct ObjFunc {
-    arity: u8,
     pub chunk: Chunk,
     name: String,
 }
 impl ObjFunc {
     pub fn new(name: String) -> Self {
         Self {
-            arity: 0,
+            // arity: 0,
             chunk: Chunk::new(),
             name,
         }
-    }
-    pub fn increment_arity(&mut self) {
-        self.arity += 1;
-    }
-    pub fn get_arity(&self) -> u8 {
-        self.arity
     }
     pub fn get_name(&self) -> &String {
         &self.name

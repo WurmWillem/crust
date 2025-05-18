@@ -9,12 +9,14 @@ fn greet() {
 
 fn d() {
   greet();
-  return fib(20);
+  return fib(30);
 }
 
-print d();
+fn par(int a) {
 
-int x = 3;
+}
+//print par(false);
+print d();
 
 //let x = 3;
 //sum(1, 2);

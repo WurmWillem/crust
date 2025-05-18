@@ -17,7 +17,6 @@ pub struct Parser<'token> {
     heap: Heap,
     comps: CompilerStack<'token>,
     funcs: DeclaredFuncStack<'token>,
-    last_arity_found: u8,
 }
 impl<'token> Parser<'token> {
     pub fn compile(
@@ -30,7 +29,6 @@ impl<'token> Parser<'token> {
             last_operand_type: ValueType::None,
             comps: CompilerStack::new(),
             funcs: DeclaredFuncStack::new(),
-            last_arity_found: 0,
         };
 
         let mut had_error = false;
@@ -141,7 +139,6 @@ impl<'token> Parser<'token> {
         let name = self.previous();
 
         self.comps.add_local(name, var_type)?;
-        self.comps.increment_arity();
 
         Ok(())
     }
@@ -424,12 +421,11 @@ impl<'token> Parser<'token> {
             return Ok(());
         }
 
-        if let Some((arg, arity)) = self.funcs.resolve_func(name.lexeme) {
-            self.last_arity_found = arity;
+        if let Some((arg, parameters)) = self.funcs.resolve_func(name.lexeme) {
             self.emit_bytes(OpCode::GetFunc as u8, arg);
 
             self.advance();
-            self.call()?;
+            self.call(parameters)?;
 
             return Ok(());
         }
@@ -656,13 +652,14 @@ impl<'token> Parser<'token> {
         }
     }
 
-    fn call(&mut self) -> Result<(), ParseError> {
-        let arg_count = self.argument_list()?;
+    fn call(&mut self, parameters: Vec<ValueType>) -> Result<(), ParseError> {
+        let arity = parameters.len() as u8;
+        let arg_count = self.argument_list(parameters)?;
 
-        if self.last_arity_found != arg_count {
+        if arity != arg_count {
             let msg = format!(
                 "Function expected {} arguments, but got {}.",
-                self.last_arity_found, arg_count,
+                arity, arg_count,
             );
             return Err(ParseError::new(self.peek().line, &msg));
         }
@@ -670,13 +667,23 @@ impl<'token> Parser<'token> {
         self.emit_bytes(OpCode::Call as u8, arg_count + 1);
         Ok(())
     }
-    fn argument_list(&mut self) -> Result<u8, ParseError> {
-        let mut arg_count = 0;
+    fn argument_list(&mut self, parameters: Vec<ValueType>) -> Result<u8, ParseError> {
+        let mut i = 0;
 
         while !self.check(TokenType::RightParen) {
             self.expression()?;
-            // dbg!(self.last_operand_type);
-            arg_count += 1;
+
+            if let Some(kind) = parameters.get(i) {
+                if self.last_operand_type != *kind {
+                    let msg = format!(
+                        "Function expected argument of type '{}', but found type '{}'.",
+                        parameters[i], self.last_operand_type,
+                    );
+                    return Err(ParseError::new(self.peek().line, &msg));
+                }
+            }
+
+            i += 1;
 
             if !self.matches(TokenType::Comma) {
                 break;
@@ -684,7 +691,7 @@ impl<'token> Parser<'token> {
         }
 
         self.consume(TokenType::RightParen, "Expected ')' after argument list")?;
-        Ok(arg_count)
+        Ok(i as u8)
     }
 
     fn emit_constant(&mut self, value: StackValue) -> Result<(), ParseError> {

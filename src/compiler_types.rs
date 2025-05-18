@@ -40,11 +40,12 @@ impl<'a> DeclaredFuncStack<'a> {
         arr
     }
 
-    pub fn resolve_func(&self, name: &str) -> Option<(u8, u8)> {
+    pub fn resolve_func(&self, name: &str) -> Option<(u8, Vec<ValueType>)> {
         for i in 0..self.funcs.len() {
             if self.funcs[i].name == name {
-                let arity = self.funcs[i].parameters.len() as u8;
-                return Some((i as u8, arity));
+                // TODO: only read access needed, maybe return reference?
+                let parameters = self.funcs[i].parameters.clone();
+                return Some((i as u8, parameters));
             }
         }
         None
@@ -119,14 +120,6 @@ impl<'a> CompilerStack<'a> {
             .func
             .chunk
             .write_byte_to_chunk(byte, line);
-    }
-
-    pub fn get_arity(&self) -> u8 {
-        self.compilers[self.current].func.get_arity()
-    }
-
-    pub fn increment_arity(&mut self) {
-        self.compilers[self.current].func.increment_arity();
     }
 
     pub fn get_code_len(&self) -> usize {
