@@ -13,14 +13,14 @@ pub struct DeclaredFuncStack<'a> {
 impl<'a> DeclaredFuncStack<'a> {
     pub fn new() -> Self {
         Self {
-            funcs: [DeclaredFunc::new("", None, 0); MAX_FUNC_AMT],
+            funcs: std::array::from_fn(|_| DeclaredFunc::new("", None)),
             top: 0,
         }
     }
 
-    pub fn patch_func(&mut self, name: &'a str, arity: u8) {
+    pub fn patch_func(&mut self, name: &'a str, parameters: Vec<ValueType>) {
         self.funcs[self.top].name = name;
-        self.funcs[self.top].arity = arity;
+        self.funcs[self.top].parameters = parameters;
     }
 
     pub fn edit_value_and_increment_top(&mut self, value: StackValue) {
@@ -29,14 +29,21 @@ impl<'a> DeclaredFuncStack<'a> {
     }
 
     pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
-        self.funcs
-            .map(|func| func.value.unwrap_or(StackValue::Null))
+        // self.funcs
+        //     .map(|func| func.value.unwrap_or(StackValue::Null))
+        let mut arr = [StackValue::Null; MAX_FUNC_AMT];
+        for (i, func) in self.funcs.iter().enumerate() {
+            if let Some(val) = &func.value {
+                arr[i] = *val;
+            }
+        }
+        arr
     }
 
     pub fn resolve_func(&self, name: &str) -> Option<(u8, u8)> {
         for i in 0..self.funcs.len() {
             if self.funcs[i].name == name {
-                let arity = self.funcs[i].arity;
+                let arity = self.funcs[i].parameters.len() as u8;
                 return Some((i as u8, arity));
             }
         }
@@ -44,15 +51,19 @@ impl<'a> DeclaredFuncStack<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct DeclaredFunc<'a> {
     name: &'a str,
-    arity: u8,
+    parameters: Vec<ValueType>,
     value: Option<StackValue>,
 }
 impl<'a> DeclaredFunc<'a> {
-    fn new(name: &'a str, value: Option<StackValue>, arity: u8) -> Self {
-        Self { name, value, arity }
+    fn new(name: &'a str, value: Option<StackValue>) -> Self {
+        Self {
+            name,
+            value,
+            parameters: Vec::new(),
+        }
     }
 }
 

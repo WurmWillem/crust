@@ -97,15 +97,15 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
 
         // parse parameters
+        let mut parameter_types = Vec::new();
         if !self.check(TokenType::RightParen) {
-            self.parse_parameter()?;
+            self.parse_parameter(&mut parameter_types)?;
             while self.matches(TokenType::Comma) {
-                self.parse_parameter()?;
+                self.parse_parameter(&mut parameter_types)?;
             }
         }
 
-        let arity = self.comps.get_arity();
-        self.funcs.patch_func(name, arity);
+        self.funcs.patch_func(name, parameter_types);
 
         self.consume(TokenType::RightParen, "Expected ')' after parameters.")?;
         self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
@@ -121,9 +121,12 @@ impl<'token> Parser<'token> {
 
         Ok(())
     }
-    fn parse_parameter(&mut self) -> Result<(), ParseError> {
+    fn parse_parameter(&mut self, parameter_types: &mut Vec<ValueType>) -> Result<(), ParseError> {
         let var_type = match self.advance().kind.as_value_type() {
-            Some(var_type) => var_type,
+            Some(var_type) => {
+                parameter_types.push(var_type);
+                var_type
+            }
             _ => {
                 self.dont_parse_scope(false);
 
