@@ -3,6 +3,7 @@ use std::ops;
 use std::ptr::NonNull;
 
 use crate::chunk::Chunk;
+use crate::native_funcs::clock;
 use crate::value::{StackValue, ValueType};
 
 pub struct Heap {
@@ -133,12 +134,6 @@ impl ObjFunc {
 
 type NativeFn = fn(&[StackValue]) -> StackValue;
 
-fn clock_native(_args: &[StackValue]) -> StackValue {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    StackValue::F64(time.as_secs_f64())
-}
-
 #[derive(Debug, Clone)]
 pub struct ObjNative {
     // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
@@ -146,10 +141,10 @@ pub struct ObjNative {
     pub func: NativeFn,
 }
 impl ObjNative {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, func: NativeFn) -> Self {
         Self {
             name,
-            func: clock_native,
+            func,
         }
     }
     pub fn get_name(&self) -> &String {

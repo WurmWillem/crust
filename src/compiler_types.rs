@@ -1,5 +1,6 @@
 use crate::{
     error::ParseError,
+    native_funcs,
     object::{Heap, ObjFunc, ObjNative, Object},
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
@@ -13,18 +14,24 @@ pub struct DeclaredFuncStack<'a> {
 impl<'a> DeclaredFuncStack<'a> {
     pub fn new(heap: &mut Heap) -> Self {
         let mut funcs = std::array::from_fn(|_| DeclaredFunc::new("", None));
+        let mut i = 0;
+        
+        macro_rules! add_func {
+            ($name: expr, $func: ident) => {
+                // patch parameters
+                let clock = ObjNative::new($name.to_string(), native_funcs::$func);
+                let (clock, _) = heap.alloc(clock, Object::Native);
+                let value = Some(StackValue::Obj(clock));
+                let clock = DeclaredFunc::new($name, value);
+                funcs[i] = clock;
+                i += 1;
+            };
+        }
+        add_func!("clock", clock);
+        add_func!("println", println);
 
-        let clock = ObjNative::new("clock".to_string());
-        let (clock, _) = heap.alloc(clock, Object::Native);
-        let value = Some(StackValue::Obj(clock));
-        let clock = DeclaredFunc::new("clock", value);
 
-        funcs[0] = clock;
-        Self { funcs, top: 1 }
-    }
-
-    pub fn get_len(&self) -> usize {
-        self.top
+        Self { funcs, top: i }
     }
 
     pub fn patch_func(

@@ -58,7 +58,7 @@ impl<'token> Parser<'token> {
         }
 
         let func = parser.end_compiler();
-        let mut funcs = parser.funcs.to_stack_value_arr();
+        let funcs = parser.funcs.to_stack_value_arr();
 
         Some((func, parser.heap, funcs))
     }

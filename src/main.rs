@@ -17,6 +17,7 @@ mod scanner;
 mod token;
 mod value;
 mod vm;
+mod native_funcs;
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");

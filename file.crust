@@ -37,4 +37,6 @@ fn main(): int {
     return 0;
 }
 
+//main();
+//println(3);
 print clock();

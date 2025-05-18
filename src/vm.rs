@@ -267,7 +267,8 @@ impl VM {
                         self.frame_count += 1;
                     }
                     Object::Native(func) => {
-                        (func.data.func)(&[]);
+                        let value = (func.data.func)(&[]);
+                        self.stack_push(value);
                     }
                     _ => unreachable!()
                 }
