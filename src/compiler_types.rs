@@ -80,10 +80,6 @@ impl<'a> CompilerStack<'a> {
         }
     }
 
-    pub fn get_scope_depth(&self) -> usize {
-        self.current().scope_depth
-    }
-
     pub fn get_return_type(&self) -> ValueType {
         self.current().func.return_type
     }

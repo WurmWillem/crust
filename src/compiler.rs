@@ -140,7 +140,7 @@ impl<'token> Parser<'token> {
                 var_type
             }
             _ => {
-                self.dont_parse_scope(false);
+                self.skip_tokens_till_out_of_scope(false);
 
                 return Err(ParseError::new(
                     self.previous().line,
@@ -232,19 +232,12 @@ impl<'token> Parser<'token> {
             self.expression()?;
 
             if self.last_operand_type != self.comps.get_return_type() {
-                // done to help with error synchronization
-
                 let msg = &format!(
                     "Expected return type '{}', but found type '{}'",
                     self.comps.get_return_type(),
                     self.last_operand_type
                 );
                 let line = self.peek().line;
-
-                // if self.check(TokenType::Semicolon) {
-                    // self.advance();
-                // }
-
                 return Err(ParseError::new(line, msg));
             }
 
@@ -352,10 +345,13 @@ impl<'token> Parser<'token> {
 
     fn synchronize(&mut self) {
         self.advance();
+        // dbg!(self.peek().kind);
 
         while self.peek().kind != TokenType::Eof {
             // if we just consumed a semicolon, we probably ended a statement
-            if self.previous().kind == TokenType::Semicolon {
+            if self.previous().kind == TokenType::Semicolon
+                && self.peek().kind != TokenType::RightBrace
+            {
                 return;
             }
 
@@ -363,9 +359,9 @@ impl<'token> Parser<'token> {
             match self.peek().kind {
                 TokenType::Class
                 | TokenType::Fun
-                | TokenType::F64
-                | TokenType::Bool
-                | TokenType::Str
+                // | TokenType::F64 used to be 'let', but these are also used in the middle of statments
+                // | TokenType::Bool
+                // | TokenType::Str
                 | TokenType::For
                 | TokenType::If
                 | TokenType::While
@@ -378,26 +374,6 @@ impl<'token> Parser<'token> {
             }
 
             self.advance();
-        }
-        if self.comps.get_scope_depth() == 0 {
-            while self.peek().kind != TokenType::Eof && self.previous().kind != TokenType::Semicolon
-            {
-                self.advance();
-            }
-        } else {
-            let mut brace_count = 0;
-            while self.peek().kind != TokenType::Eof {
-                if self.previous().kind == TokenType::LeftBrace {
-                    brace_count += 1;
-                }
-                if self.previous().kind == TokenType::RightBrace {
-                    brace_count -= 1;
-                }
-                if brace_count < 0 {
-                    break;
-                }
-                self.advance();
-            }
         }
     }
 
@@ -795,7 +771,7 @@ impl<'token> Parser<'token> {
         self.tokens[self.current_token - 1]
     }
 
-    fn dont_parse_scope(&mut self, already_inside_scope: bool) {
+    fn skip_tokens_till_out_of_scope(&mut self, already_inside_scope: bool) {
         // if not already inside the scope
         if !already_inside_scope {
             // skip tokens intil EOF or '{' is found
