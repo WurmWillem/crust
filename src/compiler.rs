@@ -405,7 +405,6 @@ impl<'token> Parser<'token> {
         while precedence <= self.get_rule(self.peek().kind).precedence {
             self.advance();
             let infix = self.get_rule(self.previous().kind).infix;
-            // dbg!(infix);
             self.execute_fn_type(infix, can_assign)?;
         }
         Ok(())
@@ -425,9 +424,10 @@ impl<'token> Parser<'token> {
         if let Some((arg, arity)) = self.funcs.resolve_func(name.lexeme) {
             self.last_arity_found = arity;
             self.emit_bytes(OpCode::GetFunc as u8, arg);
-            // self.advance();
-            // self.execute_fn_type(FnType::Variable, false)?;
-            // dbg!(self.peek());
+
+            self.advance();
+            self.call()?;
+
             return Ok(());
         }
 
@@ -649,7 +649,7 @@ impl<'token> Parser<'token> {
                 Ok(())
             }
             FnType::Empty => Ok(()),
-            FnType::Call => self.call(),
+            FnType::Call => unreachable!(),
         }
     }
 
