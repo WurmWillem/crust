@@ -49,6 +49,10 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
+            Object::Instance(ptr) => {
+                let raw = ptr.ptr.as_ptr();
+                drop(Box::from_raw(raw));
+            }
         }
     }
 }
@@ -62,6 +66,7 @@ impl Drop for Heap {
                 Object::Str(ref ptr) => ptr.next,
                 Object::Func(ref ptr) => ptr.next,
                 Object::Native(ref ptr) => ptr.next,
+                Object::Instance(ref ptr) => ptr.next,
             };
 
             unsafe {
@@ -108,6 +113,7 @@ pub enum Object {
     Str(Gc<String>),
     Func(Gc<ObjFunc>),
     Native(Gc<ObjNative>),
+    Instance(Gc<ObjInstance>),
 }
 
 // TODO: maybe look into this being stack allocated
@@ -131,7 +137,6 @@ impl ObjFunc {
 }
 
 type NativeFn = fn(&[StackValue]) -> StackValue;
-
 #[derive(Debug, Clone)]
 pub struct ObjNative {
     // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
@@ -143,6 +148,23 @@ impl ObjNative {
         Self {
             name,
             func,
+        }
+    }
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjInstance {
+    name: String,
+    fields: Vec<StackValue>,
+}
+impl ObjInstance {
+    pub fn new(name: String, fields: Vec<StackValue>) -> Self {
+        Self {
+            name,
+            fields,
         }
     }
     pub fn get_name(&self) -> &String {

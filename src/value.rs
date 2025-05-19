@@ -116,6 +116,7 @@ impl StackValue {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {:?}", f.data.get_name()),
                 Object::Native(f) => format!("nat {:?}", f.data.get_name()),
+                Object::Instance(f) => format!("str {:?}", f.data.get_name()),
             },
         }
     }

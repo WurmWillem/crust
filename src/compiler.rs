@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use colored::Colorize;
 
 use crate::{
     compiler_types::*,
-    declared_func::DeclaredFuncStack,
-    error::{EXPECTED_SEMICOLON_MSG, ParseError, print_error},
+    declared_func::DeclaredTypes,
+    error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
@@ -18,14 +20,14 @@ pub struct Parser<'token> {
     last_operand_type: ValueType,
     heap: Heap,
     comps: FuncCompilerStack<'token>,
-    funcs: DeclaredFuncStack<'token>,
+    decl_types: DeclaredTypes<'token>,
 }
 impl<'token> Parser<'token> {
     pub fn compile(
         tokens: Vec<Token<'token>>,
     ) -> Option<(ObjFunc, Heap, [StackValue; MAX_FUNC_AMT])> {
         let mut heap = Heap::new();
-        let funcs = DeclaredFuncStack::new(&mut heap);
+        let funcs = DeclaredTypes::new(&mut heap);
 
         let mut parser = Parser {
             tokens,
@@ -33,7 +35,7 @@ impl<'token> Parser<'token> {
             heap,
             last_operand_type: ValueType::None,
             comps: FuncCompilerStack::new(),
-            funcs,
+            decl_types: funcs,
         };
 
         let mut had_error = false;
@@ -46,6 +48,7 @@ impl<'token> Parser<'token> {
             }
         }
         parser.current_token += 1;
+        // dbg!(&parser.decl_types);
 
         if had_error {
             println!(
@@ -60,7 +63,7 @@ impl<'token> Parser<'token> {
         }
 
         let func = parser.end_compiler();
-        let funcs = parser.funcs.to_stack_value_arr();
+        let funcs = parser.decl_types.to_stack_value_arr();
 
         Some((func, parser.heap, funcs))
     }
@@ -78,15 +81,57 @@ impl<'token> Parser<'token> {
     fn declaration(&mut self) -> Result<(), ParseError> {
         if let Some(var_type) = self.peek().kind.as_value_type() {
             self.advance();
-            self.var_declaration(var_type)
+            self.var_decl(var_type)
         } else if self.matches(TokenType::Fun) {
-            self.func_declaration()
+            self.func_decl()
+        } else if self.matches(TokenType::Struct) {
+            self.struct_decl()
         } else {
             self.statement()
         }
     }
 
-    fn func_declaration(&mut self) -> Result<(), ParseError> {
+    fn struct_decl(&mut self) -> Result<(), ParseError> {
+        self.consume(TokenType::Identifier, "Expected struct name.")?;
+        let name = self.previous();
+
+        let mut fields = HashMap::new();
+        self.consume(TokenType::LeftBrace, "Expected '{' before class body.")?;
+
+        while !self.matches(TokenType::RightBrace) {
+            match self.advance().kind.as_value_type() {
+                Some(_var_type) => {
+                    // fields.push(var_type)
+                }
+                _ => {
+                    return Err(ParseError::new(
+                        self.previous().line,
+                        "Expected type for field.",
+                    ));
+                }
+            };
+
+            self.consume(TokenType::Identifier, "Expected field name.")?;
+            let field_name = self.previous().lexeme;
+
+            if let Some(_) = fields.insert(field_name, fields.len() as u8) {
+                return Err(ParseError::new(
+                    self.previous().line,
+                    "Field already defined.",
+                ));
+            }
+
+            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+        }
+        // dbg!(&fields);
+
+        self.decl_types.add_struct(name.lexeme, fields);
+
+        // self.consume(TokenType::RightBrace, "Expected '}' after class body.")?;
+
+        Ok(())
+    }
+    fn func_decl(&mut self) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
@@ -124,7 +169,7 @@ impl<'token> Parser<'token> {
             };
             self.comps.patch_return_type(return_type);
         }
-        self.funcs.patch_func(name, parameter_types, return_type);
+        self.decl_types.add_func(name, parameter_types, return_type);
 
         self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
 
@@ -135,7 +180,7 @@ impl<'token> Parser<'token> {
         let (func_object, _) = self.heap.alloc(func, Object::Func);
 
         let value = StackValue::Obj(func_object);
-        self.funcs.edit_value_and_increment_top(value);
+        self.decl_types.patch_value(value);
 
         Ok(())
     }
@@ -155,7 +200,7 @@ impl<'token> Parser<'token> {
             }
         };
 
-        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        self.consume(TokenType::Identifier, "Expected parameter name.")?;
         let name = self.previous();
 
         self.comps.add_local(name, var_type)?;
@@ -163,7 +208,7 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
-    fn var_declaration(&mut self, var_type: ValueType) -> Result<(), ParseError> {
+    fn var_decl(&mut self, var_type: ValueType) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
 
@@ -260,7 +305,7 @@ impl<'token> Parser<'token> {
         if self.matches(TokenType::Semicolon) {
         } else if let Some(var_type) = self.peek().kind.as_value_type() {
             self.advance();
-            self.var_declaration(var_type)?;
+            self.var_decl(var_type)?;
         } else {
             self.expression_statement()?;
         }
@@ -360,7 +405,7 @@ impl<'token> Parser<'token> {
 
             // check if next token looks like the start of a new statement
             match self.peek().kind {
-                TokenType::Class
+                TokenType::Struct
                 | TokenType::Fun
                 // | TokenType::F64 used to be 'let', but these are also used in the middle of statments
                 // | TokenType::Bool
@@ -432,7 +477,7 @@ impl<'token> Parser<'token> {
             return Ok(());
         }
 
-        if let Some((arg, parameters, return_type)) = self.funcs.resolve_func(name.lexeme) {
+        if let Some((arg, parameters, return_type)) = self.decl_types.resolve_func(name.lexeme) {
             self.emit_bytes(OpCode::GetFunc as u8, arg);
 
             self.advance();
