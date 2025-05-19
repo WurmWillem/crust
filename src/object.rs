@@ -1,9 +1,7 @@
-// use crate::chunk::Chunk;
 use std::ops;
 use std::ptr::NonNull;
 
 use crate::chunk::Chunk;
-use crate::native_funcs::clock;
 use crate::value::{StackValue, ValueType};
 
 pub struct Heap {

@@ -38,5 +38,5 @@ fn main(): int {
 }
 
 //main();
-//println(3);
-print clock();
+println(true);
+//print clock();

@@ -5,10 +5,9 @@ use std::{
 
 use crate::object::Object;
 
-// use crate::object::{, ObjectValue};
-
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ValueType {
+    // TODO: look into renaming this or removing it
     None,
     Null,
     Bool,

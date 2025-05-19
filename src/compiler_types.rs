@@ -13,23 +13,22 @@ pub struct DeclaredFuncStack<'a> {
 }
 impl<'a> DeclaredFuncStack<'a> {
     pub fn new(heap: &mut Heap) -> Self {
-        let mut funcs = std::array::from_fn(|_| DeclaredFunc::new("", None));
+        let mut funcs = std::array::from_fn(|_| DeclaredFunc::new_partial("", None));
         let mut i = 0;
-        
+
         macro_rules! add_func {
-            ($name: expr, $func: ident) => {
+            ($name: expr, $func: ident, $parameters: expr, $return_type: expr) => {
                 // patch parameters
                 let clock = ObjNative::new($name.to_string(), native_funcs::$func);
                 let (clock, _) = heap.alloc(clock, Object::Native);
                 let value = Some(StackValue::Obj(clock));
-                let clock = DeclaredFunc::new($name, value);
+                let clock = DeclaredFunc::new($name, value, $parameters, $return_type);
                 funcs[i] = clock;
                 i += 1;
             };
         }
-        add_func!("clock", clock);
-        add_func!("println", println);
-
+        add_func!("clock", clock, vec![], ValueType::Num);
+        add_func!("println", println, vec![ValueType::None], ValueType::Null);
 
         Self { funcs, top: i }
     }
@@ -76,12 +75,25 @@ impl<'a> DeclaredFuncStack<'a> {
 #[derive(Debug, Clone)]
 struct DeclaredFunc<'a> {
     name: &'a str,
-    parameters: Vec<ValueType>,
     value: Option<StackValue>,
+    parameters: Vec<ValueType>,
     return_type: ValueType,
 }
 impl<'a> DeclaredFunc<'a> {
-    fn new(name: &'a str, value: Option<StackValue>) -> Self {
+    fn new(
+        name: &'a str,
+        value: Option<StackValue>,
+        parameters: Vec<ValueType>,
+        return_type: ValueType,
+    ) -> Self {
+        Self {
+            name,
+            value,
+            parameters,
+            return_type,
+        }
+    }
+    fn new_partial(name: &'a str, value: Option<StackValue>) -> Self {
         Self {
             name,
             value,

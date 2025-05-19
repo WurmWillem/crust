@@ -685,7 +685,7 @@ impl<'token> Parser<'token> {
             self.expression()?;
 
             if let Some(kind) = parameters.get(i) {
-                if self.last_operand_type != *kind {
+                if self.last_operand_type != *kind && *kind != ValueType::None {
                     let msg = format!(
                         "Function expected argument of type '{}', but found type '{}'.",
                         parameters[i], self.last_operand_type,

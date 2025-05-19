@@ -254,25 +254,27 @@ impl VM {
         let value = self.stack[slots];
 
         match value {
-            StackValue::Obj(func) => {
-                match func {
-                    Object::Func(func) => {
-                        let frame = CallFrame {
-                            ip: func.data.chunk.get_ptr(),
-                            slots,
-                            func,
-                        };
+            StackValue::Obj(func) => match func {
+                Object::Func(func) => {
+                    let frame = CallFrame {
+                        ip: func.data.chunk.get_ptr(),
+                        slots,
+                        func,
+                    };
 
-                        unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
-                        self.frame_count += 1;
-                    }
-                    Object::Native(func) => {
-                        let value = (func.data.func)(&[]);
-                        self.stack_push(value);
-                    }
-                    _ => unreachable!()
+                    unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
+                    self.frame_count += 1;
                 }
-            }
+                Object::Native(func) => {
+                    let args = &self.stack[(slots + 1)..self.stack_top];
+                    let value = (func.data.func)(args);
+                    for _ in 0..arg_count {
+                        self.pop_no_return();
+                    }
+                    self.stack_push(value);
+                }
+                _ => unreachable!(),
+            },
             _ => unreachable!(),
         }
     }
