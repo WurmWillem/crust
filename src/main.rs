@@ -25,7 +25,7 @@ fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
 
     let msg = "Could not find file.crust. The file should be in the same directory as either the executable file or Cargo.toml.";
-    let source = std::fs::read_to_string("file.crust").expect(msg);
+    let source = std::fs::read_to_string("file.crs").expect(msg);
 
     let scanner = Scanner::new(&source);
     let tokens = match scanner.scan_tokens() {

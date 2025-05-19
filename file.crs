@@ -15,11 +15,13 @@ fn fib(int n): int {
 
 fn main() {
     int num = 5;
+    bool x = false;
     int fact = factorial(num);
 
     str msg = greet_user();
 
     println(msg);         // should print: Welcome to Crust!
+    //sfdsfs
 
     print("Number: ");
     println(num);
