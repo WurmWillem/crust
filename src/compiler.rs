@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     declared_func::DeclaredFuncStack,
-    error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
+    error::{EXPECTED_SEMICOLON_MSG, ParseError, print_error},
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
