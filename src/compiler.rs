@@ -4,6 +4,7 @@ use crate::{
     compiler_types::*,
     declared_func::DeclaredFuncStack,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
+    func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
@@ -16,7 +17,7 @@ pub struct Parser<'token> {
     current_token: usize,
     last_operand_type: ValueType,
     heap: Heap,
-    comps: CompilerStack<'token>,
+    comps: FuncCompilerStack<'token>,
     funcs: DeclaredFuncStack<'token>,
 }
 impl<'token> Parser<'token> {
@@ -31,7 +32,7 @@ impl<'token> Parser<'token> {
             current_token: 0,
             heap,
             last_operand_type: ValueType::None,
-            comps: CompilerStack::new(),
+            comps: FuncCompilerStack::new(),
             funcs,
         };
 

@@ -1,0 +1,154 @@
+use crate::{
+    error::ParseError,
+    object::ObjFunc,
+    token::{Literal, Token, TokenType},
+    value::{StackValue, ValueType},
+};
+
+pub struct FuncCompilerStack<'a> {
+    comps: Vec<FuncCompiler<'a>>,
+    current: usize,
+}
+impl<'a> FuncCompilerStack<'a> {
+    pub fn new() -> Self {
+        let root = FuncCompiler::new("".to_string());
+        Self {
+            comps: vec![root],
+            current: 0,
+        }
+    }
+
+    pub fn get_return_type(&self) -> ValueType {
+        self.current().func.return_type
+    }
+
+    pub fn increment_scope_depth(&mut self) {
+        self.comps[self.current].scope_depth += 1;
+    }
+
+    pub fn decrement_scope_depth(&mut self) {
+        self.comps[self.current].scope_depth -= 1;
+    }
+
+    pub fn decrement_local_count(&mut self) {
+        self.comps[self.current].local_count -= 1;
+    }
+
+    pub fn add_constant(&mut self, value: StackValue) -> usize {
+        self.comps[self.current].func.chunk.add_constant(value)
+    }
+
+    pub fn write_byte_to_chunk(&mut self, byte: u8, line: u32) {
+        self.comps[self.current]
+            .func
+            .chunk
+            .write_byte_to_chunk(byte, line);
+    }
+
+    pub fn get_code_len(&self) -> usize {
+        self.comps[self.current].func.chunk.code.len()
+    }
+
+    pub fn add_local(&mut self, name: Token<'a>, kind: ValueType) -> Result<(), ParseError> {
+        if self.current().local_count == MAX_LOCAL_AMT {
+            let msg = "Too many local variables in function.";
+            return Err(ParseError::new(name.line, msg));
+        }
+
+        let local = Local::new(name, self.current().scope_depth, kind);
+
+        let local_count = self.current().local_count;
+        self.comps[self.current].locals[local_count] = local;
+        self.comps[self.current].local_count += 1;
+        Ok(())
+    }
+
+    pub fn patch_jump(&mut self, offset: usize) -> Result<(), ParseError> {
+        let jump = self.get_code_len() - offset - 2;
+
+        if jump > u16::MAX as usize {
+            let msg = "Too much code to jump over.";
+            return Err(ParseError::new(0, msg));
+        }
+
+        self.comps[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        self.comps[self.current].func.chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        Ok(())
+    }
+
+    pub fn patch_return_type(&mut self, return_type: ValueType) {
+        self.comps[self.current].patch_return_type(return_type);
+    }
+
+    pub fn push(&mut self, func_name: String) {
+        let new_compiler = FuncCompiler::new(func_name);
+        self.comps.push(new_compiler);
+        self.current = self.comps.len() - 1;
+    }
+
+    pub fn pop(&mut self) -> FuncCompiler {
+        self.current = 0;
+        self.comps.pop().unwrap()
+    }
+
+    pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
+        // TODO: shadowing doesn't remove the old var as of now
+        for i in (0..self.current().local_count).rev() {
+            if self.current().locals[i].name.lexeme == name {
+                return Some((i as u8, self.current().locals[i].kind));
+            }
+        }
+        None
+    }
+
+    pub fn should_remove_local(&self) -> bool {
+        let depth = self.current().locals[self.current().local_count - 1].depth;
+        self.current().local_count > 0 && depth > self.current().scope_depth
+    }
+
+    fn current(&self) -> &FuncCompiler {
+        &self.comps[self.current]
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Local<'a> {
+    name: Token<'a>,
+    kind: ValueType,
+    depth: usize,
+}
+impl<'a> Local<'a> {
+    fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
+        Self { name, depth, kind }
+    }
+}
+
+const MAX_LOCAL_AMT: usize = u8::MAX as usize;
+pub struct FuncCompiler<'a> {
+    locals: [Local<'a>; MAX_LOCAL_AMT],
+    local_count: usize,
+    scope_depth: usize,
+    func: ObjFunc,
+}
+impl<'a> FuncCompiler<'a> {
+    pub fn new(func_name: String) -> Self {
+        let name = Token::new(TokenType::Equal, "", Literal::None, 0);
+
+        let local = Local::new(name, 0, ValueType::None);
+        Self {
+            locals: [local; MAX_LOCAL_AMT],
+            local_count: 1,
+            scope_depth: 0,
+            func: ObjFunc::new(func_name),
+        }
+    }
+
+    pub fn get_func(self) -> ObjFunc {
+        self.func
+    }
+
+    pub fn patch_return_type(&mut self, return_type: ValueType) {
+        self.func.return_type = return_type;
+    }
+}
+

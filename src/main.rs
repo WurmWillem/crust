@@ -12,6 +12,7 @@ mod compiler;
 mod compiler_types;
 mod declared_func;
 mod error;
+mod func_compiler;
 mod native_funcs;
 mod object;
 mod opcode;
