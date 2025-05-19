@@ -1,11 +1,10 @@
-use crate::StackValue;
-use crate::value::ValueType;
-use crate::object::Object;
 use crate::native_funcs;
-use crate::object::ObjNative;
 use crate::object::Heap;
+use crate::object::ObjNative;
+use crate::object::Object;
+use crate::value::ValueType;
 use crate::vm::MAX_FUNC_AMT;
-
+use crate::StackValue;
 
 pub struct DeclaredFuncStack<'a> {
     funcs: [DeclaredFunc<'a>; MAX_FUNC_AMT],
@@ -28,6 +27,9 @@ impl<'a> DeclaredFuncStack<'a> {
         }
         add_func!("clock", clock, vec![], ValueType::Num);
         add_func!("println", println, vec![ValueType::Any], ValueType::Null);
+        add_func!("sin", sin, vec![ValueType::Num], ValueType::Num);
+        add_func!("cos", cos, vec![ValueType::Num], ValueType::Num);
+        add_func!("tan", tan, vec![ValueType::Num], ValueType::Num);
         add_func!("print", print, vec![ValueType::Any], ValueType::Null);
 
         Self { funcs, top: i }
@@ -102,4 +104,3 @@ impl<'a> DeclaredFunc<'a> {
         }
     }
 }
-
