@@ -6,14 +6,13 @@ use crate::value::ValueType;
 use crate::vm::MAX_FUNC_AMT;
 use crate::StackValue;
 
+#[derive(Debug)]
 pub struct DeclaredFuncStack<'a> {
-    funcs: [DeclaredFunc<'a>; MAX_FUNC_AMT],
-    top: usize,
+    funcs: Vec<DeclaredFunc<'a>>,
 }
 impl<'a> DeclaredFuncStack<'a> {
     pub fn new(heap: &mut Heap) -> Self {
-        let mut funcs = std::array::from_fn(|_| DeclaredFunc::new_partial(None));
-        let mut i = 0;
+        let mut funcs = vec![];
 
         macro_rules! add_func {
             ($name: expr, $func: ident, $parameters: expr, $return_type: expr) => {
@@ -21,8 +20,7 @@ impl<'a> DeclaredFuncStack<'a> {
                 let (clock, _) = heap.alloc(clock, Object::Native);
                 let value = Some(StackValue::Obj(clock));
                 let clock = DeclaredFunc::new($name, value, $parameters, $return_type);
-                funcs[i] = clock;
-                i += 1;
+                funcs.push(clock);
             };
         }
         add_func!("clock", clock, vec![], ValueType::Num);
@@ -32,12 +30,12 @@ impl<'a> DeclaredFuncStack<'a> {
         add_func!("tan", tan, vec![ValueType::Num], ValueType::Num);
         add_func!("print", print, vec![ValueType::Any], ValueType::Null);
 
-        Self { funcs, top: i }
+        Self { funcs }
     }
 
     pub fn to_stack_value_arr(self) -> [StackValue; MAX_FUNC_AMT] {
         let mut arr = [StackValue::Null; MAX_FUNC_AMT];
-        for i in 0..=self.top {
+        for i in 0..self.funcs.len() {
             if let Some(val) = self.funcs[i].value {
                 arr[i] = val;
             }
@@ -51,14 +49,12 @@ impl<'a> DeclaredFuncStack<'a> {
         parameters: Vec<ValueType>,
         return_type: ValueType,
     ) {
-        self.funcs[self.top].name = name;
-        self.funcs[self.top].parameters = parameters;
-        self.funcs[self.top].return_type = return_type;
+        let func = DeclaredFunc::new_partial(name, parameters, return_type);
+        self.funcs.push(func);
     }
 
-    pub fn edit_value_and_increment_top(&mut self, value: StackValue) {
-        self.funcs[self.top].value = Some(value);
-        self.top += 1;
+    pub fn patch_value(&mut self, value: StackValue) {
+        self.funcs.last_mut().unwrap().value = Some(value);
     }
 
     pub fn resolve_func(&self, name: &str) -> Option<(u8, Vec<ValueType>, ValueType)> {
@@ -94,12 +90,16 @@ impl<'a> DeclaredFunc<'a> {
             return_type,
         }
     }
-    fn new_partial(value: Option<StackValue>) -> Self {
+    fn new_partial(
+        name: &'a str,
+        parameters: Vec<ValueType>,
+        return_type: ValueType,
+    ) -> Self {
         Self {
-            name: "",
-            value,
-            parameters: Vec::new(),
-            return_type: ValueType::Null,
+            name,
+            value: None,
+            parameters,
+            return_type,
         }
     }
 }

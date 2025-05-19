@@ -46,6 +46,7 @@ impl<'token> Parser<'token> {
             }
         }
         parser.current_token += 1;
+        // dbg!(&parser.funcs);
 
         if had_error {
             println!(
@@ -145,7 +146,7 @@ impl<'token> Parser<'token> {
         let (func_object, _) = self.heap.alloc(func, Object::Func);
 
         let value = StackValue::Obj(func_object);
-        self.funcs.edit_value_and_increment_top(value);
+        self.funcs.patch_value(value);
 
         Ok(())
     }

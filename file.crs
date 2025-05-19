@@ -15,7 +15,6 @@ fn fib(int n): int {
 
 fn main() {
     int num = 5;
-    bool x = false;
     int fact = factorial(num);
 
     str msg = greet_user();
@@ -31,6 +30,7 @@ fn main() {
 main();
 
 int before = clock();
-print(fib(20));
+int f = fib(37);
 int after = clock();
-pr after - before;
+println(after - before);
+println(f);
