@@ -13,7 +13,7 @@ pub struct DeclaredFuncStack<'a> {
 }
 impl<'a> DeclaredFuncStack<'a> {
     pub fn new(heap: &mut Heap) -> Self {
-        let mut funcs = std::array::from_fn(|_| DeclaredFunc::new_partial("", None));
+        let mut funcs = std::array::from_fn(|_| DeclaredFunc::new_partial(None));
         let mut i = 0;
 
         macro_rules! add_func {
@@ -28,7 +28,7 @@ impl<'a> DeclaredFuncStack<'a> {
             };
         }
         add_func!("clock", clock, vec![], ValueType::Num);
-        add_func!("println", println, vec![ValueType::None], ValueType::Null);
+        add_func!("println", println, vec![ValueType::Any], ValueType::Null);
 
         Self { funcs, top: i }
     }
@@ -93,9 +93,9 @@ impl<'a> DeclaredFunc<'a> {
             return_type,
         }
     }
-    fn new_partial(name: &'a str, value: Option<StackValue>) -> Self {
+    fn new_partial( value: Option<StackValue>) -> Self {
         Self {
-            name,
+            name: "",
             value,
             parameters: Vec::new(),
             return_type: ValueType::Null,

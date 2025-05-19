@@ -7,8 +7,8 @@ use crate::object::Object;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ValueType {
-    // TODO: look into renaming this or removing it
-    None,
+    None, // default value for locals
+    Any,  // useful as generic type for functions like println()
     Null,
     Bool,
     Num,
@@ -18,6 +18,7 @@ impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
+            ValueType::Any => unreachable!(),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
             ValueType::Num => write!(f, "Number"),
