@@ -253,8 +253,8 @@ impl VM {
         let slots = self.stack_top - arg_count;
         let value = self.stack[slots];
 
-        match value {
-            StackValue::Obj(func) => match func {
+        if let StackValue::Obj(obj) = value {
+            match obj {
                 Object::Func(func) => {
                     let frame = CallFrame {
                         ip: func.data.chunk.get_ptr(),
@@ -266,16 +266,18 @@ impl VM {
                     self.frame_count += 1;
                 }
                 Object::Native(func) => {
-                    let args = &self.stack[(slots + 1)..self.stack_top];
+                    let args_ptr = self.stack.as_ptr().add(slots + 1);
+                    let args = std::slice::from_raw_parts(args_ptr, arg_count);
+
                     let value = (func.data.func)(args);
-                    for _ in 0..arg_count {
-                        self.pop_no_return();
-                    }
+
+                    self.stack_top = slots;
                     self.stack_push(value);
                 }
                 _ => unreachable!(),
-            },
-            _ => unreachable!(),
+            }
+        } else {
+            unreachable!()
         }
     }
 
