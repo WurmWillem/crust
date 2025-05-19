@@ -31,6 +31,7 @@ impl<'a> DeclaredFuncStack<'a> {
         add_func!("sin", sin, vec![ValueType::Num], ValueType::Num);
         add_func!("cos", cos, vec![ValueType::Num], ValueType::Num);
         add_func!("tan", tan, vec![ValueType::Num], ValueType::Num);
+        add_func!("print", print, vec![ValueType::Any], ValueType::Null);
 
         Self { funcs, top: i }
     }

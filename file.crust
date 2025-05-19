@@ -3,41 +3,33 @@ fn factorial(int n): int {
     return n * factorial(n - 1);
 }
 
-fn square(int x): int {
-    return x * x;
-}
-
-fn double(int x): int {
-    return x + x;
-}
-
 fn greet_user(): str {
     str greeting = "Welcome to Crust!";
     return greeting;
 }
 
-fn main(): int {
+fn fib(int n): int {
+  if n < 2 return n;
+  return fib(n - 1) + fib(n - 2);
+}
+
+fn main() {
     int num = 5;
     int fact = factorial(num);
-    int sq = square(num);
-    int dbl = double(num);
 
     str msg = greet_user();
 
-    print msg;         // should print: Welcome to Crust!
-    print "Number: ";
-    print num;
-    print "Factorial: ";
-    print fact;
-    print "Square: ";
-    print sq;
-    print "Double: ";
-    print dbl;
+    pr msg;         // should print: Welcome to Crust!
 
-    return 0;
+    print("Number: ");
+    println(num);
+
+    print("Factorial: ");
+    println(fact);
 }
+main();
 
-main();
-println(true);
-print clock();
-main();
+int before = clock();
+print(fib(30));
+int after = clock();
+pr after - before;
