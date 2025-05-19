@@ -17,7 +17,6 @@ impl<'a> DeclaredFuncStack<'a> {
 
         macro_rules! add_func {
             ($name: expr, $func: ident, $parameters: expr, $return_type: expr) => {
-                // patch parameters
                 let clock = ObjNative::new($name.to_string(), native_funcs::$func);
                 let (clock, _) = heap.alloc(clock, Object::Native);
                 let value = Some(StackValue::Obj(clock));

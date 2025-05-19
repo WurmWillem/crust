@@ -333,11 +333,9 @@ impl<'token> Parser<'token> {
     }
 
     fn print_statement(&mut self) -> Result<(), ParseError> {
-        // dbg!(self.chunk.constants.len());
         self.expression()?;
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
         self.emit_byte(OpCode::Print as u8);
-        // dbg!(self.chunk.constants.len());
         Ok(())
     }
 
