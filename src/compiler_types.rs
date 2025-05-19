@@ -1,119 +1,20 @@
 use crate::{
     error::ParseError,
-    native_funcs,
-    object::{Heap, ObjFunc, ObjNative, Object},
+    object::ObjFunc,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
-    vm::MAX_FUNC_AMT,
 };
 
-pub struct DeclaredFuncStack<'a> {
-    funcs: [DeclaredFunc<'a>; MAX_FUNC_AMT],
-    top: usize,
-}
-impl<'a> DeclaredFuncStack<'a> {
-    pub fn new(heap: &mut Heap) -> Self {
-        let mut funcs = std::array::from_fn(|_| DeclaredFunc::new_partial(None));
-        let mut i = 0;
-
-        macro_rules! add_func {
-            ($name: expr, $func: ident, $parameters: expr, $return_type: expr) => {
-                // patch parameters
-                let clock = ObjNative::new($name.to_string(), native_funcs::$func);
-                let (clock, _) = heap.alloc(clock, Object::Native);
-                let value = Some(StackValue::Obj(clock));
-                let clock = DeclaredFunc::new($name, value, $parameters, $return_type);
-                funcs[i] = clock;
-                i += 1;
-            };
-        }
-        add_func!("clock", clock, vec![], ValueType::Num);
-        add_func!("println", println, vec![ValueType::Any], ValueType::Null);
-
-        Self { funcs, top: i }
-    }
-
-    pub fn patch_func(
-        &mut self,
-        name: &'a str,
-        parameters: Vec<ValueType>,
-        return_type: ValueType,
-    ) {
-        self.funcs[self.top].name = name;
-        self.funcs[self.top].parameters = parameters;
-        self.funcs[self.top].return_type = return_type;
-    }
-
-    pub fn edit_value_and_increment_top(&mut self, value: StackValue) {
-        self.funcs[self.top].value = Some(value);
-        self.top += 1;
-    }
-
-    pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
-        let mut arr = [StackValue::Null; MAX_FUNC_AMT];
-        for i in 0..=self.top {
-            if let Some(val) = &self.funcs[i].value {
-                arr[i] = *val;
-            }
-        }
-        arr
-    }
-
-    pub fn resolve_func(&self, name: &str) -> Option<(u8, Vec<ValueType>, ValueType)> {
-        for i in 0..self.funcs.len() {
-            if self.funcs[i].name == name {
-                // TODO: only read access needed, maybe return reference?
-                let parameters = self.funcs[i].parameters.clone();
-                let return_type = self.funcs[i].return_type;
-                return Some((i as u8, parameters, return_type));
-            }
-        }
-        None
-    }
-}
-
-#[derive(Debug, Clone)]
-struct DeclaredFunc<'a> {
-    name: &'a str,
-    value: Option<StackValue>,
-    parameters: Vec<ValueType>,
-    return_type: ValueType,
-}
-impl<'a> DeclaredFunc<'a> {
-    fn new(
-        name: &'a str,
-        value: Option<StackValue>,
-        parameters: Vec<ValueType>,
-        return_type: ValueType,
-    ) -> Self {
-        Self {
-            name,
-            value,
-            parameters,
-            return_type,
-        }
-    }
-    fn new_partial( value: Option<StackValue>) -> Self {
-        Self {
-            name: "",
-            value,
-            parameters: Vec::new(),
-            return_type: ValueType::Null,
-        }
-    }
-}
-
 pub struct CompilerStack<'a> {
-    compilers: Vec<Compiler<'a>>,
+    comps: Vec<Compiler<'a>>,
     current: usize,
 }
 impl<'a> CompilerStack<'a> {
-    // create a new stack with a root compiler (no parent)
     pub fn new() -> Self {
         let root = Compiler::new("".to_string());
         Self {
-            compilers: vec![root],
-            current: 0, // Root is at index 0
+            comps: vec![root],
+            current: 0, // root is at index 0
         }
     }
 
@@ -122,30 +23,30 @@ impl<'a> CompilerStack<'a> {
     }
 
     pub fn increment_scope_depth(&mut self) {
-        self.compilers[self.current].scope_depth += 1;
+        self.comps[self.current].scope_depth += 1;
     }
 
     pub fn decrement_scope_depth(&mut self) {
-        self.compilers[self.current].scope_depth -= 1;
+        self.comps[self.current].scope_depth -= 1;
     }
 
     pub fn decrement_local_count(&mut self) {
-        self.compilers[self.current].local_count -= 1;
+        self.comps[self.current].local_count -= 1;
     }
 
     pub fn add_constant(&mut self, value: StackValue) -> usize {
-        self.compilers[self.current].func.chunk.add_constant(value)
+        self.comps[self.current].func.chunk.add_constant(value)
     }
 
     pub fn write_byte_to_chunk(&mut self, byte: u8, line: u32) {
-        self.compilers[self.current]
+        self.comps[self.current]
             .func
             .chunk
             .write_byte_to_chunk(byte, line);
     }
 
     pub fn get_code_len(&self) -> usize {
-        self.compilers[self.current].func.chunk.code.len()
+        self.comps[self.current].func.chunk.code.len()
     }
 
     pub fn add_local(&mut self, name: Token<'a>, kind: ValueType) -> Result<(), ParseError> {
@@ -157,8 +58,8 @@ impl<'a> CompilerStack<'a> {
         let local = Local::new(name, self.current().scope_depth, kind);
 
         let local_count = self.current().local_count;
-        self.compilers[self.current].locals[local_count] = local;
-        self.compilers[self.current].local_count += 1;
+        self.comps[self.current].locals[local_count] = local;
+        self.comps[self.current].local_count += 1;
         Ok(())
     }
 
@@ -170,24 +71,24 @@ impl<'a> CompilerStack<'a> {
             return Err(ParseError::new(0, msg));
         }
 
-        self.compilers[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
-        self.compilers[self.current].func.chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        self.comps[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        self.comps[self.current].func.chunk.code[offset + 1] = (jump & 0xFF) as u8;
         Ok(())
     }
 
     pub fn patch_return_type(&mut self, return_type: ValueType) {
-        self.compilers[self.current].patch_return_type(return_type);
+        self.comps[self.current].patch_return_type(return_type);
     }
 
     pub fn push(&mut self, func_name: String) {
         let new_compiler = Compiler::new(func_name);
-        self.compilers.push(new_compiler);
-        self.current = self.compilers.len() - 1;
+        self.comps.push(new_compiler);
+        self.current = self.comps.len() - 1;
     }
 
     pub fn pop(&mut self) -> Compiler {
         self.current = 0;
-        self.compilers.pop().unwrap()
+        self.comps.pop().unwrap()
     }
 
     pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
@@ -206,7 +107,7 @@ impl<'a> CompilerStack<'a> {
     }
 
     fn current(&self) -> &Compiler {
-        &self.compilers[self.current]
+        &self.comps[self.current]
     }
 }
 

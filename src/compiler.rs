@@ -2,6 +2,7 @@ use colored::Colorize;
 
 use crate::{
     compiler_types::*,
+    declared_func::DeclaredFuncStack,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,

@@ -10,14 +10,15 @@ use colored::Colorize;
 mod chunk;
 mod compiler;
 mod compiler_types;
+mod declared_func;
 mod error;
+mod native_funcs;
 mod object;
 mod opcode;
 mod scanner;
 mod token;
 mod value;
 mod vm;
-mod native_funcs;
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
