@@ -29,6 +29,7 @@ impl<'a> DeclaredFuncStack<'a> {
         }
         add_func!("clock", clock, vec![], ValueType::Num);
         add_func!("println", println, vec![ValueType::Any], ValueType::Null);
+        add_func!("print", print, vec![ValueType::Any], ValueType::Null);
 
         Self { funcs, top: i }
     }
