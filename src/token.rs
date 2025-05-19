@@ -71,7 +71,7 @@ pub enum TokenType {
 
     // keywords
     And,
-    Class,
+    Struct,
     Else,
     False,
     For,

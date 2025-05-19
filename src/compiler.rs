@@ -78,15 +78,25 @@ impl<'token> Parser<'token> {
     fn declaration(&mut self) -> Result<(), ParseError> {
         if let Some(var_type) = self.peek().kind.as_value_type() {
             self.advance();
-            self.var_declaration(var_type)
+            self.var_decl(var_type)
         } else if self.matches(TokenType::Fun) {
-            self.func_declaration()
+            self.func_decl()
+        } else if self.matches(TokenType::Struct) {
+            self.struct_decl()
         } else {
             self.statement()
         }
     }
 
-    fn func_declaration(&mut self) -> Result<(), ParseError> {
+    fn struct_decl(&mut self) -> Result<(), ParseError> {
+        self.consume(TokenType::Identifier, "Expected struct name.")?;
+        let name = self.previous();
+
+        
+
+        Ok(())
+    }
+    fn func_decl(&mut self) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
@@ -163,7 +173,7 @@ impl<'token> Parser<'token> {
         Ok(())
     }
 
-    fn var_declaration(&mut self, var_type: ValueType) -> Result<(), ParseError> {
+    fn var_decl(&mut self, var_type: ValueType) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
 
@@ -260,7 +270,7 @@ impl<'token> Parser<'token> {
         if self.matches(TokenType::Semicolon) {
         } else if let Some(var_type) = self.peek().kind.as_value_type() {
             self.advance();
-            self.var_declaration(var_type)?;
+            self.var_decl(var_type)?;
         } else {
             self.expression_statement()?;
         }
@@ -360,7 +370,7 @@ impl<'token> Parser<'token> {
 
             // check if next token looks like the start of a new statement
             match self.peek().kind {
-                TokenType::Class
+                TokenType::Struct
                 | TokenType::Fun
                 // | TokenType::F64 used to be 'let', but these are also used in the middle of statments
                 // | TokenType::Bool

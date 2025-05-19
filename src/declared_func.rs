@@ -35,6 +35,16 @@ impl<'a> DeclaredFuncStack<'a> {
         Self { funcs, top: i }
     }
 
+    pub fn to_stack_value_arr(self) -> [StackValue; MAX_FUNC_AMT] {
+        let mut arr = [StackValue::Null; MAX_FUNC_AMT];
+        for i in 0..=self.top {
+            if let Some(val) = self.funcs[i].value {
+                arr[i] = val;
+            }
+        }
+        arr
+    }
+
     pub fn patch_func(
         &mut self,
         name: &'a str,
@@ -51,20 +61,9 @@ impl<'a> DeclaredFuncStack<'a> {
         self.top += 1;
     }
 
-    pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
-        let mut arr = [StackValue::Null; MAX_FUNC_AMT];
-        for i in 0..=self.top {
-            if let Some(val) = &self.funcs[i].value {
-                arr[i] = *val;
-            }
-        }
-        arr
-    }
-
     pub fn resolve_func(&self, name: &str) -> Option<(u8, Vec<ValueType>, ValueType)> {
         for i in 0..self.funcs.len() {
             if self.funcs[i].name == name {
-                // TODO: only read access needed, maybe return reference?
                 let parameters = self.funcs[i].parameters.clone();
                 let return_type = self.funcs[i].return_type;
                 return Some((i as u8, parameters, return_type));
