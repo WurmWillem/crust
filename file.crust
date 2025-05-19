@@ -19,7 +19,7 @@ fn main() {
 
     str msg = greet_user();
 
-    pr msg;         // should print: Welcome to Crust!
+    println(msg);         // should print: Welcome to Crust!
 
     print("Number: ");
     println(num);
