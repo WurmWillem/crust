@@ -27,11 +27,31 @@ impl<'a> DeclaredFuncStack<'a> {
             };
         }
         add_func!("clock", clock, vec![], ValueType::Num);
+        add_func!("print", print, vec![ValueType::Any], ValueType::Null);
         add_func!("println", println, vec![ValueType::Any], ValueType::Null);
         add_func!("sin", sin, vec![ValueType::Num], ValueType::Num);
         add_func!("cos", cos, vec![ValueType::Num], ValueType::Num);
         add_func!("tan", tan, vec![ValueType::Num], ValueType::Num);
-        add_func!("print", print, vec![ValueType::Any], ValueType::Null);
+        add_func!(
+            "min",
+            min,
+            vec![ValueType::Num, ValueType::Num],
+            ValueType::Num
+        );
+        add_func!(
+            "max",
+            max,
+            vec![ValueType::Num, ValueType::Num],
+            ValueType::Num
+        );
+        add_func!("abs", abs, vec![ValueType::Num], ValueType::Num);
+        add_func!("sqrt", sqrt, vec![ValueType::Num], ValueType::Num);
+        add_func!(
+            "pow",
+            pow,
+            vec![ValueType::Num, ValueType::Num],
+            ValueType::Num
+        );
 
         Self { funcs, top: i }
     }
