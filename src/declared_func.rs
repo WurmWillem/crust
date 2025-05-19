@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::native_funcs;
 use crate::object::Heap;
 use crate::object::ObjNative;
@@ -7,10 +9,11 @@ use crate::vm::MAX_FUNC_AMT;
 use crate::StackValue;
 
 #[derive(Debug)]
-pub struct DeclaredFuncStack<'a> {
+pub struct DeclaredTypes<'a> {
     funcs: Vec<DeclaredFunc<'a>>,
+    structs: Vec<DeclaredStruct<'a>>,
 }
-impl<'a> DeclaredFuncStack<'a> {
+impl<'a> DeclaredTypes<'a> {
     pub fn new(heap: &mut Heap) -> Self {
         let mut funcs = vec![];
 
@@ -30,7 +33,10 @@ impl<'a> DeclaredFuncStack<'a> {
         add_func!("tan", tan, vec![ValueType::Num], ValueType::Num);
         add_func!("print", print, vec![ValueType::Any], ValueType::Null);
 
-        Self { funcs }
+        Self {
+            funcs,
+            structs: Vec::new(),
+        }
     }
 
     pub fn to_stack_value_arr(self) -> [StackValue; MAX_FUNC_AMT] {
@@ -43,12 +49,12 @@ impl<'a> DeclaredFuncStack<'a> {
         arr
     }
 
-    pub fn patch_func(
-        &mut self,
-        name: &'a str,
-        parameters: Vec<ValueType>,
-        return_type: ValueType,
-    ) {
+    pub fn add_struct(&mut self, name: &'a str, fields: HashMap<&'a str, u8>) {
+        let str = DeclaredStruct::new(name, fields);
+        self.structs.push(str);
+    }
+
+    pub fn add_func(&mut self, name: &'a str, parameters: Vec<ValueType>, return_type: ValueType) {
         let func = DeclaredFunc::new_partial(name, parameters, return_type);
         self.funcs.push(func);
     }
@@ -69,7 +75,21 @@ impl<'a> DeclaredFuncStack<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
+struct DeclaredStruct<'a> {
+    name: &'a str,
+    fields: HashMap<&'a str, u8>,
+}
+impl<'a> DeclaredStruct<'a> {
+    fn new(name: &'a str,  fields: HashMap<&'a str, u8>) -> Self {
+        Self {
+            name,
+            fields,
+        }
+    }
+}
+
+#[derive(Debug)]
 struct DeclaredFunc<'a> {
     name: &'a str,
     value: Option<StackValue>,
@@ -90,11 +110,7 @@ impl<'a> DeclaredFunc<'a> {
             return_type,
         }
     }
-    fn new_partial(
-        name: &'a str,
-        parameters: Vec<ValueType>,
-        return_type: ValueType,
-    ) -> Self {
+    fn new_partial(name: &'a str, parameters: Vec<ValueType>, return_type: ValueType) -> Self {
         Self {
             name,
             value: None,

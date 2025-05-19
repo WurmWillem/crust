@@ -13,6 +13,15 @@ fn fib(int n): int {
   return fib(n - 1) + fib(n - 2);
 }
 
+struct Vector2D {
+  int x;
+  int y;
+
+  //fn product(): int {
+  //  return x * y;   // use self.field to access fields later on 
+  //}
+}
+
 fn main() {
     int num = 5;
     int fact = factorial(num);
@@ -29,8 +38,8 @@ fn main() {
 }
 main();
 
-int before = clock();
-int f = fib(37);
-int after = clock();
-println(after - before);
-println(f);
+//int before = clock();
+//int f = fib(37);
+//int after = clock();
+//println(after - before);
+//println(f);

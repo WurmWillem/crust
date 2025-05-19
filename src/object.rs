@@ -113,7 +113,7 @@ pub enum Object {
     Str(Gc<String>),
     Func(Gc<ObjFunc>),
     Native(Gc<ObjNative>),
-    Struct(Gc<ObjStruct>),
+    Struct(Gc<ObjInstance>),
 }
 
 // TODO: maybe look into this being stack allocated
@@ -156,10 +156,10 @@ impl ObjNative {
 }
 
 #[derive(Debug, Clone)]
-pub struct ObjStruct {
+pub struct ObjInstance {
     name: String,
 }
-impl ObjStruct {
+impl ObjInstance {
     pub fn new(name: String) -> Self {
         Self {
             name,
