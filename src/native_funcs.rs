@@ -51,3 +51,48 @@ pub fn tan(args: &[StackValue]) -> StackValue {
         unreachable!()
     }
 }
+
+pub fn min(args: &[StackValue]) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    match (val1, val2) {
+        (StackValue::F64(val1), StackValue::F64(val2)) => StackValue::F64(val1.min(val2)),
+        _ => unreachable!(),
+    }
+}
+
+pub fn max(args: &[StackValue]) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    match (val1, val2) {
+        (StackValue::F64(val1), StackValue::F64(val2)) => StackValue::F64(val1.max(val2)),
+        _ => unreachable!(),
+    }
+}
+
+pub fn abs(args: &[StackValue]) -> StackValue {
+    let val = args[0];
+    if let StackValue::F64(val) = val {
+        StackValue::F64(val.abs())
+    } else {
+        unreachable!()
+    }
+}
+
+pub fn sqrt(args: &[StackValue]) -> StackValue {
+    let val = args[0];
+    if let StackValue::F64(val) = val {
+        StackValue::F64(val.sqrt())
+    } else {
+        unreachable!()
+    }
+}
+
+pub fn pow(args: &[StackValue]) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    match (val1, val2) {
+        (StackValue::F64(val1), StackValue::F64(val2)) => StackValue::F64(val1.powf(val2)),
+        _ => unreachable!(),
+    }
+}
