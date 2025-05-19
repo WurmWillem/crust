@@ -38,11 +38,14 @@ pub enum TokenType {
     RightParen,
     LeftBrace,
     RightBrace,
+
     Comma,
     Dot,
+    Colon,
+    Semicolon,
+
     Minus,
     Plus,
-    Semicolon,
     Slash,
     Star,
 
@@ -82,7 +85,6 @@ pub enum TokenType {
     Super,
     This,
     True,
-    Var,
     While,
 
     // var types

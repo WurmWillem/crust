@@ -1,8 +1,8 @@
-// use crate::chunk::Chunk;
 use std::ops;
 use std::ptr::NonNull;
 
 use crate::chunk::Chunk;
+use crate::value::{StackValue, ValueType};
 
 pub struct Heap {
     // TODO: maybe add support for Table so you won't have to reallocate every time
@@ -44,6 +44,11 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
+            // WARN: I did not check if this actually works
+            Object::Native(ptr) => {
+                let raw = ptr.ptr.as_ptr();
+                drop(Box::from_raw(raw));
+            }
         }
     }
 }
@@ -52,9 +57,11 @@ impl Drop for Heap {
         let mut current = self.head.take();
 
         while let Some(object) = current {
+            // WARN: I did not check if this actually works
             let next = match object {
                 Object::Str(ref ptr) => ptr.next,
                 Object::Func(ref ptr) => ptr.next,
+                Object::Native(ref ptr) => ptr.next,
             };
 
             unsafe {
@@ -96,31 +103,47 @@ pub struct GcData<T> {
     pub data: T,
 }
 
-type RefStr = Gc<String>;
-type RefFunc = Gc<ObjFunc>;
-
 #[derive(Debug, Clone, Copy)]
 pub enum Object {
-    Str(RefStr),
-    Func(RefFunc),
+    Str(Gc<String>),
+    Func(Gc<ObjFunc>),
+    Native(Gc<ObjNative>),
 }
 
+// TODO: maybe look into this being stack allocated
 #[derive(Debug, Clone)]
 pub struct ObjFunc {
-    arity: u8,
     pub chunk: Chunk,
     name: String,
+    pub return_type: ValueType,
 }
 impl ObjFunc {
     pub fn new(name: String) -> Self {
         Self {
-            arity: 0,
             chunk: Chunk::new(),
             name,
+            return_type: ValueType::Null, // gets patched later
         }
     }
-    pub fn increment_arity(&mut self) {
-        self.arity += 1;
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+}
+
+type NativeFn = fn(&[StackValue]) -> StackValue;
+
+#[derive(Debug, Clone)]
+pub struct ObjNative {
+    // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
+    name: String,
+    pub func: NativeFn,
+}
+impl ObjNative {
+    pub fn new(name: String, func: NativeFn) -> Self {
+        Self {
+            name,
+            func,
+        }
     }
     pub fn get_name(&self) -> &String {
         &self.name

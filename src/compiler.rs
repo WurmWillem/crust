@@ -2,7 +2,9 @@ use colored::Colorize;
 
 use crate::{
     compiler_types::*,
-    error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
+    declared_func::DeclaredFuncStack,
+    error::{EXPECTED_SEMICOLON_MSG, ParseError, print_error},
+    func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
@@ -15,20 +17,23 @@ pub struct Parser<'token> {
     current_token: usize,
     last_operand_type: ValueType,
     heap: Heap,
-    comps: CompilerStack<'token>,
+    comps: FuncCompilerStack<'token>,
     funcs: DeclaredFuncStack<'token>,
 }
 impl<'token> Parser<'token> {
     pub fn compile(
         tokens: Vec<Token<'token>>,
     ) -> Option<(ObjFunc, Heap, [StackValue; MAX_FUNC_AMT])> {
+        let mut heap = Heap::new();
+        let funcs = DeclaredFuncStack::new(&mut heap);
+
         let mut parser = Parser {
             tokens,
             current_token: 0,
-            heap: Heap::new(),
+            heap,
             last_operand_type: ValueType::None,
-            comps: CompilerStack::new(),
-            funcs: DeclaredFuncStack::new(),
+            comps: FuncCompilerStack::new(),
+            funcs,
         };
 
         let mut had_error = false;
@@ -41,8 +46,12 @@ impl<'token> Parser<'token> {
             }
         }
         parser.current_token += 1;
+
         if had_error {
-            println!("{}", "Parse error(s) detected, terminate program.".purple());
+            println!(
+                "{}",
+                "Compile error(s) detected, terminating program.".purple()
+            );
             return None;
         }
 
@@ -67,8 +76,9 @@ impl<'token> Parser<'token> {
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
-        if self.matches(TokenType::Var) {
-            self.var_declaration()
+        if let Some(var_type) = self.peek().kind.as_value_type() {
+            self.advance();
+            self.var_declaration(var_type)
         } else if self.matches(TokenType::Fun) {
             self.func_declaration()
         } else {
@@ -80,30 +90,45 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
 
-        self.funcs.edit_name(name.lexeme);
-        self.function(name.lexeme.to_string())?;
+        self.function(name.lexeme)?;
 
         Ok(())
     }
-    fn function(&mut self, name: String) -> Result<(), ParseError> {
-        self.comps.push(name.clone());
+    fn function(&mut self, name: &'token str) -> Result<(), ParseError> {
+        self.comps.push(name.to_string());
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
 
         // parse parameters
+        let mut parameter_types = Vec::new();
         if !self.check(TokenType::RightParen) {
-            self.parse_parameter()?;
+            self.parse_parameter(&mut parameter_types)?;
             while self.matches(TokenType::Comma) {
-                self.parse_parameter()?;
+                self.parse_parameter(&mut parameter_types)?;
             }
         }
 
-        self.consume(TokenType::RightParen, "Expected ')' after parameters.")?;
+        let mut return_type = ValueType::Null;
+        self.consume(TokenType::RightParen, "Expected')' after parameters.")?;
+
+        if self.matches(TokenType::Colon) {
+            return_type = match self.advance().kind.as_value_type() {
+                Some(return_type) => return_type,
+                _ => {
+                    return Err(ParseError::new(
+                        self.previous().line,
+                        "Expected return type after finding ':'.",
+                    ));
+                }
+            };
+            self.comps.patch_return_type(return_type);
+        }
+        self.funcs.patch_func(name, parameter_types, return_type);
+
         self.consume(TokenType::LeftBrace, "Expected '{' before function body.")?;
 
         self.block()?;
-
         self.emit_return();
 
         let func = self.end_compiler();
@@ -114,30 +139,45 @@ impl<'token> Parser<'token> {
 
         Ok(())
     }
-    fn parse_parameter(&mut self) -> Result<(), ParseError> {
+    fn parse_parameter(&mut self, parameter_types: &mut Vec<ValueType>) -> Result<(), ParseError> {
         let var_type = match self.advance().kind.as_value_type() {
-            Some(var_type) => var_type,
+            Some(var_type) => {
+                parameter_types.push(var_type);
+                var_type
+            }
             _ => {
-                self.dont_parse_scope(false);
+                self.skip_tokens_till_out_of_scope(false);
+
                 return Err(ParseError::new(
                     self.previous().line,
                     "Expected type for parameter.",
                 ));
             }
         };
+
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
+
         self.comps.add_local(name, var_type)?;
-        self.comps.increment_arity();
+
         Ok(())
     }
 
-    fn var_declaration(&mut self) -> Result<(), ParseError> {
+    fn var_declaration(&mut self, var_type: ValueType) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous();
 
         if self.matches(TokenType::Equal) {
             self.expression()?;
+
+            if self.last_operand_type != var_type {
+                let msg = format!(
+                    "Expected value of type '{}', but found type '{}'.",
+                    var_type, self.last_operand_type
+                );
+                return Err(ParseError::new(self.peek().line, &msg));
+            }
+
             self.comps.add_local(name, self.last_operand_type)?;
         } else {
             self.emit_byte(OpCode::Null as u8);
@@ -149,7 +189,6 @@ impl<'token> Parser<'token> {
     }
 
     fn statement(&mut self) -> Result<(), ParseError> {
-        // dbg!(self.peek());
         if self.matches(TokenType::Print) {
             self.print_statement()
         } else if self.matches(TokenType::If) {
@@ -186,7 +225,6 @@ impl<'token> Parser<'token> {
 
     fn emit_jump(&mut self, instruction: OpCode) -> usize {
         self.emit_byte(instruction as u8);
-        // placeholders
         self.emit_byte(0xFF);
         self.emit_byte(0xFF);
         self.comps.get_code_len() - 2
@@ -197,6 +235,17 @@ impl<'token> Parser<'token> {
             self.emit_return();
         } else {
             self.expression()?;
+
+            if self.last_operand_type != self.comps.get_return_type() {
+                let msg = &format!(
+                    "Expected return type '{}', but found type '{}'",
+                    self.comps.get_return_type(),
+                    self.last_operand_type
+                );
+                let line = self.peek().line;
+                return Err(ParseError::new(line, msg));
+            }
+
             self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
             self.emit_byte(OpCode::Return as u8);
         }
@@ -209,8 +258,9 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::LeftParen, "Expected '(' after 'for'.")?;
 
         if self.matches(TokenType::Semicolon) {
-        } else if self.matches(TokenType::Var) {
-            self.var_declaration()?;
+        } else if let Some(var_type) = self.peek().kind.as_value_type() {
+            self.advance();
+            self.var_declaration(var_type)?;
         } else {
             self.expression_statement()?;
         }
@@ -300,10 +350,13 @@ impl<'token> Parser<'token> {
 
     fn synchronize(&mut self) {
         self.advance();
+        // dbg!(self.peek().kind);
 
         while self.peek().kind != TokenType::Eof {
             // if we just consumed a semicolon, we probably ended a statement
-            if self.previous().kind == TokenType::Semicolon {
+            if self.previous().kind == TokenType::Semicolon
+                && self.peek().kind != TokenType::RightBrace
+            {
                 return;
             }
 
@@ -311,13 +364,15 @@ impl<'token> Parser<'token> {
             match self.peek().kind {
                 TokenType::Class
                 | TokenType::Fun
-                | TokenType::Var
+                // | TokenType::F64 used to be 'let', but these are also used in the middle of statments
+                // | TokenType::Bool
+                // | TokenType::Str
                 | TokenType::For
                 | TokenType::If
                 | TokenType::While
                 | TokenType::Print
                 | TokenType::Return => {
-                    dbg!(self.peek().kind);
+                    // dbg!(self.peek().kind);
                     return;
                 }
                 _ => (),
@@ -363,7 +418,6 @@ impl<'token> Parser<'token> {
         while precedence <= self.get_rule(self.peek().kind).precedence {
             self.advance();
             let infix = self.get_rule(self.previous().kind).infix;
-            // dbg!(infix);
             self.execute_fn_type(infix, can_assign)?;
         }
         Ok(())
@@ -373,9 +427,30 @@ impl<'token> Parser<'token> {
         self.parse_precedence(Precedence::Assignment)
     }
 
-    fn variable(&mut self, can_assign: bool) -> Result<(), ParseError> {
+    fn var_or_func(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
 
+        if self.resolve_local(name.lexeme, can_assign)? {
+            return Ok(());
+        }
+
+        if let Some((arg, parameters, return_type)) = self.funcs.resolve_func(name.lexeme) {
+            self.emit_bytes(OpCode::GetFunc as u8, arg);
+
+            self.advance();
+            self.call(parameters)?;
+            self.last_operand_type = return_type;
+            return Ok(());
+        }
+
+        let msg = format!(
+            "The variable/function with name '{}' does not exist.",
+            name.lexeme
+        );
+        Err(ParseError::new(name.line, &msg))
+    }
+
+    fn resolve_local(&mut self, name: &str, can_assign: bool) -> Result<bool, ParseError> {
         macro_rules! emit_operation_code {
             ($op_code: expr, $arg: expr, $kind: expr, $op_char: expr) => {
                 self.emit_bytes(OpCode::GetLocal as u8, $arg);
@@ -388,7 +463,7 @@ impl<'token> Parser<'token> {
             };
         }
 
-        if let Some((arg, kind)) = self.comps.resolve_local(name.lexeme) {
+        if let Some((arg, kind)) = self.comps.resolve_local(name) {
             if can_assign && self.matches(TokenType::Equal) {
                 self.expression()?;
                 self.emit_bytes(OpCode::SetLocal as u8, arg);
@@ -410,35 +485,12 @@ impl<'token> Parser<'token> {
                 self.emit_bytes(OpCode::GetLocal as u8, arg);
                 self.last_operand_type = kind;
             }
-            return Ok(());
+            return Ok(true);
         }
-
-        if let Some(arg) = self.funcs.resolve_func(name.lexeme) {
-            self.emit_bytes(OpCode::GetFunc as u8, arg);
-            return Ok(());
-        }
-
-        // the variable/function does not exist
-        // skip some tokens to prevent error cascading
-        while !self.check(TokenType::Semicolon)
-            && !self.check(TokenType::LeftBrace)
-            && !self.check(TokenType::Eof)
-        {
-            self.advance();
-        }
-        if self.check(TokenType::Semicolon) {
-            self.advance();
-        }
-
-        let msg = format!(
-            "The variable/function with name '{}' does not exist.",
-            name.lexeme
-        );
-
-        Err(ParseError::new(name.line, &msg))
+        Ok(false)
     }
 
-    fn check_if_add_op_is_valid(&mut self, lhs_type: ValueType) -> Result<(), ParseError> {
+    fn check_if_add_op_is_valid(&self, lhs_type: ValueType) -> Result<(), ParseError> {
         if lhs_type != self.last_operand_type
             || (lhs_type != ValueType::Num && lhs_type != ValueType::Str)
         {
@@ -596,33 +648,55 @@ impl<'token> Parser<'token> {
     }
 
     fn execute_fn_type(&mut self, fn_type: FnType, can_assign: bool) -> Result<(), ParseError> {
+        // dbg!(fn_type);
         match fn_type {
             FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            FnType::Variable => self.variable(can_assign),
+            FnType::Variable => self.var_or_func(can_assign),
             FnType::Literal => {
                 self.literal();
                 Ok(())
             }
             FnType::Empty => Ok(()),
-            FnType::Call => self.call(),
+            FnType::Call => unreachable!(),
         }
     }
 
-    fn call(&mut self) -> Result<(), ParseError> {
-        let arg_count = self.argument_list()?;
+    fn call(&mut self, parameters: Vec<ValueType>) -> Result<(), ParseError> {
+        let arity = parameters.len() as u8;
+        let arg_count = self.argument_list(parameters)?;
+
+        if arity != arg_count {
+            let msg = format!(
+                "Function expected {} arguments, but got {}.",
+                arity, arg_count,
+            );
+            return Err(ParseError::new(self.peek().line, &msg));
+        }
+
         self.emit_bytes(OpCode::Call as u8, arg_count + 1);
         Ok(())
     }
-    fn argument_list(&mut self) -> Result<u8, ParseError> {
-        let mut arg_count = 0;
+    fn argument_list(&mut self, parameters: Vec<ValueType>) -> Result<u8, ParseError> {
+        let mut i = 0;
 
         while !self.check(TokenType::RightParen) {
             self.expression()?;
-            arg_count += 1;
+
+            if let Some(kind) = parameters.get(i) {
+                if self.last_operand_type != *kind && *kind != ValueType::Any {
+                    let msg = format!(
+                        "Function expected argument of type '{}', but found type '{}'.",
+                        parameters[i], self.last_operand_type,
+                    );
+                    return Err(ParseError::new(self.peek().line, &msg));
+                }
+            }
+
+            i += 1;
 
             if !self.matches(TokenType::Comma) {
                 break;
@@ -630,7 +704,7 @@ impl<'token> Parser<'token> {
         }
 
         self.consume(TokenType::RightParen, "Expected ')' after argument list")?;
-        Ok(arg_count)
+        Ok(i as u8)
     }
 
     fn emit_constant(&mut self, value: StackValue) -> Result<(), ParseError> {
@@ -702,7 +776,7 @@ impl<'token> Parser<'token> {
         self.tokens[self.current_token - 1]
     }
 
-    fn dont_parse_scope(&mut self, already_inside_scope: bool) {
+    fn skip_tokens_till_out_of_scope(&mut self, already_inside_scope: bool) {
         // if not already inside the scope
         if !already_inside_scope {
             // skip tokens intil EOF or '{' is found

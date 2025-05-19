@@ -10,7 +10,10 @@ use colored::Colorize;
 mod chunk;
 mod compiler;
 mod compiler_types;
+mod declared_func;
 mod error;
+mod func_compiler;
+mod native_funcs;
 mod object;
 mod opcode;
 mod scanner;
@@ -28,7 +31,10 @@ fn main() {
     let tokens = match scanner.scan_tokens() {
         Ok(tokens) => tokens,
         Err(_) => {
-            println!("{}", "Scan error(s) detected, terminate program.".purple());
+            println!(
+                "{}",
+                "Scan error(s) detected, terminating program.".purple()
+            );
             return;
         }
     };

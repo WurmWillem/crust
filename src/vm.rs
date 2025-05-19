@@ -69,9 +69,8 @@ impl VM {
     #[inline(always)]
     fn stack_push(&mut self, value: StackValue) {
         unsafe {
-            let base = self.stack.as_mut_ptr();
-            base.add(self.stack_top).write(value);
-            self.stack_top = self.stack_top.wrapping_add(1);
+            *self.stack.get_unchecked_mut(self.stack_top) = value;
+            self.stack_top += 1;
         }
     }
 
@@ -251,23 +250,34 @@ impl VM {
 
     unsafe fn call(&mut self, frame: *mut CallFrame) {
         let arg_count = self.read_byte(frame) as usize;
-        let value = &self.stack[self.stack_top - arg_count];
+        let slots = self.stack_top - arg_count;
+        let value = self.stack[slots];
 
-        match value {
-            StackValue::Obj(Object::Func(func)) => {
-                let func = *func;
-                let slots = self.stack_top - arg_count;
+        if let StackValue::Obj(obj) = value {
+            match obj {
+                Object::Func(func) => {
+                    let frame = CallFrame {
+                        ip: func.data.chunk.get_ptr(),
+                        slots,
+                        func,
+                    };
 
-                let frame = CallFrame {
-                    ip: func.data.chunk.get_ptr(),
-                    slots,
-                    func,
-                };
+                    unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
+                    self.frame_count += 1;
+                }
+                Object::Native(func) => {
+                    let args_ptr = self.stack.as_ptr().add(slots + 1);
+                    let args = std::slice::from_raw_parts(args_ptr, arg_count);
 
-                unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
-                self.frame_count += 1;
+                    let value = (func.data.func)(args);
+
+                    self.stack_top = slots;
+                    self.stack_push(value);
+                }
+                _ => unreachable!(),
             }
-            _ => unreachable!(),
+        } else {
+            unreachable!()
         }
     }
 

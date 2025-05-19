@@ -5,11 +5,10 @@ use std::{
 
 use crate::object::Object;
 
-// use crate::object::{, ObjectValue};
-
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ValueType {
-    None,
+    None, // default value for locals
+    Any,  // useful as generic type for functions like println()
     Null,
     Bool,
     Num,
@@ -19,6 +18,7 @@ impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
+            ValueType::Any => unreachable!(),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
             ValueType::Num => write!(f, "Number"),
@@ -37,6 +37,7 @@ pub enum StackValue {
 
 macro_rules! add_num_operation {
     ($fun_name: ident, $op: tt) => {
+        #[inline(always)]
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
@@ -48,6 +49,7 @@ macro_rules! add_num_operation {
 
 macro_rules! add_num_comparison {
     ($fun_name: ident, $op: tt) => {
+        #[inline(always)]
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs $op rhs),
@@ -112,7 +114,8 @@ impl StackValue {
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => format!("{:?}", s.data),
-                Object::Func(f) => format!("<fn {:?}>", f.data.get_name()),
+                Object::Func(f) => format!("fn {:?}", f.data.get_name()),
+                Object::Native(f) => format!("nat {:?}", f.data.get_name()),
             },
         }
     }

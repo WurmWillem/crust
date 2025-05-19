@@ -28,7 +28,7 @@ impl<'source> Scanner<'source> {
         let keywords = create_keywords!(
             "and",And "or",Or "if",If "else",Else "while",While "for",For
             "true",True "false",False "null",Null "this",This "parent",Super
-            "class",Class "fn",Fun "let",Var "return",Return "print",Print
+            "class",Class "fn",Fun "return",Return "print",Print
             "int",F64 "bool",Bool "str",Str
         );
 
@@ -90,6 +90,7 @@ impl<'source> Scanner<'source> {
             // ']' => self.add_token(TokenType::RightBracket),
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
+            ':' => self.add_token(TokenType::Colon),
             ';' => self.add_token(TokenType::Semicolon),
             // '^' => self.add_token(TokenType::Caret),
             '!' => ternary!(BangEqual, Bang),
@@ -179,9 +180,9 @@ impl<'source> Scanner<'source> {
                 return;
             }
         }
-        
+
         let msg = "Unterminated comment, never found '*/'.";
-        print_error(self.line, &msg);
+        print_error(self.line, msg);
         self.had_error = true;
     }
 
