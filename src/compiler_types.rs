@@ -1,38 +1,3 @@
-use crate::{
-    token::{Literal, Token, TokenType},
-    value::ValueType,
-};
-
-#[derive(Debug, Clone, Copy)]
-pub struct Local<'a> {
-    pub name: Token<'a>,
-    pub kind: ValueType,
-    pub depth: usize,
-}
-impl<'a> Local<'a> {
-    pub fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
-        Self { name, depth, kind }
-    }
-}
-
-pub const MAX_LOCAL_AMT: usize = u8::MAX as usize;
-pub struct Compiler<'a> {
-    pub locals: [Local<'a>; MAX_LOCAL_AMT],
-    pub local_count: usize,
-    pub scope_depth: usize,
-}
-impl<'a> Compiler<'a> {
-    pub fn new() -> Self {
-        let name = Token::new(TokenType::Equal, "", Literal::None, 0);
-        let local = Local::new(name, 0, ValueType::None);
-        Self {
-            locals: [local; MAX_LOCAL_AMT],
-            local_count: 0,
-            scope_depth: 0,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Precedence {
@@ -69,6 +34,7 @@ impl std::convert::From<u8> for Precedence {
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum FnType {
+    Empty,
     Grouping,
     Unary,
     Binary,
@@ -76,18 +42,18 @@ pub enum FnType {
     String,
     Literal,
     Variable,
-    Empty,
+    Call,
 }
 
 #[derive(Clone, Copy)]
 pub struct ParseRule {
-    pub prefix: FnType,
+    pub prefix: FnType, // stores in what way can it be used as prefix (if used at all)
     pub infix: FnType,
     pub precedence: Precedence,
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 39] = {
+pub const PARSE_RULES: [ParseRule; 43] = {
     use FnType::*;
     use Precedence as P;
 
@@ -99,15 +65,16 @@ pub const PARSE_RULES: [ParseRule; 39] = {
 
     [
         
-        ParseRule { prefix: Grouping, infix: Empty, precedence: P::None, }, // left paren
+        ParseRule { prefix: Grouping, infix: Call, precedence: P::Call, }, // left paren
         none!(), // right paren
         none!(), // left brace
         none!(), // right brace
         none!(), // comma
         none!(), // dot
+        none!(), // colon
+        none!(), // semicolon
         ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, }, // minus
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, }, // plus
-        none!(), // semicolon
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // slash
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // star
         ParseRule { prefix: Unary, infix: Empty, precedence: P::Factor, }, // bang
@@ -118,6 +85,12 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Greater equal
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less
         ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less equal
+
+        none!(), //Plus Equal
+        none!(), //Minus Equal
+        none!(), //Mul Equal
+        none!(), //Div Equal
+
         ParseRule { prefix: Variable, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
@@ -135,7 +108,6 @@ pub const PARSE_RULES: [ParseRule; 39] = {
         none!(), // super
         none!(), // this
         ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // true
-        none!(), // var
         none!(), // while
         none!(), // EOF
     ]

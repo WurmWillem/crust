@@ -1,4 +1,5 @@
 #[repr(u8)]
+#[derive(Debug)]
 pub enum OpCode {
     Return,
     Constant,
@@ -10,8 +11,12 @@ pub enum OpCode {
 
     Print,
 
+    Call,
+
     GetLocal,
     SetLocal,
+
+    GetFunc,
 
     // literals
     True,
@@ -45,23 +50,25 @@ impl std::convert::From<u8> for OpCode {
             4 => OpCode::JumpIfFalse,
             5 => OpCode::Loop,
             6 => OpCode::Print,
-            7 => OpCode::GetLocal,
-            8 => OpCode::SetLocal,
-            9 => OpCode::True,
-            10 => OpCode::False,
-            11 => OpCode::Null,
-            12 => OpCode::Negate,
-            13 => OpCode::Not,
-            14 => OpCode::Add,
-            15 => OpCode::Sub,
-            16 => OpCode::Mul,
-            17 => OpCode::Div,
-            18 => OpCode::Equal,
-            19 => OpCode::BangEqual,
-            20 => OpCode::Greater,
-            21 => OpCode::GreaterEqual,
-            22 => OpCode::Less,
-            23 => OpCode::LessEqual,
+            7 => OpCode::Call,
+            8 => OpCode::GetLocal,
+            9 => OpCode::SetLocal,
+            10 => OpCode::GetFunc,
+            11 => OpCode::True,
+            12 => OpCode::False,
+            13 => OpCode::Null,
+            14 => OpCode::Negate,
+            15 => OpCode::Not,
+            16 => OpCode::Add,
+            17 => OpCode::Sub,
+            18 => OpCode::Mul,
+            19 => OpCode::Div,
+            20 => OpCode::Equal,
+            21 => OpCode::BangEqual,
+            22 => OpCode::Greater,
+            23 => OpCode::GreaterEqual,
+            24 => OpCode::Less,
+            25 => OpCode::LessEqual,
             _ => panic!("Not a valid opcode."),
         }
     }

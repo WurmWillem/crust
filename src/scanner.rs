@@ -26,16 +26,17 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "en",And "of",Or "if",If "else",Else "while",While "for",For
-            "true",True "false",False "null",Null "dit",This "ouder",Super
-            "klas",Class "proces",Fun "let",Var "geef",Return "print",Print
+            "and",And "or",Or "if",If "else",Else "while",While "for",For
+            "true",True "false",False "null",Null "this",This "parent",Super
+            "class",Class "fn",Fun "return",Return "pr",Print
+            "int",F64 "bool",Bool "str",Str
         );
 
         let source_len = source_file.len();
 
         Self {
             source: source_file,
-            tokens: Vec::with_capacity(source_len / 2),
+            tokens: Vec::with_capacity(source_len / 6),
             keywords,
             start: 0,
             current: 0,
@@ -69,8 +70,8 @@ impl<'source> Scanner<'source> {
         self.current += 1;
 
         macro_rules! ternary {
-            ($c: expr, $t1: ident, $t2: ident) => {{
-                let token = if self.matches($c) {
+            ($t1: ident, $t2: ident) => {{
+                let token = if self.matches('=') {
                     self.current += 1;
                     TokenType::$t1
                 } else {
@@ -89,17 +90,19 @@ impl<'source> Scanner<'source> {
             // ']' => self.add_token(TokenType::RightBracket),
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
-            '-' => self.add_token(TokenType::Minus),
-            '+' => self.add_token(TokenType::Plus),
+            ':' => self.add_token(TokenType::Colon),
             ';' => self.add_token(TokenType::Semicolon),
-            '*' => self.add_token(TokenType::Star),
             // '^' => self.add_token(TokenType::Caret),
-            '!' => ternary!('=', BangEqual, Bang),
-            '=' => ternary!('=', EqualEqual, Equal),
-            '<' => ternary!('=', LessEqual, Less),
-            '>' => ternary!('=', GreaterEqual, Greater),
+            '!' => ternary!(BangEqual, Bang),
+            '=' => ternary!(EqualEqual, Equal),
+            '<' => ternary!(LessEqual, Less),
+            '>' => ternary!(GreaterEqual, Greater),
 
-            // comments
+            '+' => ternary!(PlusEqual, Plus),
+            '-' => ternary!(MinEqual, Minus),
+            '*' => ternary!(MulEqual, Star),
+
+            // comments, '/', or '/='
             '/' => {
                 if self.matches('/') {
                     while self.peek() != '\n' && !self.at_end_input() {
@@ -108,8 +111,7 @@ impl<'source> Scanner<'source> {
                 } else if self.matches('*') {
                     self.check_for_end_comment();
                 } else {
-                    self.add_token(TokenType::Slash);
-                    self.current += 1;
+                    ternary!(DivEqual, Slash);
                 }
             }
 
@@ -122,7 +124,7 @@ impl<'source> Scanner<'source> {
                     self.current += 1;
                 }
                 if self.at_end_input() {
-                    print_error(self.line, "Ongetermineerde reeks.");
+                    print_error(self.line, "Unterminated sequence of characters.");
                     self.had_error = true;
                     return;
                 }
@@ -141,7 +143,7 @@ impl<'source> Scanner<'source> {
                 if c.is_ascii_digit() {
                     self.add_num_token()
                 } else if c.is_alphabetic() || c == '_' {
-                    while self.peek().is_alphanumeric() {
+                    while self.peek().is_alphanumeric() || self.peek() == '_' {
                         self.current += 1;
                     }
 
@@ -154,7 +156,7 @@ impl<'source> Scanner<'source> {
 
                     self.add_token(kind);
                 } else {
-                    let msg = format!("'{}' is een ongeldig karakter.", c);
+                    let msg = format!("'{}' is an unvalid character.", c);
                     print_error(self.line, &msg);
                     self.had_error = true;
                 }
@@ -178,6 +180,10 @@ impl<'source> Scanner<'source> {
                 return;
             }
         }
+
+        let msg = "Unterminated comment, never found '*/'.";
+        print_error(self.line, msg);
+        self.had_error = true;
     }
 
     fn peek(&self) -> char {

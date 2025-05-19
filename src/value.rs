@@ -3,11 +3,12 @@ use std::{
     ops::{Neg, Not},
 };
 
-use crate::object::{Object, ObjectValue};
+use crate::object::Object;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum ValueType {
-    None,
+    None, // default value for locals
+    Any,  // useful as generic type for functions like println()
     Null,
     Bool,
     Num,
@@ -17,6 +18,7 @@ impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
+            ValueType::Any => unreachable!(),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
             ValueType::Num => write!(f, "Number"),
@@ -30,11 +32,12 @@ pub enum StackValue {
     Null,
     Bool(bool),
     F64(f64),
-    Obj(usize),
+    Obj(Object),
 }
 
 macro_rules! add_num_operation {
     ($fun_name: ident, $op: tt) => {
+        #[inline(always)]
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
@@ -46,6 +49,7 @@ macro_rules! add_num_operation {
 
 macro_rules! add_num_comparison {
     ($fun_name: ident, $op: tt) => {
+        #[inline(always)]
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs $op rhs),
@@ -102,27 +106,17 @@ impl Not for StackValue {
         }
     }
 }
-// trait DisplayWithContext {
-//     fn fmt_with(&self, objects: &Vec<Object>)  -> String;
-// }
-//
-// impl DisplayWithContext for StackValue {
-//     fn fmt_with(&self, objects: &Vec<Object>) -> String {
-//         self.display_with_context(objects)
-//     }
-// }
 impl StackValue {
-    pub fn display(&self, objects: &[Object]) -> String {
+    pub fn display(&self) -> String {
         match self {
             StackValue::Null => "null".to_string(),
             StackValue::Bool(b) => b.to_string(),
             StackValue::F64(f) => f.to_string(),
-            StackValue::Obj(idx) => {
-                match &objects[*idx].value {
-                    ObjectValue::Str(s) => format!("\"{}\"", s),
-                    // handle other ObjectValue variants
-                }
-            }
+            StackValue::Obj(o) => match o {
+                Object::Str(s) => format!("{:?}", s.data),
+                Object::Func(f) => format!("fn {:?}", f.data.get_name()),
+                Object::Native(f) => format!("nat {:?}", f.data.get_name()),
+            },
         }
     }
 }

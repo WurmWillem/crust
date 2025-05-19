@@ -1,9 +1,10 @@
-use crate::{object::Object, OpCode, StackValue};
+use crate::{OpCode, StackValue};
 
+#[derive(Debug, Clone)]
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<StackValue>,
-    pub lines: Vec<u32>,
+    lines: Vec<u32>,
 }
 impl Chunk {
     pub fn new() -> Self {
@@ -37,8 +38,8 @@ impl Chunk {
     //     }
     // }
 
-    pub fn disassemble_instruction(&mut self, offset: usize, objects: &[Object]) -> usize {
-        // print!("{}  ", offset);
+    pub fn disassemble_instruction(&self, offset: usize) -> usize {
+        // dbg!(offset);
         // dbg!(self.lines[offset]);
 
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
@@ -51,17 +52,21 @@ impl Chunk {
         // dbg!(instruction);
         match instruction.into() {
             OpCode::Return => Self::simple_instruction("OP_RETURN", offset),
-            OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset, objects),
+            OpCode::Constant => self.constant_instruction("OP_CONSTANT", offset),
             OpCode::Pop => Self::simple_instruction("OP_POP", offset),
-            // TODO: update for jump and vars and loop
+            // TODO: update for jump and vars and loop and call
             OpCode::Jump => Self::simple_instruction("OP_POP", offset),
             OpCode::JumpIfFalse => Self::simple_instruction("OP_POP", offset),
             OpCode::Loop => Self::simple_instruction("OP_POP", offset),
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 
-            OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset, objects),
-            OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset, objects),
+            OpCode::Call => Self::simple_instruction("OP_CALL", offset),
+
+            OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
+            OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),
+
+            OpCode::GetFunc => self.constant_instruction("OP_GET_LOCAL", offset),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
@@ -89,13 +94,10 @@ impl Chunk {
         offset + 1
     }
 
-    fn constant_instruction(&self, name: &str, offset: usize, objects: &[Object]) -> usize {
+    fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant_index = self.code[offset + 1];
         print!("{}  {}:", name, constant_index);
-        println!(
-            " '{}'",
-            self.constants[constant_index as usize].display(objects)
-        );
+        // println!(" '{}'", self.constants[constant_index as usize].display());
         // println!();
         offset + 2
     }

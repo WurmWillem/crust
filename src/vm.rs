@@ -1,8 +1,11 @@
+use std::mem::MaybeUninit;
+
+use crate::object::{Gc, Heap, ObjFunc};
 use colored::Colorize;
 
 use crate::error::DEBUG_TRACE_EXECUTION;
-use crate::object::{Object, ObjectValue};
-use crate::{chunk::Chunk, opcode::OpCode, value::StackValue};
+use crate::object::Object;
+use crate::{opcode::OpCode, value::StackValue};
 
 pub enum InterpretResult {
     Ok,
@@ -10,69 +13,110 @@ pub enum InterpretResult {
 }
 
 const STACK_SIZE: usize = 256;
+const FRAMES_SIZE: usize = 64;
+pub const MAX_FUNC_AMT: usize = 64;
+
+#[derive(Debug)]
+#[repr(C)]
+struct CallFrame {
+    func: Gc<ObjFunc>,
+    ip: *const u8,
+    slots: usize,
+}
 
 pub struct VM {
-    chunk: Chunk,
-    ip: *const u8,
+    frames: [MaybeUninit<CallFrame>; FRAMES_SIZE],
+    frame_count: usize,
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
-    objects: Vec<Object>,
+    heap: Heap,
+    funcs: [StackValue; MAX_FUNC_AMT],
 }
 impl VM {
-    pub fn interpret(chunk: Chunk, objects: Vec<Object>) -> InterpretResult {
-        let ip = chunk.get_ptr();
+    pub fn interpret(
+        func: ObjFunc,
+        mut heap: Heap,
+        funcs: [StackValue; MAX_FUNC_AMT],
+    ) -> InterpretResult {
+        let (func_object, gc_obj) = heap.alloc(func, Object::Func);
+        let frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
+        unsafe {
+            frames = MaybeUninit::uninit().assume_init();
+        }
+
         let mut vm = Self {
-            chunk,
-            objects,
-            ip,
+            heap,
+            frames,
+            frame_count: 1,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
+            funcs,
         };
+
+        let frame = CallFrame {
+            ip: gc_obj.data.chunk.get_ptr(),
+            slots: 0,
+            func: gc_obj,
+        };
+
+        unsafe { vm.frames[0].as_mut_ptr().write(frame) }
+
+        vm.stack_push(StackValue::Obj(func_object));
+
         unsafe { vm.run() }
     }
 
+    #[inline(always)]
     fn stack_push(&mut self, value: StackValue) {
-        self.stack[self.stack_top] = value;
-        self.stack_top += 1;
-    }
-
-    fn stack_pop(&mut self) -> StackValue {
-        self.stack_top -= 1;
-        self.stack[self.stack_top]
-    }
-
-    fn stack_peek(&mut self) -> StackValue {
-        self.stack[self.stack_top - 1]
+        unsafe {
+            *self.stack.get_unchecked_mut(self.stack_top) = value;
+            self.stack_top += 1;
+        }
     }
 
     #[inline(always)]
-    unsafe fn read_byte(&mut self) -> u8 {
-        let byte = *self.ip;
-        self.ip = self.ip.add(1);
+    fn stack_pop(&mut self) -> StackValue {
+        unsafe {
+            self.stack_top -= 1;
+            self.stack.as_ptr().add(self.stack_top).read()
+        }
+    }
+
+    #[inline(always)]
+    fn pop_no_return(&mut self) {
+        self.stack_top -= 1;
+    }
+
+    #[inline(always)]
+    fn stack_peek(&mut self) -> StackValue {
+        unsafe { self.stack.as_ptr().add(self.stack_top - 1).read() }
+    }
+
+    #[inline(always)]
+    unsafe fn read_byte(&mut self, frame: *mut CallFrame) -> u8 {
+        // let mut ip = frame.ip;
+        let byte = *(*frame).ip;
+        (*frame).ip = (*frame).ip.add(1);
         byte
     }
 
     #[inline(always)]
-    unsafe fn read_short(&mut self) -> u16 {
-        self.ip = self.ip.add(2);
-        let high = *self.ip.offset(-2);
-        let low = *self.ip.offset(-1);
+    unsafe fn read_short(&mut self, frame: *mut CallFrame) -> u16 {
+        let ip = &mut (*frame).ip;
+        *ip = ip.add(2);
+
+        let high = *ip.offset(-2);
+        let low = *ip.offset(-1);
+
         ((high as u16) << 8) | (low as u16)
     }
 
     unsafe fn run(&mut self) -> InterpretResult {
-        // consider making ip a local variable
+        let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
+
         loop {
             if DEBUG_TRACE_EXECUTION {
-                print!("          ");
-                for stack_index in 0..self.stack_top {
-                    print!("[ {} ]", self.stack[stack_index].display(&self.objects))
-                }
-                println!();
-
-                let debug_offset = self.ip.offset_from(self.chunk.code.as_ptr());
-                self.chunk
-                    .disassemble_instruction(debug_offset as usize, &self.objects);
+                self.debug_trace(frame)
             }
 
             macro_rules! binary_op {
@@ -82,58 +126,69 @@ impl VM {
                     self.stack_push(lhs.$operation(rhs));
                 }};
             }
-            // macro_rules! get_var_name_from_next_byte {
-            //     () => {{
-            //         let constants_index = self.read_byte() as usize;
-            //         let StackValue::Obj(idx) = self.chunk.constants[constants_index] else {
-            //             unreachable!();
-            //         };
-            //         let ObjectValue::Str(var_name) = &self.objects[idx].value;
-            //         var_name
-            //     }};
-            // }
 
-            match std::mem::transmute::<u8, OpCode>(self.read_byte()) {
+            let opcode = std::mem::transmute::<u8, OpCode>(self.read_byte(frame));
+            match opcode {
                 OpCode::Return => {
-                    return InterpretResult::Ok;
+                    let result = self.stack_pop();
+
+                    self.frame_count -= 1;
+                    if self.frame_count == 0 {
+                        self.pop_no_return();
+                        return InterpretResult::Ok;
+                    }
+
+                    self.stack_top = (*frame).slots;
+                    self.stack_push(result);
+                    // frame = self.frames[self.frame_count - 1].assume_init_mut();
                 }
                 OpCode::Constant => {
-                    let index = self.read_byte() as usize;
-                    let constant = self.chunk.constants[index];
+                    let index = self.read_byte(frame) as usize;
+                    let constant = (*frame).func.data.chunk.constants[index];
                     self.stack_push(constant);
                 }
                 OpCode::Pop => {
-                    // dbg!(self.stack_top);
-                    self.stack_pop();
+                    self.pop_no_return();
                 }
 
                 OpCode::Jump => {
-                    let offset = self.read_short() as usize;
-                    self.ip = self.ip.add(offset);
+                    let offset = self.read_short(frame) as usize;
+                    (*frame).ip = (*frame).ip.add(offset);
                 }
                 OpCode::JumpIfFalse => {
-                    let offset = self.read_short() as usize;
+                    let offset = self.read_short(frame) as usize;
                     if let StackValue::Bool(false) = self.stack_peek() {
-                        self.ip = self.ip.add(offset);
+                        (*frame).ip = (*frame).ip.add(offset);
                     }
                 }
                 OpCode::Loop => {
-                    let offset = self.read_short() as usize;
-                    self.ip = self.ip.sub(offset);
+                    let offset = self.read_short(frame) as usize;
+                    (*frame).ip = (*frame).ip.sub(offset);
                 }
 
                 OpCode::Print => {
-                    let string = self.stack_pop().display(&self.objects).green();
+                    let string = self.stack_pop().display().green();
                     println!("{}", string);
                 }
 
+                OpCode::Call => {
+                    self.call(frame);
+                }
+
                 OpCode::GetLocal => {
-                    let slot = self.read_byte();
-                    self.stack_push(self.stack[slot as usize]);
+                    let slot = self.read_byte(frame) as usize;
+                    let value = self.stack[(*frame).slots + slot];
+                    self.stack_push(value);
                 }
                 OpCode::SetLocal => {
-                    let slot = self.read_byte();
-                    self.stack[slot as usize] = self.stack_peek();
+                    let slot = self.read_byte(frame) as usize;
+                    self.stack[(*frame).slots + slot] = self.stack_peek();
+                }
+
+                OpCode::GetFunc => {
+                    let slot = self.read_byte(frame) as usize;
+                    let value = self.funcs[slot];
+                    self.stack_push(value);
                 }
 
                 OpCode::True => {
@@ -187,24 +242,76 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
             }
+            frame = self.frames[self.frame_count - 1].assume_init_mut();
+            // break InterpretResult::Ok;
         }
         // InterpretResult::RuntimeError
     }
 
-    fn concatenate_strings(&mut self, lhs: usize, rhs: usize) -> StackValue {
-        // remove rhs so we can take ownership, but mutate lhs so we don't
-        // have to remove and then push again
-        assert_ne!(lhs, rhs, "lhs and rhs must not be the same object index");
+    unsafe fn call(&mut self, frame: *mut CallFrame) {
+        let arg_count = self.read_byte(frame) as usize;
+        let slots = self.stack_top - arg_count;
+        let value = self.stack[slots];
 
-        let lhs_index = lhs;
-        // let rhs_value = self.objects.swap_remove(rhs).value;
-        let rhs_value = self.objects[rhs].value.clone();
-        // let ObjectValue::Str(rhs_value) = self.objects[rhs].value;
-        let lhs_value = &mut self.objects[lhs].value;
+        if let StackValue::Obj(obj) = value {
+            match obj {
+                Object::Func(func) => {
+                    let frame = CallFrame {
+                        ip: func.data.chunk.get_ptr(),
+                        slots,
+                        func,
+                    };
 
-        let (ObjectValue::Str(lhs), ObjectValue::Str(rhs)) = (lhs_value, rhs_value);
+                    unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
+                    self.frame_count += 1;
+                }
+                Object::Native(func) => {
+                    let args_ptr = self.stack.as_ptr().add(slots + 1);
+                    let args = std::slice::from_raw_parts(args_ptr, arg_count);
 
-        lhs.push_str(&rhs);
-        StackValue::Obj(lhs_index)
+                    let value = (func.data.func)(args);
+
+                    self.stack_top = slots;
+                    self.stack_push(value);
+                }
+                _ => unreachable!(),
+            }
+        } else {
+            unreachable!()
+        }
+    }
+
+    unsafe fn debug_trace(&self, frame: *mut CallFrame) {
+        print!("          ");
+        for stack_index in 0..self.stack_top {
+            print!("[ {} ]", self.stack[stack_index].display())
+        }
+        println!();
+
+        let ip = (*frame).ip;
+        let offset = (*frame).func.data.chunk.code.as_ptr();
+        let debug_offset = ip.offset_from(offset) as usize;
+
+        (*frame)
+            .func
+            .data
+            .chunk
+            .disassemble_instruction(debug_offset);
+    }
+
+    fn concatenate_strings(&mut self, lhs: Object, rhs: Object) -> StackValue {
+        let Object::Str(lhs) = lhs else {
+            unreachable!()
+        };
+        let Object::Str(rhs) = rhs else {
+            unreachable!()
+        };
+
+        let mut new_str = lhs.data.clone();
+        new_str.push_str(&rhs.data);
+
+        let (object, _) = self.heap.alloc(new_str, Object::Str);
+
+        StackValue::Obj(object)
     }
 }

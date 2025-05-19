@@ -1,3 +1,5 @@
+use crate::value::ValueType;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Literal<'source> {
     None,
@@ -29,7 +31,6 @@ impl<'source> Token<'source> {
     }
 }
 
-#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
     // single-character tokens
@@ -37,11 +38,14 @@ pub enum TokenType {
     RightParen,
     LeftBrace,
     RightBrace,
+
     Comma,
     Dot,
+    Colon,
+    Semicolon,
+
     Minus,
     Plus,
-    Semicolon,
     Slash,
     Star,
 
@@ -54,6 +58,11 @@ pub enum TokenType {
     GreaterEqual,
     Less,
     LessEqual,
+
+    PlusEqual,
+    MinEqual,
+    MulEqual,
+    DivEqual,
 
     // literals
     Identifier,
@@ -76,9 +85,29 @@ pub enum TokenType {
     Super,
     This,
     True,
-    Var,
     While,
+
+    // var types
+    F64,
+    Bool,
+    Str,
 
     // end of file
     Eof,
+}
+impl TokenType {
+    // pub fn is_value_type(&self) -> bool {
+    //     match self {
+    //         TokenType::F64 | TokenType::Bool | TokenType::Str => true,
+    //         _ => false,
+    //     }
+    // }
+    pub fn as_value_type(&self) -> Option<ValueType> {
+        match self {
+            TokenType::F64 => Some(ValueType::Num),
+            TokenType::Bool => Some(ValueType::Bool),
+            TokenType::Str => Some(ValueType::Str),
+            _ => None,
+        }
+    }
 }

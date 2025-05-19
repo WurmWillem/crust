@@ -1,4 +1,3 @@
-use chunk::Chunk;
 use compiler::Parser;
 use error::PRINT_SCAN_TOKENS;
 use opcode::OpCode;
@@ -11,7 +10,10 @@ use colored::Colorize;
 mod chunk;
 mod compiler;
 mod compiler_types;
+mod declared_func;
 mod error;
+mod func_compiler;
+mod native_funcs;
 mod object;
 mod opcode;
 mod scanner;
@@ -20,31 +22,36 @@ mod value;
 mod vm;
 
 fn main() {
-    let msg = "file.crust is niet gevonden. Het moet in dezelfde directory als de binary of Cargo.toml zitten.";
-    let source = std::fs::read_to_string("file.js").expect(msg);
+    std::env::set_var("RUST_BACKTRACE", "1");
+
+    let msg = "Could not find file.crust. The file should be in the same directory as either the executable file or Cargo.toml.";
+    let source = std::fs::read_to_string("file.crust").expect(msg);
 
     let scanner = Scanner::new(&source);
     let tokens = match scanner.scan_tokens() {
         Ok(tokens) => tokens,
         Err(_) => {
-            println!("{}", "Scan error(s) detected, terminate program.".purple());
+            println!(
+                "{}",
+                "Scan error(s) detected, terminating program.".purple()
+            );
             return;
         }
     };
 
     if PRINT_SCAN_TOKENS {
         for token in &tokens {
-            println!("{:?}", token);
+            println!("{:?} type: {:?}", token, token.kind as u8);
         }
         println!();
     }
 
-    let (chunk, objects) = match Parser::compile(tokens, Chunk::new()) {
+    let (func, heap, funcs) = match Parser::compile(tokens) {
         None => {
             return;
         }
-        Some((chunk, objects)) => (chunk, objects),
+        Some((func, heap, funcs)) => (func, heap, funcs),
     };
 
-    VM::interpret(chunk, objects);
+    VM::interpret(func, heap, funcs);
 }
