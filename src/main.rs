@@ -1,3 +1,4 @@
+use comp::Comp;
 use error::PRINT_SCAN_TOKENS;
 use opcode::OpCode;
 use scanner::Scanner;
@@ -6,6 +7,7 @@ use value::StackValue;
 use colored::Colorize;
 
 mod chunk;
+mod comp;
 mod compiler;
 mod compiler_types;
 mod declared_func;
@@ -14,11 +16,11 @@ mod func_compiler;
 mod native_funcs;
 mod object;
 mod opcode;
+mod parser;
 mod scanner;
 mod token;
 mod value;
 mod vm;
-mod parser;
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
@@ -46,5 +48,8 @@ fn main() {
     }
 
     let expr = parser::Parser::compile(tokens);
-    dbg!(expr);
+    dbg!(&expr);
+    let mut comp = Comp::new();
+    comp.compile(expr);
+
 }

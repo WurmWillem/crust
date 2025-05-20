@@ -50,16 +50,18 @@ impl BinaryOp {
 
 #[derive(Debug)]
 pub enum Expr<'a> {
-    Lit(Literal<'a>),
+    Lit(Literal<'a>, u32),
     Variable(String),
     Unary {
         prefix: TokenType,
         right: Box<Expr<'a>>,
+        line: u32,
     },
     Binary {
         left: Box<Expr<'a>>,
         op: BinaryOp,
         right: Box<Expr<'a>>,
+        line: u32,
     },
 }
 
@@ -75,7 +77,7 @@ impl<'a> Parser<'a> {
         };
 
         let mut had_error = false;
-        let mut result = Expr::Lit(Literal::Null);
+        let mut result = Expr::Lit(Literal::Null, 0);
         while !parser.check(TokenType::Eof) {
             let parsed = parser.expression();
             result = match parsed {
@@ -84,7 +86,7 @@ impl<'a> Parser<'a> {
                     print_error(err.line, &err.msg);
 
                     had_error = true;
-                    Expr::Lit(Literal::Null)
+                    Expr::Lit(Literal::Null, 0)
                 }
             }
         }
@@ -199,16 +201,7 @@ impl<'a> Parser<'a> {
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseError> {
         self.advance();
-        let kind = self.previous().kind;
-        let prefix = self.get_rule(kind).prefix;
-
-        if prefix == FnType::Empty {
-            let msg = "Expected expression.";
-            let err = ParseError::new(self.previous().line, msg);
-            return Err(err);
-        }
-        let can_assign = precedence <= Precedence::Assignment;
-        let mut expr = self.execute_prefix(prefix, can_assign)?;
+        let (can_assign, mut expr) = self.parse_prefix(precedence)?;
 
         while self.peek().kind != TokenType::Eof
             && precedence <= self.get_rule(self.peek().kind).precedence
@@ -218,6 +211,21 @@ impl<'a> Parser<'a> {
             expr = self.execute_infix(expr, infix, can_assign)?;
         }
         Ok(expr)
+    }
+
+    fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseError> {
+        let kind = self.previous().kind;
+
+        let prefix = self.get_rule(kind).prefix;
+        if prefix == FnType::Empty {
+            let msg = "Expected expression.";
+            let err = ParseError::new(self.previous().line, msg);
+            return Err(err);
+        }
+
+        let can_assign = precedence <= Precedence::Assignment;
+        let expr = self.execute_prefix(prefix, can_assign)?;
+        Ok((can_assign, expr))
     }
 
     // fn parse_prefix(&mut self) -> Result<Expr<'a>, ParseError> {
@@ -237,20 +245,27 @@ impl<'a> Parser<'a> {
 
         let precedence = op.get_precedency();
         let right = Box::new(self.parse_precedence(precedence)?);
-        Ok(Expr::Binary { left, op, right })
+        let line = self.previous().line;
+        Ok(Expr::Binary {
+            left,
+            op,
+            right,
+            line,
+        })
     }
 
     fn number(&mut self) -> Result<Expr<'a>, ParseError> {
         let Literal::Num(value) = self.previous().literal else {
             unreachable!();
         };
-        Ok(Expr::Lit(Literal::Num(value)))
+        Ok(Expr::Lit(Literal::Num(value), self.previous().line))
     }
 
     fn unary(&mut self) -> Result<Expr<'a>, ParseError> {
         let prefix = self.previous().kind;
         let right = Box::new(self.parse_precedence(Precedence::Unary)?);
-        Ok(Expr::Unary { prefix, right })
+        let line = self.previous().line;
+        Ok(Expr::Unary { prefix, right, line })
     }
 
     fn expression(&mut self) -> Result<Expr<'a>, ParseError> {
