@@ -136,7 +136,7 @@ impl ObjFunc {
     }
 }
 
-type NativeFn = fn(&[StackValue]) -> StackValue;
+type NativeFn = fn(&mut Heap, &[StackValue]) -> StackValue;
 #[derive(Debug, Clone)]
 pub struct ObjNative {
     // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too

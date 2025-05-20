@@ -19,7 +19,9 @@ impl<'a> DeclaredTypes<'a> {
 
         macro_rules! add_func {
             ($name: expr, $func: ident, $parameters: expr, $return_type: expr) => {
-                let clock = ObjNative::new($name.to_string(), native_funcs::$func);
+                let clock = ObjNative::new($name.to_string(), |heap, args| {
+                    native_funcs::$func(&mut *heap, args)
+                });
                 let (clock, _) = heap.alloc(clock, Object::Native);
                 let value = Some(StackValue::Obj(clock));
                 let clock = DeclaredFunc::new($name, value, $parameters, $return_type);
@@ -52,6 +54,7 @@ impl<'a> DeclaredTypes<'a> {
             vec![ValueType::Num, ValueType::Num],
             ValueType::Num
         );
+        add_func!("readfile", readfile, vec![ValueType::Str], ValueType::Str);
 
         Self {
             funcs,
@@ -101,11 +104,8 @@ struct DeclaredStruct<'a> {
     fields: HashMap<&'a str, u8>,
 }
 impl<'a> DeclaredStruct<'a> {
-    fn new(name: &'a str,  fields: HashMap<&'a str, u8>) -> Self {
-        Self {
-            name,
-            fields,
-        }
+    fn new(name: &'a str, fields: HashMap<&'a str, u8>) -> Self {
+        Self { name, fields }
     }
 }
 
