@@ -1,15 +1,11 @@
 struct Vector2D {
   int x;
   int y;
-
-  //fn product(): int {
-  //  return x * y;   // use self.field to access fields later on 
-  //}
 }
 
 fn main() {
-    int x = Vector2D();
-    println(x);
+    int vec = Vector2D();
+    pr vec.x;
 }
 main();
 

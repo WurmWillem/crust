@@ -159,7 +159,7 @@ impl ObjNative {
 #[derive(Debug, Clone)]
 pub struct ObjInstance {
     name: String,
-    fields: Vec<StackValue>,
+    pub fields: Vec<StackValue>,
 }
 impl ObjInstance {
     pub fn new(name: String, fields: Vec<StackValue>) -> Self {

@@ -41,8 +41,9 @@ pub enum FnType {
     Number,
     String,
     Literal,
-    Variable,
+    Identifier,
     Call,
+    Dot,
 }
 
 #[derive(Clone, Copy)]
@@ -70,7 +71,7 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         none!(), // left brace
         none!(), // right brace
         none!(), // comma
-        none!(), // dot
+        ParseRule { prefix: Empty, infix: Dot, precedence: P::Call, }, // dot
         none!(), // colon
         none!(), // semicolon
         ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, }, // minus
@@ -91,7 +92,7 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         none!(), //Mul Equal
         none!(), //Div Equal
 
-        ParseRule { prefix: Variable, infix: Empty, precedence: P::None, }, // identifier
+        ParseRule { prefix: Identifier, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
         none!(), // and

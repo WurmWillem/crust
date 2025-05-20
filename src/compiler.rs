@@ -470,7 +470,39 @@ impl<'token> Parser<'token> {
         self.parse_precedence(Precedence::Assignment)
     }
 
-    fn var_or_func(&mut self, can_assign: bool) -> Result<(), ParseError> {
+    fn dot(&mut self, can_assign: bool) -> Result<(), ParseError> {
+        self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
+        let field = self.previous();
+
+        let inst = self.comps.comps[self.comps.current]
+            .func
+            .chunk
+            .constants
+            .last()
+            .unwrap();
+        let inst = match inst {
+            StackValue::Obj(Object::Instance(inst)) => inst,
+            _ => unreachable!(),
+        };
+
+        let struct_name = inst.data.get_name();
+        let field_index = match self.decl_types.get_field_index(struct_name, field.lexeme) {
+            Some(i) => i,
+            None => {
+                let msg = format!(
+                    "Struct '{}' does not have field '{}', ",
+                    struct_name, field.lexeme
+                );
+                return Err(ParseError::new(field.line, &msg));
+            }
+        };
+
+        self.emit_bytes(OpCode::GetProp as u8, field_index);
+        // dbg!(struct_name);
+
+        Ok(())
+    }
+    fn identifier(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
 
         if self.resolve_local(name.lexeme, can_assign)? {
@@ -491,7 +523,7 @@ impl<'token> Parser<'token> {
             self.consume(TokenType::RightParen, "Expected ')' after class name.")?;
 
             let inst = ObjInstance::new(name.lexeme.to_string(), fields);
-            dbg!(&inst);
+            // dbg!(&inst);
             let (inst, _) = self.heap.alloc(inst, Object::Instance);
             let value = StackValue::Obj(inst);
             self.emit_constant(value)?;
@@ -712,7 +744,8 @@ impl<'token> Parser<'token> {
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            FnType::Variable => self.var_or_func(can_assign),
+            FnType::Identifier => self.identifier(can_assign),
+            FnType::Dot => self.dot(can_assign),
             FnType::Literal => {
                 self.literal();
                 Ok(())

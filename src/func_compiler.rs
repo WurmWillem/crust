@@ -6,8 +6,8 @@ use crate::{
 };
 
 pub struct FuncCompilerStack<'a> {
-    comps: Vec<FuncCompiler<'a>>,
-    current: usize,
+    pub comps: Vec<FuncCompiler<'a>>,
+    pub current: usize,
 }
 impl<'a> FuncCompilerStack<'a> {
     pub fn new() -> Self {
@@ -128,7 +128,7 @@ pub struct FuncCompiler<'a> {
     locals: [Local<'a>; MAX_LOCAL_AMT],
     local_count: usize,
     scope_depth: usize,
-    func: ObjFunc,
+    pub func: ObjFunc,
 }
 impl<'a> FuncCompiler<'a> {
     pub fn new(func_name: String) -> Self {

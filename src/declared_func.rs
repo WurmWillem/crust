@@ -94,6 +94,15 @@ impl<'a> DeclaredTypes<'a> {
         None
     }
 
+    pub fn get_field_index(&self, struct_name: &str, field_name: &str) -> Option<u8> {
+        self.structs
+            .iter()
+            .find(|s| s.name == struct_name)?
+            .fields
+            .get(field_name)
+            .copied()
+    }
+
     pub fn resolve_struct(&self, name: &str) -> Option<Vec<StackValue>> {
         self.structs
             .iter()

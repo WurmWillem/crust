@@ -68,6 +68,8 @@ impl Chunk {
 
             OpCode::GetFunc => self.constant_instruction("OP_GET_LOCAL", offset),
 
+            OpCode::GetProp => self.constant_instruction("OP_GET_PROP", offset),
+
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
             OpCode::False => Self::simple_instruction("OP_FALSE", offset),
