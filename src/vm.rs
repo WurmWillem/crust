@@ -191,6 +191,32 @@ impl VM {
                     self.stack_push(value);
                 }
 
+                OpCode::GetProp => {
+                    let field_index = self.read_byte(frame) as usize;
+                    let inst = self.stack_peek();
+                    self.pop_no_return();
+
+                    if let StackValue::Obj(Object::Instance(value)) = inst {
+                        let field = value.data.fields[field_index];
+                        self.stack_push(field);
+                    } else {
+                        unreachable!()
+                    }
+                }
+                OpCode::SetProp => {
+                    let field_index = self.read_byte(frame) as usize;
+                    let new_value = self.stack_pop();
+                    let inst = self.stack_pop();
+                    // dbg!(new_value);
+                    // dbg!(inst);
+
+                    if let StackValue::Obj(Object::Instance(mut value)) = inst {
+                        value.data.fields[field_index] = new_value;
+                    } else {
+                        unreachable!()
+                    }
+                }
+
                 OpCode::True => {
                     self.stack_push(StackValue::Bool(true));
                 }

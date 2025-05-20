@@ -7,7 +7,7 @@ use crate::{
     declared_func::DeclaredTypes,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     func_compiler::FuncCompilerStack,
-    object::{Heap, ObjFunc, Object},
+    object::{Heap, ObjFunc, ObjInstance, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
@@ -215,7 +215,7 @@ impl<'token> Parser<'token> {
         if self.matches(TokenType::Equal) {
             self.expression()?;
 
-            if self.last_operand_type != var_type {
+            if self.last_operand_type != var_type && self.last_operand_type != ValueType::Any {
                 let msg = format!(
                     "Expected value of type '{}', but found type '{}'.",
                     var_type, self.last_operand_type
@@ -470,10 +470,51 @@ impl<'token> Parser<'token> {
         self.parse_precedence(Precedence::Assignment)
     }
 
-    fn var_or_func(&mut self, can_assign: bool) -> Result<(), ParseError> {
+    fn dot(&mut self, can_assign: bool) -> Result<(), ParseError> {
+        self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
+        let field = self.previous();
+        return Ok(());
+
+        let inst = self.comps.comps[self.comps.current]
+            .func
+            .chunk
+            .constants
+            .last()
+            .unwrap();
+
+        let inst = match inst {
+            StackValue::Obj(Object::Instance(inst)) => inst,
+            _ => unreachable!(),
+        };
+
+        let struct_name = inst.data.get_name();
+        let field_index = match self.decl_types.get_field_index(struct_name, field.lexeme) {
+            Some(i) => i,
+            None => {
+                let msg = format!(
+                    "Struct '{}' does not have field '{}', ",
+                    struct_name, field.lexeme
+                );
+                return Err(ParseError::new(field.line, &msg));
+            }
+        };
+
+        if self.matches(TokenType::Equal) && can_assign {
+            // dbg!("set");
+            self.expression()?;
+            self.emit_bytes(OpCode::SetProp as u8, field_index);
+        } else {
+            // dbg!("get");
+            self.emit_bytes(OpCode::GetProp as u8, field_index);
+        }
+
+        Ok(())
+    }
+    fn identifier(&mut self, can_assign: bool) -> Result<(), ParseError> {
         let name = self.previous();
 
         if self.resolve_local(name.lexeme, can_assign)? {
+            dbg!(name.lexeme);
             return Ok(());
         }
 
@@ -483,6 +524,20 @@ impl<'token> Parser<'token> {
             self.advance();
             self.call(parameters)?;
             self.last_operand_type = return_type;
+            return Ok(());
+        }
+
+        if let Some(fields) = self.decl_types.resolve_struct(name.lexeme) {
+            self.consume(TokenType::LeftParen, "Expected '(' after class name.")?;
+            self.consume(TokenType::RightParen, "Expected ')' after class name.")?;
+
+            let inst = ObjInstance::new(name.lexeme.to_string(), fields);
+            // dbg!(&inst);
+            let (inst, _) = self.heap.alloc(inst, Object::Instance);
+            let value = StackValue::Obj(inst);
+            self.emit_constant(value)?;
+
+            self.last_operand_type = ValueType::Any;
             return Ok(());
         }
 
@@ -691,14 +746,15 @@ impl<'token> Parser<'token> {
     }
 
     fn execute_fn_type(&mut self, fn_type: FnType, can_assign: bool) -> Result<(), ParseError> {
-        // dbg!(fn_type);
+        dbg!(fn_type);
         match fn_type {
             FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            FnType::Variable => self.var_or_func(can_assign),
+            FnType::Identifier => self.identifier(can_assign),
+            FnType::Dot => self.dot(can_assign),
             FnType::Literal => {
                 self.literal();
                 Ok(())

@@ -1,42 +1,21 @@
-fn factorial(int n): int {
-    if n <= 1 return 1;
-    return n * factorial(n - 1);
-}
-
-fn greet_user(): str {
-    str greeting = "Welcome to Crust!";
-    return greeting;
-}
-
-fn fib(int n): int {
-  if n < 2 return n;
-  return fib(n - 1) + fib(n - 2);
-}
-
 struct Vector2D {
   int x;
   int y;
-
-  //fn product(): int {
-  //  return x * y;   // use self.field to access fields later on 
-  //}
 }
 
-fn main() {
-    int num = 5;
-    int fact = factorial(num);
+int vec = Vector2D();
+//int y = 3;
+vec.x;
+//pr x;
 
-    str msg = greet_user();
-
-    println(msg);
-
-    print("Number: ");
-    println(num);
-
-    print("Factorial: ");
-    println(fact);
-}
-main();
+//fn main() {
+    //pr vec;
+    //bool sdf = false;
+    //pr vec.x;
+    //vec.x = 3;
+    //pr vec.x;
+//}
+//main();
 
 //int before = clock();
 //int f = fib(37);
