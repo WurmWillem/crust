@@ -93,6 +93,13 @@ impl<'a> DeclaredTypes<'a> {
         }
         None
     }
+
+    pub fn resolve_struct(&self, name: &str) -> Option<Vec<StackValue>> {
+        self.structs
+            .iter()
+            .find(|s| s.name == name)
+            .map(|struc| vec![StackValue::Null; struc.fields.len()])
+    }
 }
 
 #[derive(Debug)]
@@ -101,11 +108,8 @@ struct DeclaredStruct<'a> {
     fields: HashMap<&'a str, u8>,
 }
 impl<'a> DeclaredStruct<'a> {
-    fn new(name: &'a str,  fields: HashMap<&'a str, u8>) -> Self {
-        Self {
-            name,
-            fields,
-        }
+    fn new(name: &'a str, fields: HashMap<&'a str, u8>) -> Self {
+        Self { name, fields }
     }
 }
 

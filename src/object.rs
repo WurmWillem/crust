@@ -140,6 +140,7 @@ type NativeFn = fn(&[StackValue]) -> StackValue;
 #[derive(Debug, Clone)]
 pub struct ObjNative {
     // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
+    // TODO also look into making it a &str
     name: String,
     pub func: NativeFn,
 }

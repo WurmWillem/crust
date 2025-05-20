@@ -7,7 +7,7 @@ use crate::{
     declared_func::DeclaredTypes,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     func_compiler::FuncCompilerStack,
-    object::{Heap, ObjFunc, Object},
+    object::{Heap, ObjFunc, ObjInstance, Object},
     opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
@@ -215,7 +215,7 @@ impl<'token> Parser<'token> {
         if self.matches(TokenType::Equal) {
             self.expression()?;
 
-            if self.last_operand_type != var_type {
+            if self.last_operand_type != var_type && self.last_operand_type != ValueType::Any {
                 let msg = format!(
                     "Expected value of type '{}', but found type '{}'.",
                     var_type, self.last_operand_type
@@ -483,6 +483,20 @@ impl<'token> Parser<'token> {
             self.advance();
             self.call(parameters)?;
             self.last_operand_type = return_type;
+            return Ok(());
+        }
+
+        if let Some(fields) = self.decl_types.resolve_struct(name.lexeme) {
+            self.consume(TokenType::LeftParen, "Expected '(' after class name.")?;
+            self.consume(TokenType::RightParen, "Expected ')' after class name.")?;
+
+            let inst = ObjInstance::new(name.lexeme.to_string(), fields);
+            dbg!(&inst);
+            let (inst, _) = self.heap.alloc(inst, Object::Instance);
+            let value = StackValue::Obj(inst);
+            self.emit_constant(value)?;
+
+            self.last_operand_type = ValueType::Any;
             return Ok(());
         }
 
