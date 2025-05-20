@@ -1,6 +1,6 @@
-use crate::value::StackValue;
-use crate::object::Object;
 use crate::object::Heap;
+use crate::object::Object;
+use crate::value::StackValue;
 
 pub fn clock(_heap: &Heap, _args: &[StackValue]) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -100,12 +100,36 @@ pub fn pow(_heap: &Heap, args: &[StackValue]) -> StackValue {
 }
 
 pub fn readfile(heap: &mut Heap, args: &[StackValue]) -> StackValue {
+    use colored::Colorize;
     use std::fs;
 
-    let file = args[0].display();
-    let contents = fs::read_to_string(file).expect("could not find file");
+    let file = &args[0].display();
 
-    let (object, _) = heap.alloc(contents, Object::Str);
+    let file_contents = match fs::read_to_string(file) {
+        Ok(contents) => contents,
+        Err(_e) => {
+            let msg = format!("Error reading file: {}", file).red();
+            println!("{}", msg);
+            String::new()
+        }
+    };
+
+    let (object, _) = heap.alloc(file_contents, Object::Str);
 
     StackValue::Obj(object)
 }
+
+// readfile alternative
+// pub fn readfile(heap: &mut Heap, args: &[StackValue]) -> StackValue {
+//     use std::fs;
+//
+//     let file = &args[0].display();
+//
+//     match fs::read_to_string(file) {
+//         Ok(contents) => {
+//             let (object, _) = heap.alloc(contents, Object::Str);
+//             StackValue::Obj(object)
+//         }
+//         Err(_e) => StackValue::Null,
+//     }
+// }
