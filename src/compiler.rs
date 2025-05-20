@@ -473,6 +473,7 @@ impl<'token> Parser<'token> {
     fn dot(&mut self, can_assign: bool) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
         let field = self.previous();
+        return Ok(());
 
         let inst = self.comps.comps[self.comps.current]
             .func
@@ -480,6 +481,7 @@ impl<'token> Parser<'token> {
             .constants
             .last()
             .unwrap();
+
         let inst = match inst {
             StackValue::Obj(Object::Instance(inst)) => inst,
             _ => unreachable!(),
@@ -497,8 +499,14 @@ impl<'token> Parser<'token> {
             }
         };
 
-        self.emit_bytes(OpCode::GetProp as u8, field_index);
-        // dbg!(struct_name);
+        if self.matches(TokenType::Equal) && can_assign {
+            // dbg!("set");
+            self.expression()?;
+            self.emit_bytes(OpCode::SetProp as u8, field_index);
+        } else {
+            // dbg!("get");
+            self.emit_bytes(OpCode::GetProp as u8, field_index);
+        }
 
         Ok(())
     }
@@ -506,6 +514,7 @@ impl<'token> Parser<'token> {
         let name = self.previous();
 
         if self.resolve_local(name.lexeme, can_assign)? {
+            dbg!(name.lexeme);
             return Ok(());
         }
 
@@ -737,7 +746,7 @@ impl<'token> Parser<'token> {
     }
 
     fn execute_fn_type(&mut self, fn_type: FnType, can_assign: bool) -> Result<(), ParseError> {
-        // dbg!(fn_type);
+        dbg!(fn_type);
         match fn_type {
             FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),

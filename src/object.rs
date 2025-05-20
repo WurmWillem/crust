@@ -95,11 +95,11 @@ impl<T> ops::Deref for Gc<T> {
         unsafe { self.ptr.as_ref() }
     }
 }
-// impl<T> ops::DerefMut for Gc<T> {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         unsafe { self.ptr.as_mut() }
-//     }
-// }
+impl<T> ops::DerefMut for Gc<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.ptr.as_mut() }
+    }
+}
 
 #[derive(Debug)]
 pub struct GcData<T> {

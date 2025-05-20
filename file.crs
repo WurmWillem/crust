@@ -3,11 +3,19 @@ struct Vector2D {
   int y;
 }
 
-fn main() {
-    int vec = Vector2D();
-    pr vec.x;
-}
-main();
+int vec = Vector2D();
+//int y = 3;
+vec.x;
+//pr x;
+
+//fn main() {
+    //pr vec;
+    //bool sdf = false;
+    //pr vec.x;
+    //vec.x = 3;
+    //pr vec.x;
+//}
+//main();
 
 //int before = clock();
 //int f = fib(37);

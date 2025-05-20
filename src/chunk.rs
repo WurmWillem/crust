@@ -25,6 +25,7 @@ impl Chunk {
     }
 
     pub fn add_constant(&mut self, value: StackValue) -> usize {
+        // dbg!(value);
         self.constants.push(value);
         self.constants.len() - 1
     }
@@ -69,6 +70,7 @@ impl Chunk {
             OpCode::GetFunc => self.constant_instruction("OP_GET_LOCAL", offset),
 
             OpCode::GetProp => self.constant_instruction("OP_GET_PROP", offset),
+            OpCode::SetProp => self.constant_instruction("OP_SET_PROP", offset),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
