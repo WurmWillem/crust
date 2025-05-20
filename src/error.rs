@@ -5,6 +5,7 @@ pub const DEBUG_TRACE_EXECUTION: bool = false;
 
 pub const EXPECTED_SEMICOLON_MSG: &str = "Expected ';' at end of statement.";
 
+#[derive(Debug)]
 pub struct ParseError {
     pub msg: String,
     pub line: u32,

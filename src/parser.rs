@@ -54,7 +54,7 @@ pub enum Expr<'a> {
     Variable(String),
     Unary {
         prefix: TokenType,
-        right: Box<Expr<'a>>,
+        value: Box<Expr<'a>>,
         line: u32,
     },
     Binary {
@@ -265,7 +265,7 @@ impl<'a> Parser<'a> {
         let prefix = self.previous().kind;
         let right = Box::new(self.parse_precedence(Precedence::Unary)?);
         let line = self.previous().line;
-        Ok(Expr::Unary { prefix, right, line })
+        Ok(Expr::Unary { prefix, value: right, line })
     }
 
     fn expression(&mut self) -> Result<Expr<'a>, ParseError> {

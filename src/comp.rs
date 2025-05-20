@@ -3,8 +3,8 @@ use crate::{
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc},
     opcode::OpCode,
-    parser::Expr,
-    token::Literal,
+    parser::{BinaryOp, Expr},
+    token::{Literal, TokenType},
     value::StackValue,
 };
 
@@ -14,10 +14,20 @@ pub struct Comp<'a> {
     // decl_types: DeclaredTypes<'token>,
 }
 impl<'a> Comp<'a> {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self { heap: Heap::new(), comps: FuncCompilerStack::new() }
     }
-    pub fn compile(&mut self, expr: Expr) -> Result<ObjFunc, ParseError> {
+    pub fn compile(expr: Expr) -> Option<(ObjFunc, Heap)> {
+        let mut comp = Comp::new();
+        comp.emit_expr(expr).unwrap();
+        comp.emit_byte(OpCode::Print as u8, 0);
+        let func = comp.end_compiler(69);
+
+        Some((func, comp.heap))
+        // None
+    }
+
+    pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         match expr {
             Expr::Lit(lit, line) => match lit {
                 Literal::None => unreachable!(),
@@ -32,19 +42,33 @@ impl<'a> Comp<'a> {
             Expr::Variable(_) => todo!(),
             Expr::Unary {
                 prefix,
-                right,
+                value: right,
                 line,
-            } => todo!(),
-            Expr::Binary {
+            } => {
+                self.emit_expr(*right)?;
+                match prefix {
+                    TokenType::Minus => self.emit_byte(OpCode::Negate as u8, line),
+                    TokenType::Bang => self.emit_byte(OpCode::Not as u8, line),
+                    _ => unreachable!()
+                }
+            }            Expr::Binary {
                 left,
                 op,
                 right,
                 line,
-            } => todo!(),
+            } => {
+                self.emit_expr(*left)?;
+                self.emit_expr(*right)?;
+                match op {
+                    BinaryOp::Add => self.emit_byte(OpCode::Add as u8, line),
+                    BinaryOp::Sub => self.emit_byte(OpCode::Sub as u8, line),
+                    BinaryOp::Mul => self.emit_byte(OpCode::Mul as u8, line),
+                    BinaryOp::Div => self.emit_byte(OpCode::Div as u8, line),
+                    _ => unreachable!()
+                }
+            }
         };
-        let func = self.end_compiler(69);
-        Ok(func)
-        // None
+        Ok(())
     }
 
     fn end_compiler(&mut self, line: u32) -> ObjFunc {
