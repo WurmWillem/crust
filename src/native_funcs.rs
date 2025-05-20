@@ -1,6 +1,8 @@
+use crate::object::Heap;
+use crate::object::Object;
 use crate::value::StackValue;
 
-pub fn clock(_args: &[StackValue]) -> StackValue {
+pub fn clock(_heap: &Heap, _args: &[StackValue]) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
@@ -8,7 +10,7 @@ pub fn clock(_args: &[StackValue]) -> StackValue {
     StackValue::F64(time.as_secs_f64())
 }
 
-pub fn print(args: &[StackValue]) -> StackValue {
+pub fn print(_heap: &Heap, args: &[StackValue]) -> StackValue {
     use colored::Colorize;
 
     let string = args[0].display().green();
@@ -16,7 +18,7 @@ pub fn print(args: &[StackValue]) -> StackValue {
 
     StackValue::Null
 }
-pub fn println(args: &[StackValue]) -> StackValue {
+pub fn println(_heap: &Heap, args: &[StackValue]) -> StackValue {
     use colored::Colorize;
 
     let string = args[0].display().green();
@@ -25,7 +27,7 @@ pub fn println(args: &[StackValue]) -> StackValue {
     StackValue::Null
 }
 
-pub fn sin(args: &[StackValue]) -> StackValue {
+pub fn sin(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.sin())
@@ -34,7 +36,7 @@ pub fn sin(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn cos(args: &[StackValue]) -> StackValue {
+pub fn cos(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.cos())
@@ -43,7 +45,7 @@ pub fn cos(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn tan(args: &[StackValue]) -> StackValue {
+pub fn tan(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.tan())
@@ -52,7 +54,7 @@ pub fn tan(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn min(args: &[StackValue]) -> StackValue {
+pub fn min(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -61,7 +63,7 @@ pub fn min(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn max(args: &[StackValue]) -> StackValue {
+pub fn max(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -70,7 +72,7 @@ pub fn max(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn abs(args: &[StackValue]) -> StackValue {
+pub fn abs(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.abs())
@@ -79,7 +81,7 @@ pub fn abs(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn sqrt(args: &[StackValue]) -> StackValue {
+pub fn sqrt(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.sqrt())
@@ -88,7 +90,7 @@ pub fn sqrt(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn pow(args: &[StackValue]) -> StackValue {
+pub fn pow(_heap: &Heap, args: &[StackValue]) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -96,3 +98,38 @@ pub fn pow(args: &[StackValue]) -> StackValue {
         _ => unreachable!(),
     }
 }
+
+pub fn readfile(heap: &mut Heap, args: &[StackValue]) -> StackValue {
+    use colored::Colorize;
+    use std::fs;
+
+    let file = &args[0].display();
+
+    let file_contents = match fs::read_to_string(file) {
+        Ok(contents) => contents,
+        Err(_e) => {
+            let msg = format!("Error reading file: {}", file).red();
+            println!("{}", msg);
+            String::new()
+        }
+    };
+
+    let (object, _) = heap.alloc(file_contents, Object::Str);
+
+    StackValue::Obj(object)
+}
+
+// readfile alternative
+// pub fn readfile(heap: &mut Heap, args: &[StackValue]) -> StackValue {
+//     use std::fs;
+//
+//     let file = &args[0].display();
+//
+//     match fs::read_to_string(file) {
+//         Ok(contents) => {
+//             let (object, _) = heap.alloc(contents, Object::Str);
+//             StackValue::Obj(object)
+//         }
+//         Err(_e) => StackValue::Null,
+//     }
+// }

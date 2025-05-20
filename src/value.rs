@@ -113,10 +113,10 @@ impl StackValue {
             StackValue::Bool(b) => b.to_string(),
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(o) => match o {
-                Object::Str(s) => format!("{:?}", s.data),
-                Object::Func(f) => format!("fn {:?}", f.data.get_name()),
-                Object::Native(f) => format!("nat {:?}", f.data.get_name()),
-                Object::Instance(f) => format!("struct {:?}", f.data.get_name()),
+                Object::Str(s) => format!("{}", s.data),
+                Object::Func(f) => format!("fn {}", f.data.get_name()),
+                Object::Native(f) => format!("nat {}", f.data.get_name()),
+                Object::Instance(f) => format!("str {:?}", f.data.get_name()),
             },
         }
     }
