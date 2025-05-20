@@ -1,9 +1,7 @@
-use compiler::Parser;
 use error::PRINT_SCAN_TOKENS;
 use opcode::OpCode;
 use scanner::Scanner;
 use value::StackValue;
-use vm::VM;
 
 use colored::Colorize;
 
@@ -20,6 +18,7 @@ mod scanner;
 mod token;
 mod value;
 mod vm;
+mod parser;
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
@@ -46,12 +45,6 @@ fn main() {
         println!();
     }
 
-    let (func, heap, funcs) = match Parser::compile(tokens) {
-        None => {
-            return;
-        }
-        Some((func, heap, funcs)) => (func, heap, funcs),
-    };
-
-    VM::interpret(func, heap, funcs);
+    let expr = parser::Parser::compile(tokens);
+    dbg!(expr);
 }

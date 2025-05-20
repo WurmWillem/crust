@@ -768,11 +768,11 @@ impl<'token> Parser<'token> {
     }
 
     fn peek(&self) -> Token<'token> {
-        self.tokens[self.current_token]
+        self.tokens[self.current_token].clone()
     }
 
     fn previous(&self) -> Token<'token> {
-        self.tokens[self.current_token - 1]
+        self.tokens[self.current_token - 1].clone()
     }
 
     fn skip_tokens_till_out_of_scope(&mut self, already_inside_scope: bool) {

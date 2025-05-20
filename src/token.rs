@@ -5,8 +5,11 @@ pub enum Literal<'source> {
     None,
     Str(&'source str),
     Num(f64),
-    // other types of literals such as true, false, or null are not necessary
+    True,
+    False,
+    Null,
 }
+
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token<'source> {
