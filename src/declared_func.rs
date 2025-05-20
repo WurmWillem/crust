@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::native_funcs;
 use crate::object::Heap;
 use crate::object::ObjNative;
@@ -11,7 +9,6 @@ use crate::StackValue;
 #[derive(Debug)]
 pub struct DeclaredTypes<'a> {
     funcs: Vec<DeclaredFunc<'a>>,
-    structs: Vec<DeclaredStruct<'a>>,
 }
 impl<'a> DeclaredTypes<'a> {
     pub fn new(heap: &mut Heap) -> Self {
@@ -55,23 +52,18 @@ impl<'a> DeclaredTypes<'a> {
 
         Self {
             funcs,
-            structs: Vec::new(),
         }
     }
 
-    pub fn to_stack_value_arr(self) -> [StackValue; MAX_FUNC_AMT] {
+    pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
         let mut arr = [StackValue::Null; MAX_FUNC_AMT];
-        for i in 0..self.funcs.len() {
+        
+        for (i, item) in arr.iter_mut().enumerate().take(self.funcs.len()) {
             if let Some(val) = self.funcs[i].value {
-                arr[i] = val;
+                *item = val;
             }
         }
         arr
-    }
-
-    pub fn add_struct(&mut self, name: &'a str, fields: HashMap<&'a str, u8>) {
-        let str = DeclaredStruct::new(name, fields);
-        self.structs.push(str);
     }
 
     pub fn add_func(&mut self, name: &'a str, parameters: Vec<ValueType>, return_type: ValueType) {
@@ -92,20 +84,6 @@ impl<'a> DeclaredTypes<'a> {
             }
         }
         None
-    }
-}
-
-#[derive(Debug)]
-struct DeclaredStruct<'a> {
-    name: &'a str,
-    fields: HashMap<&'a str, u8>,
-}
-impl<'a> DeclaredStruct<'a> {
-    fn new(name: &'a str,  fields: HashMap<&'a str, u8>) -> Self {
-        Self {
-            name,
-            fields,
-        }
     }
 }
 

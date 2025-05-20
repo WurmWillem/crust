@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use colored::Colorize;
 
 use crate::{
@@ -84,53 +82,11 @@ impl<'token> Parser<'token> {
             self.var_decl(var_type)
         } else if self.matches(TokenType::Fun) {
             self.func_decl()
-        } else if self.matches(TokenType::Struct) {
-            self.struct_decl()
         } else {
             self.statement()
         }
     }
 
-    fn struct_decl(&mut self) -> Result<(), ParseError> {
-        self.consume(TokenType::Identifier, "Expected struct name.")?;
-        let name = self.previous();
-
-        let mut fields = HashMap::new();
-        self.consume(TokenType::LeftBrace, "Expected '{' before class body.")?;
-
-        while !self.matches(TokenType::RightBrace) {
-            match self.advance().kind.as_value_type() {
-                Some(_var_type) => {
-                    // fields.push(var_type)
-                }
-                _ => {
-                    return Err(ParseError::new(
-                        self.previous().line,
-                        "Expected type for field.",
-                    ));
-                }
-            };
-
-            self.consume(TokenType::Identifier, "Expected field name.")?;
-            let field_name = self.previous().lexeme;
-
-            if let Some(_) = fields.insert(field_name, fields.len() as u8) {
-                return Err(ParseError::new(
-                    self.previous().line,
-                    "Field already defined.",
-                ));
-            }
-
-            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
-        }
-        // dbg!(&fields);
-
-        self.decl_types.add_struct(name.lexeme, fields);
-
-        // self.consume(TokenType::RightBrace, "Expected '}' after class body.")?;
-
-        Ok(())
-    }
     fn func_decl(&mut self) -> Result<(), ParseError> {
         self.consume(TokenType::Identifier, "Expected function name.")?;
         let name = self.previous();
