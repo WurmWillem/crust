@@ -147,7 +147,6 @@ impl<'a> Parser<'a> {
 
     fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseError> {
         let kind = self.previous().kind;
-        dbg!(kind);
 
         let prefix = self.get_rule(kind).prefix;
         if prefix == FnType::Empty {
@@ -316,7 +315,9 @@ impl<'a> Parser<'a> {
     }
 
     fn grouping(&mut self) -> Result<Expr<'a>, ParseError> {
-        todo!()
+        let expr = self.expression()?;
+        self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
+        Ok(expr)
     }
 
     fn execute_prefix(
@@ -326,19 +327,12 @@ impl<'a> Parser<'a> {
     ) -> Result<Expr<'a>, ParseError> {
         // dbg!(fn_type);
         match fn_type {
-            // FnType::Grouping => self.grouping(),
+            FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),
-            // FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            // FnType::Variable => self.var_or_func(can_assign),
-            FnType::Literal => {
-                self.literal()
-                // Ok(())
-            }
-            // FnType::Empty => Ok(()),
-            // FnType::Call => unreachable!(),
-            _ => todo!(),
+            FnType::Literal => self.literal(),
+            _ => unreachable!(),
         }
     }
 
@@ -349,19 +343,8 @@ impl<'a> Parser<'a> {
         _can_assign: bool,
     ) -> Result<Expr<'a>, ParseError> {
         match fn_type {
-            // FnType::Grouping => self.grouping(),
-            FnType::Unary => self.unary(),
             FnType::Binary => self.binary(left),
-            FnType::Number => self.number(),
-            FnType::String => self.string(),
-            // FnType::Variable => self.var_or_func(can_assign),
-            FnType::Literal => {
-                self.literal()
-                // Ok(())
-            }
-            // FnType::Empty => Ok(()),
-            // FnType::Call => unreachable!(),
-            _ => todo!(),
+            _ => unreachable!(),
         }
     }
 

@@ -70,6 +70,7 @@ impl StackValue {
     add_num_comparison!(is_less_than, <);
     add_num_comparison!(is_less_equal_than, <=);
 
+    #[inline(always)]
     pub fn equals(self, rhs: StackValue) -> bool {
         match (self, rhs) {
             (StackValue::F64(lhs), StackValue::F64(rhs)) => lhs == rhs,
@@ -78,12 +79,14 @@ impl StackValue {
             _ => unreachable!(),
         }
     }
+    #[inline(always)]
     pub fn and(self, rhs: StackValue) -> bool {
         match (self, rhs) {
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs && rhs,
             _ => unreachable!(),
         }
     }
+    #[inline(always)]
     pub fn or(self, rhs: StackValue) -> bool {
         match (self, rhs) {
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs || rhs,
