@@ -139,10 +139,7 @@ pub struct ObjNative {
 }
 impl ObjNative {
     pub fn new(name: String, func: NativeFn) -> Self {
-        Self {
-            name,
-            func,
-        }
+        Self { name, func }
     }
     pub fn get_name(&self) -> &String {
         &self.name

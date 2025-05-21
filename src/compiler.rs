@@ -586,7 +586,7 @@ impl<'token> Parser<'token> {
                 self.emit_byte(OpCode::Equal as u8);
                 self.last_operand_type = ValueType::Bool;
             }
-            TokenType::BangEqual => emit_and_update_last_operand!("!=", OpCode::BangEqual),
+            TokenType::BangEqual => emit_and_update_last_operand!("!=", OpCode::NotEqual),
             TokenType::Greater => emit_and_update_last_operand!(">", OpCode::Greater),
             TokenType::GreaterEqual => emit_and_update_last_operand!(">=", OpCode::GreaterEqual),
             TokenType::Less => emit_and_update_last_operand!("<", OpCode::Less),

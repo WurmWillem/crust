@@ -151,4 +151,3 @@ impl<'a> FuncCompiler<'a> {
         self.func.return_type = return_type;
     }
 }
-

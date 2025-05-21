@@ -15,7 +15,10 @@ pub struct Comp<'a> {
 }
 impl<'a> Comp<'a> {
     fn new() -> Self {
-        Self { heap: Heap::new(), comps: FuncCompilerStack::new() }
+        Self {
+            heap: Heap::new(),
+            comps: FuncCompilerStack::new(),
+        }
     }
     pub fn compile(expr: Expr) -> Option<(ObjFunc, Heap)> {
         let mut comp = Comp::new();
@@ -32,12 +35,10 @@ impl<'a> Comp<'a> {
             Expr::Lit(lit, line) => match lit {
                 Literal::None => unreachable!(),
                 Literal::Str(_) => todo!(),
-                Literal::Num(num) => {
-                    self.emit_constant(StackValue::F64(num), line)?;
-                }
-                Literal::True => todo!(),
-                Literal::False => todo!(),
-                Literal::Null => todo!(),
+                Literal::Num(num) => self.emit_constant(StackValue::F64(num), line)?,
+                Literal::True => self.emit_byte(OpCode::True as u8, line),
+                Literal::False => self.emit_byte(OpCode::False as u8, line),
+                Literal::Null => self.emit_byte(OpCode::Null as u8, line),
             },
             Expr::Variable(_) => todo!(),
             Expr::Unary {
@@ -49,9 +50,10 @@ impl<'a> Comp<'a> {
                 match prefix {
                     TokenType::Minus => self.emit_byte(OpCode::Negate as u8, line),
                     TokenType::Bang => self.emit_byte(OpCode::Not as u8, line),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
-            }            Expr::Binary {
+            }
+            Expr::Binary {
                 left,
                 op,
                 right,
@@ -59,13 +61,8 @@ impl<'a> Comp<'a> {
             } => {
                 self.emit_expr(*left)?;
                 self.emit_expr(*right)?;
-                match op {
-                    BinaryOp::Add => self.emit_byte(OpCode::Add as u8, line),
-                    BinaryOp::Sub => self.emit_byte(OpCode::Sub as u8, line),
-                    BinaryOp::Mul => self.emit_byte(OpCode::Mul as u8, line),
-                    BinaryOp::Div => self.emit_byte(OpCode::Div as u8, line),
-                    _ => unreachable!()
-                }
+                let op_code = op.to_op_code();
+                self.emit_byte(op_code as u8, line);
             }
         };
         Ok(())

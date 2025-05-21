@@ -232,7 +232,7 @@ impl VM {
                     let lhs = self.stack_pop();
                     self.stack_push(StackValue::Bool(lhs.equals(rhs)));
                 }
-                OpCode::BangEqual => {
+                OpCode::NotEqual => {
                     let rhs = self.stack_pop();
                     let lhs = self.stack_pop();
                     self.stack_push(StackValue::Bool(!lhs.equals(rhs)));

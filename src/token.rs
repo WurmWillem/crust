@@ -10,7 +10,6 @@ pub enum Literal<'source> {
     Null,
 }
 
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token<'source> {
     pub kind: TokenType,

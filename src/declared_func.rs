@@ -50,14 +50,12 @@ impl<'a> DeclaredTypes<'a> {
             ValueType::Num
         );
 
-        Self {
-            funcs,
-        }
+        Self { funcs }
     }
 
     pub fn to_stack_value_arr(&self) -> [StackValue; MAX_FUNC_AMT] {
         let mut arr = [StackValue::Null; MAX_FUNC_AMT];
-        
+
         for (i, item) in arr.iter_mut().enumerate().take(self.funcs.len()) {
             if let Some(val) = self.funcs[i].value {
                 *item = val;

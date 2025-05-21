@@ -94,7 +94,7 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         ParseRule { prefix: Variable, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
-        none!(), // and
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::And, }, // and
         none!(), // class
         none!(), // else
         ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // false

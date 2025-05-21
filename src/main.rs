@@ -52,5 +52,4 @@ fn main() {
     let (func, heap) = Comp::compile(expr).unwrap();
     let funcs = [StackValue::Null; 64];
     vm::VM::interpret(func, heap, funcs);
-
 }

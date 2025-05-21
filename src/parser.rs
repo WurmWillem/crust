@@ -3,6 +3,7 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     error::{print_error, ParseError},
+    opcode::OpCode,
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
@@ -13,12 +14,16 @@ pub enum BinaryOp {
     Sub,
     Mul,
     Div,
+
     Equal,
     NotEqual,
     Less,
     LessEqual,
     Greater,
     GreaterEqual,
+
+    And,
+    Or,
 }
 impl BinaryOp {
     fn get_precedency(self) -> Precedence {
@@ -29,6 +34,8 @@ impl BinaryOp {
             BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
                 Precedence::Comparison
             }
+            BinaryOp::And => Precedence::And,
+            BinaryOp::Or => Precedence::Or,
         }
     }
     fn from_token_type(ty: TokenType) -> Self {
@@ -44,6 +51,22 @@ impl BinaryOp {
             TokenType::Greater => BinaryOp::Greater,
             TokenType::GreaterEqual => BinaryOp::GreaterEqual,
             _ => unreachable!(),
+        }
+    }
+    pub fn to_op_code(self) -> OpCode {
+        match self {
+            BinaryOp::Add => OpCode::Add,
+            BinaryOp::Sub => OpCode::Sub,
+            BinaryOp::Mul => OpCode::Mul,
+            BinaryOp::Div => OpCode::Div,
+            BinaryOp::Equal => OpCode::Equal,
+            BinaryOp::NotEqual => OpCode::NotEqual,
+            BinaryOp::Less => OpCode::Less,
+            BinaryOp::LessEqual => OpCode::LessEqual,
+            BinaryOp::Greater => OpCode::Greater,
+            BinaryOp::GreaterEqual => OpCode::GreaterEqual,
+            _ => todo!(), // BinaryOp::And => OpCode::And,
+                          // BinaryOp::GreaterEqual => OpCode::GreaterEqual,
         }
     }
 }
@@ -104,6 +127,86 @@ impl<'a> Parser<'a> {
             println!("{}", "Not all tokens were parsed.".red());
         }
         result
+    }
+
+    fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseError> {
+        self.advance();
+        let (can_assign, mut expr) = self.parse_prefix(precedence)?;
+
+        while self.peek().kind != TokenType::Eof
+            && precedence <= self.get_rule(self.peek().kind).precedence
+        {
+            self.advance();
+            let infix = self.get_rule(self.previous().kind).infix;
+            expr = self.execute_infix(expr, infix, can_assign)?;
+        }
+        Ok(expr)
+    }
+
+    fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseError> {
+        let kind = self.previous().kind;
+        dbg!(kind);
+
+        let prefix = self.get_rule(kind).prefix;
+        if prefix == FnType::Empty {
+            let msg = "Expected expression.";
+            let err = ParseError::new(self.previous().line, msg);
+            return Err(err);
+        }
+
+        let can_assign = precedence <= Precedence::Assignment;
+        let expr = self.execute_prefix(prefix, can_assign)?;
+        Ok((can_assign, expr))
+    }
+
+    fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseError> {
+        let left = Box::new(left);
+        let op = BinaryOp::from_token_type(self.previous().kind);
+
+        let precedence = op.get_precedency();
+        let right = Box::new(self.parse_precedence(precedence)?);
+
+        let line = self.previous().line;
+        Ok(Expr::Binary {
+            left,
+            op,
+            right,
+            line,
+        })
+    }
+
+    fn number(&mut self) -> Result<Expr<'a>, ParseError> {
+        let Literal::Num(value) = self.previous().literal else {
+            unreachable!();
+        };
+        Ok(Expr::Lit(Literal::Num(value), self.previous().line))
+    }
+
+    fn unary(&mut self) -> Result<Expr<'a>, ParseError> {
+        let prefix = self.previous().kind;
+        let right = Box::new(self.parse_precedence(Precedence::Unary)?);
+        let line = self.previous().line;
+
+        Ok(Expr::Unary {
+            prefix,
+            value: right,
+            line,
+        })
+    }
+
+    fn literal(&mut self) -> Result<Expr<'a>, ParseError> {
+        let literal = match self.previous().kind {
+            TokenType::True => Literal::True,
+            TokenType::False => Literal::False,
+            TokenType::Null => Literal::Null,
+            _ => unreachable!(),
+        };
+        let line = self.previous().line;
+        Ok(Expr::Lit(literal, line))
+    }
+
+    fn expression(&mut self) -> Result<Expr<'a>, ParseError> {
+        self.parse_precedence(Precedence::Assignment)
     }
 
     fn declaration(&mut self) -> Result<(), ParseError> {
@@ -198,80 +301,6 @@ impl<'a> Parser<'a> {
     fn block(&mut self) -> Result<(), ParseError> {
         todo!()
     }
-
-    fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseError> {
-        self.advance();
-        let (can_assign, mut expr) = self.parse_prefix(precedence)?;
-
-        while self.peek().kind != TokenType::Eof
-            && precedence <= self.get_rule(self.peek().kind).precedence
-        {
-            self.advance();
-            let infix = self.get_rule(self.previous().kind).infix;
-            expr = self.execute_infix(expr, infix, can_assign)?;
-        }
-        Ok(expr)
-    }
-
-    fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseError> {
-        let kind = self.previous().kind;
-
-        let prefix = self.get_rule(kind).prefix;
-        if prefix == FnType::Empty {
-            let msg = "Expected expression.";
-            let err = ParseError::new(self.previous().line, msg);
-            return Err(err);
-        }
-
-        let can_assign = precedence <= Precedence::Assignment;
-        let expr = self.execute_prefix(prefix, can_assign)?;
-        Ok((can_assign, expr))
-    }
-
-    // fn parse_prefix(&mut self) -> Result<Expr<'a>, ParseError> {
-    //     let token = self.previous();
-    //     let rule = self.get_rule(token.kind);
-    //
-    //     if rule.prefix == FnType::Empty {
-    //         return Err(ParseError::new(token.line, "Expected expression"));
-    //     }
-    //
-    //     self.execute_prefix(rule.prefix)
-    // }
-
-    fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseError> {
-        let left = Box::new(left);
-        let op = BinaryOp::from_token_type(self.previous().kind);
-
-        let precedence = op.get_precedency();
-        let right = Box::new(self.parse_precedence(precedence)?);
-        let line = self.previous().line;
-        Ok(Expr::Binary {
-            left,
-            op,
-            right,
-            line,
-        })
-    }
-
-    fn number(&mut self) -> Result<Expr<'a>, ParseError> {
-        let Literal::Num(value) = self.previous().literal else {
-            unreachable!();
-        };
-        Ok(Expr::Lit(Literal::Num(value), self.previous().line))
-    }
-
-    fn unary(&mut self) -> Result<Expr<'a>, ParseError> {
-        let prefix = self.previous().kind;
-        let right = Box::new(self.parse_precedence(Precedence::Unary)?);
-        let line = self.previous().line;
-        Ok(Expr::Unary { prefix, value: right, line })
-    }
-
-    fn expression(&mut self) -> Result<Expr<'a>, ParseError> {
-        self.parse_precedence(Precedence::Assignment)
-    }
-
     fn var_or_func(&mut self, _can_assign: bool) -> Result<(), ParseError> {
         todo!()
     }
@@ -288,22 +317,11 @@ impl<'a> Parser<'a> {
         todo!()
     }
 
-    fn literal(&mut self) -> Result<Expr<'a>, ParseError> {
-        todo!()
-        // match self.previous().kind {
-        //     TokenType::True => {}
-        //     TokenType::False => {}
-        //     TokenType::Null => {}
-        //     _ => unreachable!(),
-        // }
-    }
-
     fn execute_prefix(
         &mut self,
         fn_type: FnType,
         _can_assign: bool,
     ) -> Result<Expr<'a>, ParseError> {
-        // todo!()
         // dbg!(fn_type);
         match fn_type {
             // FnType::Grouping => self.grouping(),
