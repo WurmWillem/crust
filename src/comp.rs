@@ -1,7 +1,7 @@
 use crate::{
     error::ParseError,
     func_compiler::FuncCompilerStack,
-    object::{Heap, ObjFunc},
+    object::{Heap, ObjFunc, Object},
     opcode::OpCode,
     parser::{BinaryOp, Expr},
     token::{Literal, TokenType},
@@ -34,13 +34,17 @@ impl<'a> Comp<'a> {
         match expr {
             Expr::Lit(lit, line) => match lit {
                 Literal::None => unreachable!(),
-                Literal::Str(_) => todo!(),
+                Literal::Str(str) => {
+                    let (object, _) = self.heap.alloc(str.to_string(), Object::Str);
+                    let stack_value = StackValue::Obj(object);
+                    self.emit_constant(stack_value, line)?;
+                }
                 Literal::Num(num) => self.emit_constant(StackValue::F64(num), line)?,
                 Literal::True => self.emit_byte(OpCode::True as u8, line),
                 Literal::False => self.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.emit_byte(OpCode::Null as u8, line),
             },
-            Expr::Variable(_) => todo!(),
+            Expr::Var(_) => todo!(),
             Expr::Unary {
                 prefix,
                 value: right,

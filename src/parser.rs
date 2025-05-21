@@ -76,7 +76,7 @@ impl BinaryOp {
 #[derive(Debug)]
 pub enum Expr<'a> {
     Lit(Literal<'a>, u32),
-    Variable(String),
+    Var(String),
     Unary {
         prefix: TokenType,
         value: Box<Expr<'a>>,
@@ -311,7 +311,10 @@ impl<'a> Parser<'a> {
     }
 
     fn string(&mut self) -> Result<Expr<'a>, ParseError> {
-        todo!()
+        let Literal::Str(value) = self.previous().literal else {
+            unreachable!();
+        };
+        Ok(Expr::Lit(Literal::Str(value), self.previous().line))
     }
 
     fn grouping(&mut self) -> Result<Expr<'a>, ParseError> {
