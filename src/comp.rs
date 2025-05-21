@@ -3,7 +3,7 @@ use crate::{
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
-    parse_types::{Expr, Stmt},
+    parse_types::{Expr, ExprKind, Stmt},
     token::{Literal, TokenType},
     value::StackValue,
 };
@@ -37,13 +37,15 @@ impl<'a> Comp<'a> {
             Stmt::Println(expr) => {
                 // expr.lin
                 self.emit_expr(expr)?;
-                Ok(self.emit_byte(OpCode::Print as u8, 0))
+                self.emit_byte(OpCode::Print as u8, 0);
+                Ok(())
             }
         }
     }
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
-        match expr {
-            Expr::Lit(lit, line) => match lit {
+        let line = expr.line;
+        match expr.expr {
+            ExprKind::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
                 Literal::Str(str) => {
                     let (object, _) = self.heap.alloc(str.to_string(), Object::Str);
@@ -55,11 +57,10 @@ impl<'a> Comp<'a> {
                 Literal::False => self.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.emit_byte(OpCode::Null as u8, line),
             },
-            Expr::Var(_) => todo!(),
-            Expr::Unary {
+            ExprKind::Var(_) => todo!(),
+            ExprKind::Unary {
                 prefix,
                 value: right,
-                line,
             } => {
                 self.emit_expr(*right)?;
                 match prefix {
@@ -68,12 +69,7 @@ impl<'a> Comp<'a> {
                     _ => unreachable!(),
                 }
             }
-            Expr::Binary {
-                left,
-                op,
-                right,
-                line,
-            } => {
+            ExprKind::Binary { left, op, right } => {
                 self.emit_expr(*left)?;
                 self.emit_expr(*right)?;
                 let op_code = op.to_op_code();

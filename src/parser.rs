@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    parse_types::{BinaryOp, Expr, Stmt},
+    parse_types::{BinaryOp, Expr, ExprKind, Stmt},
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
@@ -86,31 +86,27 @@ impl<'a> Parser<'a> {
         let right = Box::new(self.parse_precedence(precedence)?);
 
         let line = self.previous().line;
-        Ok(Expr::Binary {
-            left,
-            op,
-            right,
-            line,
-        })
+        let kind = ExprKind::Binary { left, op, right };
+        let expr = Expr::new(kind, line);
+        Ok(expr)
     }
 
     fn number(&mut self) -> Result<Expr<'a>, ParseError> {
         let Literal::Num(value) = self.previous().literal else {
             unreachable!();
         };
-        Ok(Expr::Lit(Literal::Num(value), self.previous().line))
+        let kind = ExprKind::Lit(Literal::Num(value));
+        Ok(Expr::new(kind, self.previous().line))
     }
 
     fn unary(&mut self) -> Result<Expr<'a>, ParseError> {
         let prefix = self.previous().kind;
-        let right = Box::new(self.parse_precedence(Precedence::Unary)?);
-        let line = self.previous().line;
+        let value = Box::new(self.parse_precedence(Precedence::Unary)?);
 
-        Ok(Expr::Unary {
-            prefix,
-            value: right,
-            line,
-        })
+        let line = self.previous().line;
+        let kind = ExprKind::Unary { prefix, value };
+        let expr = Expr::new(kind, line);
+        Ok(expr)
     }
 
     fn literal(&mut self) -> Result<Expr<'a>, ParseError> {
@@ -120,8 +116,8 @@ impl<'a> Parser<'a> {
             TokenType::Null => Literal::Null,
             _ => unreachable!(),
         };
-        let line = self.previous().line;
-        Ok(Expr::Lit(literal, line))
+        let kind = ExprKind::Lit(literal);
+        Ok(Expr::new(kind, self.previous().line))
     }
 
     fn expression(&mut self) -> Result<Expr<'a>, ParseError> {
@@ -219,7 +215,8 @@ impl<'a> Parser<'a> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
         };
-        Ok(Expr::Lit(Literal::Str(value), self.previous().line))
+        let kind = ExprKind::Lit(Literal::Str(value));
+        Ok(Expr::new(kind, self.previous().line))
     }
 
     fn grouping(&mut self) -> Result<Expr<'a>, ParseError> {

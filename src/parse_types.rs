@@ -77,18 +77,27 @@ pub enum Stmt<'a> {
 }
 
 #[derive(Debug)]
-pub enum Expr<'a> {
-    Lit(Literal<'a>, u32),
+pub struct Expr<'a> {
+    pub expr: ExprKind<'a>,
+    pub line: u32,
+}
+impl<'a> Expr<'a> {
+    pub fn new(expr: ExprKind<'a>, line: u32) -> Expr<'a> {
+        Expr { expr, line }
+    }
+}
+
+#[derive(Debug)]
+pub enum ExprKind<'a> {
+    Lit(Literal<'a>),
     Var(String),
     Unary {
         prefix: TokenType,
         value: Box<Expr<'a>>,
-        line: u32,
     },
     Binary {
         left: Box<Expr<'a>>,
         op: BinaryOp,
         right: Box<Expr<'a>>,
-        line: u32,
     },
 }
