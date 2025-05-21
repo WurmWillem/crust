@@ -1,7 +1,5 @@
 use crate::{
-    compiler_types::Precedence,
-    token::{Literal, TokenType},
-    OpCode,
+    compiler_types::Precedence, token::{Literal, TokenType}, value::ValueType, OpCode
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -76,7 +74,7 @@ pub struct Stmt<'a> {
     pub line: u32,
 }
 impl<'a> Stmt<'a> {
-        pub fn new(stmt: StmtKind<'a>, line: u32) -> Stmt<'a> {
+    pub fn new(stmt: StmtKind<'a>, line: u32) -> Stmt<'a> {
         Stmt { stmt, line }
     }
 }
@@ -84,6 +82,7 @@ impl<'a> Stmt<'a> {
 #[derive(Debug)]
 pub enum StmtKind<'a> {
     Expr(Expr<'a>),
+    Var { name: &'a str, value: Expr<'a>, ty: ValueType },
     Println(Expr<'a>),
 }
 

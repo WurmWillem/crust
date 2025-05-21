@@ -41,6 +41,9 @@ impl<'a> Comp<'a> {
                 self.emit_byte(OpCode::Print as u8, line);
                 Ok(())
             }
+            StmtKind::Var { name, value, ty } => {
+                Ok(())
+            }
         }
     }
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {

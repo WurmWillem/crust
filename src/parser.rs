@@ -33,8 +33,7 @@ impl<'a> Parser<'a> {
                 }
             }
         }
-        // parser.current_token += 1;
-        // dbg!(&parser.decl_types);
+        parser.current_token += 1;
 
         if had_error {
             panic!(
@@ -125,11 +124,31 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&mut self) -> Result<Stmt<'a>, ParseError> {
-        self.statement()
+        if let Some(var_type) = self.peek().kind.as_value_type() {
+            self.advance();
+            self.var_decl(var_type)
+        } else {
+            self.statement()
+        }
     }
 
-    fn var_decl(&mut self, _var_type: ValueType) -> Result<(), ParseError> {
-        todo!()
+    fn var_decl(&mut self, ty: ValueType) -> Result<Stmt<'a>, ParseError> {
+        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        let name = self.previous().lexeme;
+        let line = self.previous().line;
+
+        let value = if self.matches(TokenType::Equal) {
+            let value = self.expression()?;
+            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+            value
+        } else {
+            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+            Expr::new(ExprKind::Lit(Literal::Null), line)
+        };
+
+        let kind = StmtKind::Var { name, value, ty };
+        let var = Stmt::new(kind, line);
+        return Ok(var);
     }
 
     fn statement(&mut self) -> Result<Stmt<'a>, ParseError> {
