@@ -49,10 +49,10 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].func.chunk.code.len()
     }
 
-    pub fn add_local(&mut self, name: Token<'a>, kind: ValueType) -> Result<(), ParseError> {
+    pub fn add_local(&mut self, name: &'a str, kind: ValueType, line: u32) -> Result<(), ParseError> {
         if self.current().local_count == MAX_LOCAL_AMT {
             let msg = "Too many local variables in function.";
-            return Err(ParseError::new(name.line, msg));
+            return Err(ParseError::new(line, msg));
         }
 
         let local = Local::new(name, self.current().scope_depth, kind);
@@ -94,7 +94,7 @@ impl<'a> FuncCompilerStack<'a> {
     pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
         // TODO: shadowing doesn't remove the old var as of now
         for i in (0..self.current().local_count).rev() {
-            if self.current().locals[i].name.lexeme == name {
+            if self.current().locals[i].name == name {
                 return Some((i as u8, self.current().locals[i].kind));
             }
         }
@@ -113,12 +113,12 @@ impl<'a> FuncCompilerStack<'a> {
 
 #[derive(Debug, Clone, Copy)]
 struct Local<'a> {
-    name: Token<'a>,
+    name: &'a str,
     kind: ValueType,
     depth: usize,
 }
 impl<'a> Local<'a> {
-    fn new(name: Token<'a>, depth: usize, kind: ValueType) -> Self {
+    fn new(name: &'a str, depth: usize, kind: ValueType) -> Self {
         Self { name, depth, kind }
     }
 }
@@ -132,9 +132,7 @@ pub struct FuncCompiler<'a> {
 }
 impl<'a> FuncCompiler<'a> {
     pub fn new(func_name: String) -> Self {
-        let name = Token::new(TokenType::Equal, "", Literal::None, 0);
-
-        let local = Local::new(name, 0, ValueType::None);
+        let local = Local::new("", 0, ValueType::None);
         Self {
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,

@@ -159,7 +159,7 @@ impl<'token> Parser<'token> {
         self.consume(TokenType::Identifier, "Expected parameter name.")?;
         let name = self.previous();
 
-        self.comps.add_local(name, var_type)?;
+        self.comps.add_local(name.lexeme, var_type, name.line)?;
 
         Ok(())
     }
@@ -179,10 +179,10 @@ impl<'token> Parser<'token> {
                 return Err(ParseError::new(self.peek().line, &msg));
             }
 
-            self.comps.add_local(name, self.last_operand_type)?;
+            self.comps.add_local(name.lexeme, self.last_operand_type, name.line)?;
         } else {
             self.emit_byte(OpCode::Null as u8);
-            self.comps.add_local(name, ValueType::Null)?;
+            self.comps.add_local(name.lexeme, ValueType::Null, name.line)?;
         }
 
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;

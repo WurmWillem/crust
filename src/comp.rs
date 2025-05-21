@@ -31,7 +31,7 @@ impl<'a> Comp<'a> {
         // None
     }
 
-    pub fn emit_stmt(&mut self, stmt: Stmt) -> Result<(), ParseError> {
+    pub fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {
         let line = stmt.line;
         match stmt.stmt {
             StmtKind::Expr(expr) => self.emit_expr(expr),
@@ -42,6 +42,8 @@ impl<'a> Comp<'a> {
                 Ok(())
             }
             StmtKind::Var { name, value, ty } => {
+                self.emit_expr(value)?;
+                self.comps.add_local(name, ty, line)?;
                 Ok(())
             }
         }
