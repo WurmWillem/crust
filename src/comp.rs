@@ -22,9 +22,8 @@ impl<'a> Comp<'a> {
     }
     pub fn compile(stmt: Stmt) -> Option<(ObjFunc, Heap)> {
         let mut comp = Comp::new();
-        
+
         comp.emit_stmt(stmt).unwrap();
-        comp.emit_byte(OpCode::Print as u8, 0);
 
         let func = comp.end_compiler(69);
 
@@ -35,6 +34,11 @@ impl<'a> Comp<'a> {
     pub fn emit_stmt(&mut self, stmt: Stmt) -> Result<(), ParseError> {
         match stmt {
             Stmt::Expr(expr) => self.emit_expr(expr),
+            Stmt::Println(expr) => {
+                // expr.lin
+                self.emit_expr(expr)?;
+                Ok(self.emit_byte(OpCode::Print as u8, 0))
+            }
         }
     }
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {

@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use crate::{
     compiler_types::*,
-    error::{print_error, ParseError},
+    error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
     parse_types::{BinaryOp, Expr, Stmt},
     token::{Literal, Token, TokenType},
     value::ValueType,
@@ -161,7 +161,9 @@ impl<'a> Parser<'a> {
     }
 
     fn print_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
-        todo!()
+        let stmt = Stmt::Println(self.expression()?);
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+        Ok(stmt)
     }
 
     fn expr_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {

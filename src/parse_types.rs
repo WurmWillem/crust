@@ -73,6 +73,7 @@ impl BinaryOp {
 #[derive(Debug)]
 pub enum Stmt<'a> {
     Expr(Expr<'a>),
+    Println(Expr<'a>),
 }
 
 #[derive(Debug)]
