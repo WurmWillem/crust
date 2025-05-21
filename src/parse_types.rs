@@ -71,7 +71,18 @@ impl BinaryOp {
     }
 }
 #[derive(Debug)]
-pub enum Stmt<'a> {
+pub struct Stmt<'a> {
+    pub stmt: StmtKind<'a>,
+    pub line: u32,
+}
+impl<'a> Stmt<'a> {
+        pub fn new(stmt: StmtKind<'a>, line: u32) -> Stmt<'a> {
+        Stmt { stmt, line }
+    }
+}
+
+#[derive(Debug)]
+pub enum StmtKind<'a> {
     Expr(Expr<'a>),
     Println(Expr<'a>),
 }

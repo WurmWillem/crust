@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    parse_types::{BinaryOp, Expr, ExprKind, Stmt},
+    parse_types::{BinaryOp, Expr, ExprKind, Stmt, StmtKind},
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
@@ -157,13 +157,17 @@ impl<'a> Parser<'a> {
     }
 
     fn print_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
-        let stmt = Stmt::Println(self.expression()?);
+        let kind = StmtKind::Println(self.expression()?);
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+
+        let stmt = Stmt::new(kind, self.previous().line);
         Ok(stmt)
     }
 
     fn expr_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
-        Ok(Stmt::Expr(self.expression()?))
+        let kind = StmtKind::Expr(self.expression()?);
+        let stmt = Stmt::new(kind, self.previous().line);
+        Ok(stmt)
     }
 
     fn synchronize(&mut self) {
