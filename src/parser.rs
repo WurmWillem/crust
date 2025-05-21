@@ -50,6 +50,8 @@ impl BinaryOp {
             TokenType::LessEqual => BinaryOp::LessEqual,
             TokenType::Greater => BinaryOp::Greater,
             TokenType::GreaterEqual => BinaryOp::GreaterEqual,
+            TokenType::And => BinaryOp::And,
+            TokenType::Or => BinaryOp::Or,
             _ => unreachable!(),
         }
     }
@@ -65,8 +67,8 @@ impl BinaryOp {
             BinaryOp::LessEqual => OpCode::LessEqual,
             BinaryOp::Greater => OpCode::Greater,
             BinaryOp::GreaterEqual => OpCode::GreaterEqual,
-            _ => todo!(), // BinaryOp::And => OpCode::And,
-                          // BinaryOp::GreaterEqual => OpCode::GreaterEqual,
+            BinaryOp::And => OpCode::And,
+            BinaryOp::Or => OpCode::Or,
         }
     }
 }

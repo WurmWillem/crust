@@ -227,6 +227,16 @@ impl VM {
                 OpCode::Sub => binary_op!(sub_nums),
                 OpCode::Mul => binary_op!(mul_nums),
                 OpCode::Div => binary_op!(div_nums),
+                OpCode::And => {
+                    let rhs = self.stack_pop();
+                    let lhs = self.stack_pop();
+                    self.stack_push(StackValue::Bool(lhs.and(rhs)));
+                }
+                OpCode::Or => {
+                    let rhs = self.stack_pop();
+                    let lhs = self.stack_pop();
+                    self.stack_push(StackValue::Bool(lhs.or(rhs)));
+                }
                 OpCode::Equal => {
                     let rhs = self.stack_pop();
                     let lhs = self.stack_pop();

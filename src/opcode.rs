@@ -27,11 +27,15 @@ pub enum OpCode {
     Negate,
     Not,
 
-    // binary
+    // binary arithmetic
     Add,
     Sub,
     Mul,
     Div,
+
+    // binary logic
+    And,
+    Or,
 
     Equal,
     NotEqual,
@@ -63,12 +67,14 @@ impl std::convert::From<u8> for OpCode {
             17 => OpCode::Sub,
             18 => OpCode::Mul,
             19 => OpCode::Div,
-            20 => OpCode::Equal,
-            21 => OpCode::NotEqual,
-            22 => OpCode::Greater,
-            23 => OpCode::GreaterEqual,
-            24 => OpCode::Less,
-            25 => OpCode::LessEqual,
+            20 => OpCode::And,
+            21 => OpCode::Or,
+            22 => OpCode::Equal,
+            23 => OpCode::NotEqual,
+            24 => OpCode::Greater,
+            25 => OpCode::GreaterEqual,
+            26 => OpCode::Less,
+            27 => OpCode::LessEqual,
             _ => panic!("Not a valid opcode."),
         }
     }

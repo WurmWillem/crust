@@ -78,6 +78,18 @@ impl StackValue {
             _ => unreachable!(),
         }
     }
+    pub fn and(self, rhs: StackValue) -> bool {
+        match (self, rhs) {
+            (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs && rhs,
+            _ => unreachable!(),
+        }
+    }
+    pub fn or(self, rhs: StackValue) -> bool {
+        match (self, rhs) {
+            (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs || rhs,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl Neg for StackValue {

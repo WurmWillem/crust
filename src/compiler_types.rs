@@ -102,7 +102,7 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         none!(), // fun
         none!(), // if
         ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // nil
-        none!(), // or
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Or, }, // or
         none!(), // print
         none!(), // return
         none!(), // super
