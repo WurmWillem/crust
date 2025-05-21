@@ -3,7 +3,7 @@ use crate::{
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
-    parser::{BinaryOp, Expr},
+    parse_types::{Expr, Stmt},
     token::{Literal, TokenType},
     value::StackValue,
 };
@@ -20,16 +20,23 @@ impl<'a> Comp<'a> {
             comps: FuncCompilerStack::new(),
         }
     }
-    pub fn compile(expr: Expr) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(stmt: Stmt) -> Option<(ObjFunc, Heap)> {
         let mut comp = Comp::new();
-        comp.emit_expr(expr).unwrap();
+        
+        comp.emit_stmt(stmt).unwrap();
         comp.emit_byte(OpCode::Print as u8, 0);
+
         let func = comp.end_compiler(69);
 
         Some((func, comp.heap))
         // None
     }
 
+    pub fn emit_stmt(&mut self, stmt: Stmt) -> Result<(), ParseError> {
+        match stmt {
+            Stmt::Expr(expr) => self.emit_expr(expr),
+        }
+    }
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         match expr {
             Expr::Lit(lit, line) => match lit {

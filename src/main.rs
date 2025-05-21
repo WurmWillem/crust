@@ -16,6 +16,7 @@ mod func_compiler;
 mod native_funcs;
 mod object;
 mod opcode;
+mod parse_types;
 mod parser;
 mod scanner;
 mod token;

@@ -3,115 +3,33 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     error::{print_error, ParseError},
-    opcode::OpCode,
+    parse_types::{BinaryOp, Expr, Stmt},
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
-
-#[derive(Debug, Clone, Copy)]
-pub enum BinaryOp {
-    Add,
-    Sub,
-    Mul,
-    Div,
-
-    Equal,
-    NotEqual,
-    Less,
-    LessEqual,
-    Greater,
-    GreaterEqual,
-
-    And,
-    Or,
-}
-impl BinaryOp {
-    fn get_precedency(self) -> Precedence {
-        match self {
-            BinaryOp::Add | BinaryOp::Sub => Precedence::Term,
-            BinaryOp::Mul | BinaryOp::Div => Precedence::Factor,
-            BinaryOp::Equal | BinaryOp::NotEqual => Precedence::Equality,
-            BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
-                Precedence::Comparison
-            }
-            BinaryOp::And => Precedence::And,
-            BinaryOp::Or => Precedence::Or,
-        }
-    }
-    fn from_token_type(ty: TokenType) -> Self {
-        match ty {
-            TokenType::Plus => BinaryOp::Add,
-            TokenType::Minus => BinaryOp::Sub,
-            TokenType::Star => BinaryOp::Mul,
-            TokenType::Slash => BinaryOp::Div,
-            TokenType::EqualEqual => BinaryOp::Equal,
-            TokenType::BangEqual => BinaryOp::NotEqual,
-            TokenType::Less => BinaryOp::Less,
-            TokenType::LessEqual => BinaryOp::LessEqual,
-            TokenType::Greater => BinaryOp::Greater,
-            TokenType::GreaterEqual => BinaryOp::GreaterEqual,
-            TokenType::And => BinaryOp::And,
-            TokenType::Or => BinaryOp::Or,
-            _ => unreachable!(),
-        }
-    }
-    pub fn to_op_code(self) -> OpCode {
-        match self {
-            BinaryOp::Add => OpCode::Add,
-            BinaryOp::Sub => OpCode::Sub,
-            BinaryOp::Mul => OpCode::Mul,
-            BinaryOp::Div => OpCode::Div,
-            BinaryOp::Equal => OpCode::Equal,
-            BinaryOp::NotEqual => OpCode::NotEqual,
-            BinaryOp::Less => OpCode::Less,
-            BinaryOp::LessEqual => OpCode::LessEqual,
-            BinaryOp::Greater => OpCode::Greater,
-            BinaryOp::GreaterEqual => OpCode::GreaterEqual,
-            BinaryOp::And => OpCode::And,
-            BinaryOp::Or => OpCode::Or,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Expr<'a> {
-    Lit(Literal<'a>, u32),
-    Var(String),
-    Unary {
-        prefix: TokenType,
-        value: Box<Expr<'a>>,
-        line: u32,
-    },
-    Binary {
-        left: Box<Expr<'a>>,
-        op: BinaryOp,
-        right: Box<Expr<'a>>,
-        line: u32,
-    },
-}
 
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
     current_token: usize,
 }
 impl<'a> Parser<'a> {
-    pub fn compile(tokens: Vec<Token<'a>>) -> Expr {
+    pub fn compile(tokens: Vec<Token<'a>>) -> Stmt<'a> {
         let mut parser = Parser {
             tokens,
             current_token: 0,
         };
 
         let mut had_error = false;
-        let mut result = Expr::Lit(Literal::Null, 0);
+        let mut result = None;
         while !parser.check(TokenType::Eof) {
-            let parsed = parser.expression();
+            let parsed = parser.declaration();
             result = match parsed {
-                Ok(result) => result,
+                Ok(result) => Some(result),
                 Err(err) => {
                     print_error(err.line, &err.msg);
 
                     had_error = true;
-                    Expr::Lit(Literal::Null, 0)
+                    None
                 }
             }
         }
@@ -128,7 +46,7 @@ impl<'a> Parser<'a> {
         if parser.current_token != parser.tokens.len() {
             println!("{}", "Not all tokens were parsed.".red());
         }
-        result
+        result.unwrap()
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseError> {
@@ -210,34 +128,19 @@ impl<'a> Parser<'a> {
         self.parse_precedence(Precedence::Assignment)
     }
 
-    fn declaration(&mut self) -> Result<(), ParseError> {
-        if let Some(var_type) = self.peek().kind.as_value_type() {
-            self.advance();
-            self.var_decl(var_type)
-        } else {
-            self.statement()
-        }
+    fn declaration(&mut self) -> Result<Stmt<'a>, ParseError> {
+        self.statement()
     }
 
     fn var_decl(&mut self, _var_type: ValueType) -> Result<(), ParseError> {
         todo!()
     }
 
-    fn statement(&mut self) -> Result<(), ParseError> {
+    fn statement(&mut self) -> Result<Stmt<'a>, ParseError> {
         if self.matches(TokenType::Print) {
             self.print_statement()
-        } else if self.matches(TokenType::If) {
-            self.if_statement()
-        } else if self.matches(TokenType::While) {
-            self.while_statement()
-        } else if self.matches(TokenType::For) {
-            self.for_statement()
-        } else if self.matches(TokenType::Return) {
-            self.return_statement()
-        } else if self.matches(TokenType::LeftBrace) {
-            todo!()
         } else {
-            self.expression_statement()
+            self.expr_stmt()
         }
     }
 
@@ -257,12 +160,12 @@ impl<'a> Parser<'a> {
         todo!()
     }
 
-    fn print_statement(&mut self) -> Result<(), ParseError> {
+    fn print_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
         todo!()
     }
 
-    fn expression_statement(&mut self) -> Result<(), ParseError> {
-        todo!()
+    fn expr_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
+        Ok(Stmt::Expr(self.expression()?))
     }
 
     fn synchronize(&mut self) {
