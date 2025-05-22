@@ -167,7 +167,7 @@ impl VM {
                 }
 
                 OpCode::Print => {
-                    let string = self.stack_pop().display().green();
+                    let string = self.stack_pop().to_string().green();
                     println!("{}", string);
                 }
 

@@ -53,6 +53,17 @@ impl<'a> Comp<'a> {
                     self.emit_stmt(stmt)?;
                 }
             }
+            StmtType::If { first_if } => {
+                self.emit_expr(first_if.condition)?;
+
+                let if_false_jump = self.emit_jump(OpCode::JumpIfFalse, line);
+
+                self.emit_byte(OpCode::Pop as u8, line);
+                self.emit_stmt(*first_if.block)?;
+
+                self.comps.patch_jump(if_false_jump)?;
+                // self.emit_byte(OpCode::Pop as u8, line);
+            }
         }
         Ok(())
     }
@@ -142,5 +153,12 @@ impl<'a> Comp<'a> {
     fn emit_bytes(&mut self, byte_0: u8, byte_1: u8, line: u32) {
         self.emit_byte(byte_0, line);
         self.emit_byte(byte_1, line);
+    }
+
+    fn emit_jump(&mut self, instruction: OpCode, line: u32) -> usize {
+        self.emit_byte(instruction as u8, line);
+        self.emit_byte(0xFF, line);
+        self.emit_byte(0xFF, line);
+        self.comps.get_code_len() - 2
     }
 }
