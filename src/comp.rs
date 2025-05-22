@@ -72,6 +72,14 @@ impl<'a> Comp<'a> {
                     unreachable!()
                 }
             }
+            ExprType::Assign { name, value } => {
+                if let Some((arg, kind)) = self.comps.resolve_local(name) {
+                    self.emit_expr(*value)?;
+                    self.emit_bytes(OpCode::SetLocal as u8, arg, line);
+                } else {
+                    unreachable!()
+                }
+            }
             ExprType::Unary {
                 prefix,
                 value: right,

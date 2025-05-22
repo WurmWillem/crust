@@ -101,6 +101,10 @@ impl<'a> Expr<'a> {
 pub enum ExprType<'a> {
     Lit(Literal<'a>),
     Var(&'a str),
+    Assign {
+        name: &'a str,
+        value: Box<Expr<'a>>,
+    },
     Unary {
         prefix: TokenType,
         value: Box<Expr<'a>>,

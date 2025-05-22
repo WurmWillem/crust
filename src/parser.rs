@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
             match parser.declaration() {
                 Ok(result) => {
                     statements.push(result);
-                },
+                }
                 Err(err) => {
                     print_error(err.line, &err.msg);
                     had_error = true;
@@ -35,10 +35,10 @@ impl<'a> Parser<'a> {
         parser.current_token += 1;
 
         if had_error {
-            panic!(
-                "{}",
-                "Compile error(s) detected, terminating program.".purple()
-            );
+            // panic!(
+            //     "{}",
+            //     "Compile error(s) detected, terminating program.".purple()
+            // );
         }
 
         if parser.current_token != parser.tokens.len() {
@@ -225,10 +225,19 @@ impl<'a> Parser<'a> {
     fn block(&mut self) -> Result<(), ParseError> {
         todo!()
     }
-    fn var(&mut self) -> Result<Expr<'a>, ParseError> {
+    fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseError> {
         let name = self.previous();
-        let ty = ExprType::Var(name.lexeme);
-        let var = Expr::new(ty, name.line);
+        let var = if can_assign && self.matches(TokenType::Equal) {
+            let value = Box::new(self.expression()?);
+            let ty = ExprType::Assign {
+                name: name.lexeme,
+                value,
+            };
+            Expr::new(ty, name.line)
+        } else {
+            let ty = ExprType::Var(name.lexeme);
+            Expr::new(ty, name.line)
+        };
         Ok(var)
     }
 
@@ -253,7 +262,7 @@ impl<'a> Parser<'a> {
     fn execute_prefix(
         &mut self,
         fn_type: FnType,
-        _can_assign: bool,
+        can_assign: bool,
     ) -> Result<Expr<'a>, ParseError> {
         // dbg!(fn_type);
         match fn_type {
@@ -262,7 +271,7 @@ impl<'a> Parser<'a> {
             FnType::Number => self.number(),
             FnType::String => self.string(),
             FnType::Literal => self.literal(),
-            FnType::Var => self.var(),
+            FnType::Var => self.var(can_assign),
             _ => unreachable!(),
         }
     }
