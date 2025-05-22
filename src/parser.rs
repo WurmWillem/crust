@@ -177,32 +177,31 @@ impl<'a> Parser<'a> {
         let name = var.lexeme;
 
         self.consume(TokenType::In, "Expected 'in' after 'for identifier'.")?;
-        let start = self.expression()?;
 
-        let kind = StmtType::Var {
-            name,
-            value: start,
-            ty: ValueType::Num,
-        };
-        let var = Stmt::new(kind, line);
+        // declare var
+        let value = self.expression()?;
+        let ty = ValueType::Num;
+        let kind = StmtType::Var { name, value, ty };
+        let var = Box::new(Stmt::new(kind, line));
 
+        // condition
         self.consume(TokenType::To, "Expected 'to' after 'for identifier'.")?;
         let end = Box::new(self.expression()?);
-
-        let start_ty = ExprType::Var(name);
-        let start = Box::new(Expr::new(start_ty, line));
+        let get_var_ty = ExprType::Var(name);
+        let get_var = Box::new(Expr::new(get_var_ty, line));
         let condition_ty = ExprType::Binary {
-            left: start,
+            left: get_var,
             op: BinaryOp::Less,
             right: end,
         };
-        let condition = Expr::new(condition_ty, var.line);
+        let condition = Expr::new(condition_ty, line);
 
+        // produce for stmt
         let body = Box::new(self.statement()?);
         let for_ty = StmtType::For {
             condition,
             body,
-            var: Box::new(var),
+            var,
         };
         let stmt = Stmt::new(for_ty, line);
 
