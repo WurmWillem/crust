@@ -1,5 +1,5 @@
 use crate::{
-    error::ParseError,
+    error::{print_error, ParseError},
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
@@ -24,7 +24,10 @@ impl<'a> Comp<'a> {
         let mut comp = Comp::new();
 
         for stmt in stmts {
-            comp.emit_stmt(stmt).unwrap();
+            if let Err(err) = comp.emit_stmt(stmt) {
+                print_error(err.line, &err.msg);
+                return None;
+            }
         }
 
         let func = comp.end_compiler(69);
@@ -69,7 +72,8 @@ impl<'a> Comp<'a> {
                 if let Some((arg, kind)) = self.comps.resolve_local(name) {
                     self.emit_bytes(OpCode::GetLocal as u8, arg, line);
                 } else {
-                    unreachable!()
+                    let msg = format!("The variable/function with name '{}' does not exist.", name);
+                    return Err(ParseError::new(line, &msg));
                 }
             }
             ExprType::Assign { name, value } => {
@@ -77,7 +81,8 @@ impl<'a> Comp<'a> {
                     self.emit_expr(*value)?;
                     self.emit_bytes(OpCode::SetLocal as u8, arg, line);
                 } else {
-                    unreachable!()
+                    let msg = format!("The variable/function with name '{}' does not exist.", name);
+                    return Err(ParseError::new(line, &msg));
                 }
             }
             ExprType::Unary {

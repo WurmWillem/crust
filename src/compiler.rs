@@ -179,10 +179,12 @@ impl<'token> Parser<'token> {
                 return Err(ParseError::new(self.peek().line, &msg));
             }
 
-            self.comps.add_local(name.lexeme, self.last_operand_type, name.line)?;
+            self.comps
+                .add_local(name.lexeme, self.last_operand_type, name.line)?;
         } else {
             self.emit_byte(OpCode::Null as u8);
-            self.comps.add_local(name.lexeme, ValueType::Null, name.line)?;
+            self.comps
+                .add_local(name.lexeme, ValueType::Null, name.line)?;
         }
 
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;

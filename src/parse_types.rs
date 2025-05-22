@@ -1,5 +1,8 @@
 use crate::{
-    compiler_types::Precedence, token::{Literal, TokenType}, value::ValueType, OpCode
+    compiler_types::Precedence,
+    token::{Literal, TokenType},
+    value::ValueType,
+    OpCode,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -82,7 +85,11 @@ impl<'a> Stmt<'a> {
 #[derive(Debug)]
 pub enum StmtKind<'a> {
     Expr(Expr<'a>),
-    Var { name: &'a str, value: Expr<'a>, ty: ValueType },
+    Var {
+        name: &'a str,
+        value: Expr<'a>,
+        ty: ValueType,
+    },
     Println(Expr<'a>),
 }
 

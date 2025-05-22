@@ -49,7 +49,12 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].func.chunk.code.len()
     }
 
-    pub fn add_local(&mut self, name: &'a str, kind: ValueType, line: u32) -> Result<(), ParseError> {
+    pub fn add_local(
+        &mut self,
+        name: &'a str,
+        kind: ValueType,
+        line: u32,
+    ) -> Result<(), ParseError> {
         if self.current().local_count == MAX_LOCAL_AMT {
             let msg = "Too many local variables in function.";
             return Err(ParseError::new(line, msg));
