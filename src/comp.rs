@@ -55,7 +55,6 @@ impl<'a> Comp<'a> {
             }
             StmtType::If {
                 first_if,
-                else_ifs,
                 final_else,
             } => {
                 self.emit_expr(first_if.condition)?;

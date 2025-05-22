@@ -1,5 +1,11 @@
-if true {
+int x = 4;
+
+if x == 1 {
   pr "First";
+} else if x == 2 {
+  pr "Second";
+} else if x == 3 {
+  pr "Third";
 } else {
   pr "Final";
 }

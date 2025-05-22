@@ -95,7 +95,6 @@ pub enum StmtType<'a> {
     Block(Vec<Stmt<'a>>),
     If {
         first_if: Box<If<'a>>,
-        else_ifs: Vec<If<'a>>,
         final_else: Option<Box<Stmt<'a>>>,
     },
 }

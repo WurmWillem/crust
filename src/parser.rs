@@ -186,10 +186,8 @@ impl<'a> Parser<'a> {
             final_else = Some(Box::new(self.statement()?));
         }
 
-        let else_ifs = Vec::new();
         let ty = StmtType::If {
             first_if,
-            else_ifs,
             final_else,
         };
         Ok(Stmt::new(ty, line))
