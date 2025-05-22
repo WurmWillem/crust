@@ -49,7 +49,7 @@ fn main() {
     }
 
     let statements = parser::Parser::compile(tokens);
-    dbg!(&statements);
+    // dbg!(&statements);
     let (func, heap) = Comp::compile(statements).unwrap();
     let funcs = [StackValue::Null; 64];
     vm::VM::interpret(func, heap, funcs);

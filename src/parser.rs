@@ -35,10 +35,10 @@ impl<'a> Parser<'a> {
         parser.current_token += 1;
 
         if had_error {
-            // panic!(
-            //     "{}",
-            //     "Compile error(s) detected, terminating program.".purple()
-            // );
+            panic!(
+                "{}",
+                "Compile error(s) detected, terminating program.".purple()
+            );
         }
 
         if parser.current_token != parser.tokens.len() {
@@ -233,6 +233,7 @@ impl<'a> Parser<'a> {
                 name: name.lexeme,
                 value,
             };
+            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
             Expr::new(ty, name.line)
         } else {
             let ty = ExprType::Var(name.lexeme);
