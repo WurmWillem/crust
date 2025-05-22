@@ -3,7 +3,7 @@ use crate::{
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
-    parse_types::{Expr, ExprType, Stmt, StmtKind},
+    parse_types::{Expr, ExprType, Stmt, StmtType},
     token::{Literal, TokenType},
     value::StackValue,
 };
@@ -38,17 +38,17 @@ impl<'a> Comp<'a> {
     pub fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {
         let line = stmt.line;
         match stmt.stmt {
-            StmtKind::Expr(expr) => self.emit_expr(expr)?,
-            StmtKind::Println(expr) => {
+            StmtType::Expr(expr) => self.emit_expr(expr)?,
+            StmtType::Println(expr) => {
                 // expr.lin
                 self.emit_expr(expr)?;
                 self.emit_byte(OpCode::Print as u8, line);
             }
-            StmtKind::Var { name, value, ty } => {
+            StmtType::Var { name, value, ty } => {
                 self.emit_expr(value)?;
                 self.comps.add_local(name, ty, line)?;
             }
-            StmtKind::Block(stmts) => {
+            StmtType::Block(stmts) => {
                 for stmt in stmts {
                     self.emit_stmt(stmt)?;
                 }

@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    parse_types::{BinaryOp, Expr, ExprType, Stmt, StmtKind},
+    parse_types::{BinaryOp, Expr, ExprType, Stmt, StmtType},
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
@@ -145,7 +145,7 @@ impl<'a> Parser<'a> {
             Expr::new(ExprType::Lit(Literal::Null), line)
         };
 
-        let kind = StmtKind::Var { name, value, ty };
+        let kind = StmtType::Var { name, value, ty };
         let var = Stmt::new(kind, line);
         return Ok(var);
     }
@@ -153,6 +153,8 @@ impl<'a> Parser<'a> {
     fn statement(&mut self) -> Result<Stmt<'a>, ParseError> {
         if self.matches(TokenType::Print) {
             self.print_statement()
+        } else if self.matches(TokenType::LeftBrace) {
+            self.block()
         } else {
             self.expr_stmt()
         }
@@ -175,7 +177,7 @@ impl<'a> Parser<'a> {
     }
 
     fn print_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
-        let kind = StmtKind::Println(self.expression()?);
+        let kind = StmtType::Println(self.expression()?);
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
 
         let stmt = Stmt::new(kind, self.previous().line);
@@ -183,7 +185,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expr_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
-        let kind = StmtKind::Expr(self.expression()?);
+        let kind = StmtType::Expr(self.expression()?);
         let stmt = Stmt::new(kind, self.previous().line);
         Ok(stmt)
     }
@@ -222,8 +224,16 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn block(&mut self) -> Result<(), ParseError> {
-        todo!()
+    fn block(&mut self) -> Result<Stmt<'a>, ParseError> {
+        let mut stmts = vec![];
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
+            stmts.push(self.declaration()?);
+        }
+        self.consume(TokenType::RightBrace, "Expected '}' at end of block.")?;
+
+        let ty = StmtType::Block(stmts);
+        let block = Stmt::new(ty, self.previous().line);
+        Ok(block)
     }
     fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseError> {
         let name = self.previous();
