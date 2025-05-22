@@ -38,7 +38,10 @@ impl<'a> Comp<'a> {
     pub fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {
         let line = stmt.line;
         match stmt.stmt {
-            StmtType::Expr(expr) => self.emit_expr(expr)?,
+            StmtType::Expr(expr) => {
+                self.emit_expr(expr)?;
+                self.emit_byte(OpCode::Pop as u8, line);
+            },
             StmtType::Println(expr) => {
                 // expr.lin
                 self.emit_expr(expr)?;
@@ -108,6 +111,7 @@ impl<'a> Comp<'a> {
 
                 self.emit_byte(OpCode::Add as u8, line);
                 self.emit_bytes(OpCode::SetLocal as u8, var_arg, line);
+                self.emit_byte(OpCode::Pop as u8, line);
 
                 self.emit_loop(loop_start, line)?;
 
