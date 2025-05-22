@@ -168,14 +168,16 @@ impl<'a> Parser<'a> {
         todo!()
     }
 
-    fn for_statement(&mut self) -> Result<(), ParseError> {
+    fn for_stmt(&mut self) -> Result<Stmt<'a>, ParseError>  {
+        self.consume(TokenType::Identifier, "Expected variable name after 'for'.")?;
+        let var = self.previous();
         todo!()
     }
 
     fn while_stmt(&mut self) -> Result<Stmt<'a>, ParseError>  {
         let condition = self.expression()?;
         let body = Box::new(self.statement()?);
-        
+
         let ty = StmtType::While { condition, body };
         let stmt = Stmt::new(ty, self.previous().line);
         Ok(stmt)

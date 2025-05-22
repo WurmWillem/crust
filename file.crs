@@ -1,5 +1,11 @@
-int x = 0;
-while x < 10 {
-  pr x;
-  x = x + 1;
+int y = 1;
+{
+  int x = 1;
+  {
+    y = 2;
+  }
+  int z = 3;
 }
+pr 3;
+pr 3;
+pr 3;

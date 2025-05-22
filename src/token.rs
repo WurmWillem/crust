@@ -77,6 +77,8 @@ pub enum TokenType {
     Else,
     False,
     For,
+    In,
+    To,
     Fun,
     If,
     Null,

@@ -49,9 +49,11 @@ impl<'a> Comp<'a> {
                 self.comps.add_local(name, ty, line)?;
             }
             StmtType::Block(stmts) => {
+                self.begin_scope();
                 for stmt in stmts {
                     self.emit_stmt(stmt)?;
                 }
+                self.end_scope(line);
             }
             StmtType::If {
                 first_if,
@@ -87,6 +89,7 @@ impl<'a> Comp<'a> {
                 self.comps.patch_jump(exit_jump)?;
                 self.emit_byte(OpCode::Pop as u8, line);
             }
+            StmtType::For { condition, body } => todo!(),
         }
         Ok(())
     }
@@ -142,6 +145,20 @@ impl<'a> Comp<'a> {
             }
         };
         Ok(())
+    }
+
+    // TODO: make these functions functions of comp
+    fn begin_scope(&mut self) {
+        self.comps.increment_scope_depth();
+    }
+
+    fn end_scope(&mut self, line: u32) {
+        self.comps.decrement_scope_depth();
+
+        while self.comps.should_remove_local() {
+            self.emit_byte(OpCode::Pop as u8, line);
+            self.comps.decrement_local_count()
+        }
     }
 
     fn end_compiler(&mut self, line: u32) -> ObjFunc {
