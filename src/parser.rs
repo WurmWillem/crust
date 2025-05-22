@@ -177,11 +177,21 @@ impl<'a> Parser<'a> {
     fn if_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
         let line = self.previous().line;
 
-        let condition = self.expression()?;
-        let body = Box::new(self.statement()?);
-        
-        let first_if = If::new(condition, body);
-        let ty = StmtType::If { first_if };
+        let first_condition = self.expression()?;
+        let first_body = self.statement()?;
+        let first_if = Box::new(If::new(first_condition, first_body));
+
+        let mut final_else = None;
+        if self.matches(TokenType::Else) {
+            final_else = Some(Box::new(self.statement()?));
+        }
+
+        let else_ifs = Vec::new();
+        let ty = StmtType::If {
+            first_if,
+            else_ifs,
+            final_else,
+        };
         Ok(Stmt::new(ty, line))
     }
 

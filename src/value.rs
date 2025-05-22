@@ -129,8 +129,8 @@ impl StackValue {
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => format!("{}", s.data),
-                Object::Func(f) => format!("{}", f.data.get_name()),
-                Object::Native(f) => format!("{}", f.data.get_name()),
+                Object::Func(_) => unreachable!(),
+                Object::Native(_) => unreachable!(),
             },
         }
     }

@@ -53,16 +53,28 @@ impl<'a> Comp<'a> {
                     self.emit_stmt(stmt)?;
                 }
             }
-            StmtType::If { first_if } => {
+            StmtType::If {
+                first_if,
+                else_ifs,
+                final_else,
+            } => {
                 self.emit_expr(first_if.condition)?;
 
                 let if_false_jump = self.emit_jump(OpCode::JumpIfFalse, line);
 
                 self.emit_byte(OpCode::Pop as u8, line);
-                self.emit_stmt(*first_if.block)?;
+                self.emit_stmt(first_if.block)?;
+
+                let if_true_jump = self.emit_jump(OpCode::Jump, line);
 
                 self.comps.patch_jump(if_false_jump)?;
-                // self.emit_byte(OpCode::Pop as u8, line);
+                self.emit_byte(OpCode::Pop as u8, line);
+
+                if let Some(final_else) = final_else {
+                    self.emit_stmt(*final_else)?;
+                }
+
+                self.comps.patch_jump(if_true_jump)?;
             }
         }
         Ok(())

@@ -94,17 +94,19 @@ pub enum StmtType<'a> {
     // TODO: maybe make this an expression
     Block(Vec<Stmt<'a>>),
     If {
-        first_if: If<'a>,
+        first_if: Box<If<'a>>,
+        else_ifs: Vec<If<'a>>,
+        final_else: Option<Box<Stmt<'a>>>,
     },
 }
 
 #[derive(Debug)]
 pub struct If<'a> {
     pub condition: Expr<'a>,
-    pub block: Box<Stmt<'a>>,
+    pub block: Stmt<'a>,
 }
 impl<'a> If<'a> {
-    pub fn new(condition: Expr<'a>, block: Box<Stmt<'a>>) -> If<'a> {
+    pub fn new(condition: Expr<'a>, block: Stmt<'a>) -> If<'a> {
         If { condition, block }
     }
 }
