@@ -100,7 +100,7 @@ impl<'a> Expr<'a> {
 #[derive(Debug)]
 pub enum ExprKind<'a> {
     Lit(Literal<'a>),
-    Var(String),
+    Var(&'a str),
     Unary {
         prefix: TokenType,
         value: Box<Expr<'a>>,

@@ -48,9 +48,9 @@ fn main() {
         println!();
     }
 
-    let expr = parser::Parser::compile(tokens);
-    dbg!(&expr);
-    let (func, heap) = Comp::compile(expr).unwrap();
+    let statements = parser::Parser::compile(tokens);
+    dbg!(&statements);
+    let (func, heap) = Comp::compile(statements).unwrap();
     let funcs = [StackValue::Null; 64];
     vm::VM::interpret(func, heap, funcs);
 }

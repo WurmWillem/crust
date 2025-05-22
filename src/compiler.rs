@@ -654,7 +654,7 @@ impl<'token> Parser<'token> {
             FnType::Binary => self.binary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
-            FnType::Variable => self.var_or_func(can_assign),
+            FnType::Var => self.var_or_func(can_assign),
             FnType::Literal => {
                 self.literal();
                 Ok(())

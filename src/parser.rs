@@ -13,23 +13,22 @@ pub struct Parser<'token> {
     current_token: usize,
 }
 impl<'a> Parser<'a> {
-    pub fn compile(tokens: Vec<Token<'a>>) -> Stmt<'a> {
+    pub fn compile(tokens: Vec<Token<'a>>) -> Vec<Stmt<'a>> {
         let mut parser = Parser {
             tokens,
             current_token: 0,
         };
 
         let mut had_error = false;
-        let mut result = None;
+        let mut statements = Vec::new();
         while !parser.check(TokenType::Eof) {
-            let parsed = parser.declaration();
-            result = match parsed {
-                Ok(result) => Some(result),
+            match parser.declaration() {
+                Ok(result) => {
+                    statements.push(result);
+                },
                 Err(err) => {
                     print_error(err.line, &err.msg);
-
                     had_error = true;
-                    None
                 }
             }
         }
@@ -45,7 +44,7 @@ impl<'a> Parser<'a> {
         if parser.current_token != parser.tokens.len() {
             println!("{}", "Not all tokens were parsed.".red());
         }
-        result.unwrap()
+        statements
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseError> {
@@ -226,7 +225,9 @@ impl<'a> Parser<'a> {
     fn block(&mut self) -> Result<(), ParseError> {
         todo!()
     }
-    fn var_or_func(&mut self, _can_assign: bool) -> Result<(), ParseError> {
+    fn var(&mut self) -> Result<Expr<'a>, ParseError> {
+        // let name = self.previous();
+        // dbg!(name.lexeme);
         todo!()
     }
 
@@ -260,6 +261,7 @@ impl<'a> Parser<'a> {
             FnType::Number => self.number(),
             FnType::String => self.string(),
             FnType::Literal => self.literal(),
+            FnType::Var => self.var(),
             _ => unreachable!(),
         }
     }

@@ -20,10 +20,12 @@ impl<'a> Comp<'a> {
             comps: FuncCompilerStack::new(),
         }
     }
-    pub fn compile(stmt: Stmt) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
         let mut comp = Comp::new();
 
+        for stmt in stmts {
         comp.emit_stmt(stmt).unwrap();
+        }
 
         let func = comp.end_compiler(69);
 

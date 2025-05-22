@@ -41,7 +41,7 @@ pub enum FnType {
     Number,
     String,
     Literal,
-    Variable,
+    Var,
     Call,
 }
 
@@ -91,7 +91,7 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         none!(), //Mul Equal
         none!(), //Div Equal
 
-        ParseRule { prefix: Variable, infix: Empty, precedence: P::None, }, // identifier
+        ParseRule { prefix: Var, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
         ParseRule { prefix: Empty, infix: Binary, precedence: P::And, }, // and
