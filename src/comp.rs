@@ -5,7 +5,7 @@ use crate::{
     opcode::OpCode,
     parse_types::{Expr, ExprType, Stmt, StmtType},
     token::{Literal, TokenType},
-    value::StackValue,
+    value::{StackValue, ValueType},
 };
 
 pub struct Comp<'a> {
@@ -128,22 +128,33 @@ impl<'a> Comp<'a> {
                 body,
                 return_ty,
             } => {
-                self.comps.push(name.to_string(), return_ty);
-                self.comps.patch_return_type(return_ty);
-                self.begin_scope();
-
-                for (ty, name) in parameters {
-                    self.comps.add_local(name, ty, line)?;
-                }
-
-                self.emit_stmt(*body)?;
-                self.emit_return(line);
-                // not sure if this is necessary
-                self.end_scope();
+                // should this actually be None?
+                // self.comps.add_local(name, ValueType::None, line)?;
+                // self.comps.push(name.to_string(), return_ty);
+                // self.comps.patch_return_type(return_ty);
+                // self.begin_scope();
+                //
+                // for (ty, name) in parameters {
+                //     self.comps.add_local(name, ty, line)?;
+                // }
+                //
+                // self.emit_stmt(*body)?;
+                // self.emit_return(line);
+                // // not sure if this is necessary
+                // self.end_scope();
             }
         }
         Ok(())
     }
+
+    /*
+        expression callable with name
+
+        function decl stmt 
+        later gets pushed as local
+        
+        add func to hashmap<Name, FuncDecl> in first pass
+    */
 
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         let line = expr.line;

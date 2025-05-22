@@ -12,6 +12,7 @@ mod compiler;
 mod compiler_types;
 mod declared_func;
 mod error;
+mod collect_type_data;
 mod func_compiler;
 mod native_funcs;
 mod object;
@@ -49,6 +50,7 @@ fn main() {
     }
 
     let statements = parser::Parser::compile(tokens);
+    let funcs = collect_type_data::collect(&statements);
     // dbg!(&statements);
     if let Some((func, heap)) = Comp::compile(statements) {
         let funcs = [StackValue::Null; 64];

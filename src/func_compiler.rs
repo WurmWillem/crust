@@ -55,7 +55,7 @@ impl<'a> FuncCompilerStack<'a> {
     pub fn add_local(
         &mut self,
         name: &'a str,
-        kind: ValueType,
+        ty: ValueType,
         line: u32,
     ) -> Result<(), ParseError> {
         if self.current().local_count == MAX_LOCAL_AMT {
@@ -63,7 +63,7 @@ impl<'a> FuncCompilerStack<'a> {
             return Err(ParseError::new(line, msg));
         }
 
-        let local = Local::new(name, self.current().scope_depth, kind);
+        let local = Local::new(name, self.current().scope_depth, ty);
 
         let local_count = self.current().local_count;
         self.comps[self.current].locals[local_count] = local;

@@ -71,7 +71,7 @@ impl BinaryOp {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Stmt<'a> {
     pub stmt: StmtType<'a>,
     pub line: u32,
@@ -82,7 +82,7 @@ impl<'a> Stmt<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StmtType<'a> {
     Expr(Expr<'a>),
     Var {
@@ -114,9 +114,8 @@ pub enum StmtType<'a> {
         return_ty: ValueType,
     },
 }
-// pub struct Va
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct If<'a> {
     pub condition: Expr<'a>,
     pub block: Stmt<'a>,
@@ -127,7 +126,7 @@ impl<'a> If<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expr<'a> {
     pub expr: ExprType<'a>,
     pub line: u32,
@@ -138,7 +137,7 @@ impl<'a> Expr<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExprType<'a> {
     Lit(Literal<'a>),
     Var(&'a str),
