@@ -31,7 +31,6 @@ impl<'a> Comp<'a> {
         }
 
         let func = comp.end_compiler(69);
-
         Some((func, comp.heap))
         // None
     }
@@ -39,19 +38,23 @@ impl<'a> Comp<'a> {
     pub fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {
         let line = stmt.line;
         match stmt.stmt {
-            StmtKind::Expr(expr) => self.emit_expr(expr),
+            StmtKind::Expr(expr) => self.emit_expr(expr)?,
             StmtKind::Println(expr) => {
                 // expr.lin
                 self.emit_expr(expr)?;
                 self.emit_byte(OpCode::Print as u8, line);
-                Ok(())
             }
             StmtKind::Var { name, value, ty } => {
                 self.emit_expr(value)?;
                 self.comps.add_local(name, ty, line)?;
-                Ok(())
+            }
+            StmtKind::Block(stmts) => {
+                for stmt in stmts {
+                    self.emit_stmt(stmt)?;
+                }
             }
         }
+        Ok(())
     }
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         let line = expr.line;
@@ -69,15 +72,16 @@ impl<'a> Comp<'a> {
                 Literal::Null => self.emit_byte(OpCode::Null as u8, line),
             },
             ExprType::Var(name) => {
-                if let Some((arg, kind)) = self.comps.resolve_local(name) {
+                if let Some((arg, _kind)) = self.comps.resolve_local(name) {
                     self.emit_bytes(OpCode::GetLocal as u8, arg, line);
                 } else {
+                    // TODO: report these errors in earlier stage
                     let msg = format!("The variable/function with name '{}' does not exist.", name);
                     return Err(ParseError::new(line, &msg));
                 }
             }
             ExprType::Assign { name, value } => {
-                if let Some((arg, kind)) = self.comps.resolve_local(name) {
+                if let Some((arg, _kind)) = self.comps.resolve_local(name) {
                     self.emit_expr(*value)?;
                     self.emit_bytes(OpCode::SetLocal as u8, arg, line);
                 } else {

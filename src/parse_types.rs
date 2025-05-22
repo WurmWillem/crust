@@ -91,6 +91,12 @@ pub enum StmtKind<'a> {
         ty: ValueType,
     },
     Println(Expr<'a>),
+    // TODO: maybe make this an expression
+    Block(Vec<Stmt<'a>>),
+    // If {
+    //     condition: Box<Expr<'a>>,
+    //
+    // },
 }
 
 #[derive(Debug)]
