@@ -79,7 +79,7 @@ pub enum TokenType {
     For,
     In,
     To,
-    Fun,
+    Fn,
     If,
     Null,
     Or,

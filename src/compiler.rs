@@ -80,7 +80,7 @@ impl<'token> Parser<'token> {
         if let Some(var_type) = self.peek().kind.as_value_type() {
             self.advance();
             self.var_decl(var_type)
-        } else if self.matches(TokenType::Fun) {
+        } else if self.matches(TokenType::Fn) {
             self.func_decl()
         } else {
             self.statement()
@@ -110,9 +110,9 @@ impl<'token> Parser<'token> {
             }
         }
 
-        let mut return_type = ValueType::Null;
         self.consume(TokenType::RightParen, "Expected')' after parameters.")?;
 
+        let mut return_type = ValueType::Null;
         if self.matches(TokenType::Colon) {
             return_type = match self.advance().kind.as_value_type() {
                 Some(return_type) => return_type,
@@ -364,7 +364,7 @@ impl<'token> Parser<'token> {
             // check if next token looks like the start of a new statement
             match self.peek().kind {
                 TokenType::Struct
-                | TokenType::Fun
+                | TokenType::Fn
                 // | TokenType::F64 used to be 'let', but these are also used in the middle of statments
                 // | TokenType::Bool
                 // | TokenType::Str

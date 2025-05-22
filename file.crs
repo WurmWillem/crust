@@ -1,6 +1,6 @@
-for i in 0 to 20 {
-    pr i;
+fn add(): int {
+  pr 3;
 }
-
-pr i;
-pr i;
+//fn add(int a, int b): a {
+//  pr a + b;
+//}

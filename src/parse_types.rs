@@ -107,7 +107,14 @@ pub enum StmtType<'a> {
         condition: Expr<'a>,
         body: Box<Stmt<'a>>,
     },
+    Func {
+        name: &'a str,
+        parameters: Vec<(ValueType, &'a str)>,
+        body: Box<Stmt<'a>>,
+        return_ty: ValueType,
+    },
 }
+// pub struct Va
 
 #[derive(Debug)]
 pub struct If<'a> {

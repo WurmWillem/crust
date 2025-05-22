@@ -122,6 +122,7 @@ impl<'a> Comp<'a> {
                 self.emit_byte(OpCode::Pop as u8, line);
                 self.comps.decrement_local_count();
             }
+            StmtType::Func { name, parameters, body, return_ty } => todo!(),
         }
         Ok(())
     }
