@@ -117,6 +117,10 @@ impl<'a> Comp<'a> {
 
                 self.comps.patch_jump(exit_jump)?;
                 self.emit_byte(OpCode::Pop as u8, line);
+
+                // necessary so the variable goes out of scope again
+                self.emit_byte(OpCode::Pop as u8, line);
+                self.comps.decrement_local_count();
             }
         }
         Ok(())
