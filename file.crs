@@ -1,5 +1,5 @@
-fn add(): int {
-  pr 3;
+fn add(int a, int b): int {
+  pr a + b;
 }
 //fn add(int a, int b): a {
 //  pr a + b;

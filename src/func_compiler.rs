@@ -103,7 +103,7 @@ impl<'a> FuncCompilerStack<'a> {
         // TODO: shadowing doesn't remove the old var as of now
         for i in (0..self.current().local_count).rev() {
             if self.current().locals[i].name == name {
-                return Some((i as u8, self.current().locals[i].kind));
+                return Some((i as u8, self.current().locals[i].ty));
             }
         }
         None
@@ -122,12 +122,12 @@ impl<'a> FuncCompilerStack<'a> {
 #[derive(Debug, Clone, Copy)]
 struct Local<'a> {
     name: &'a str,
-    kind: ValueType,
+    ty: ValueType,
     depth: usize,
 }
 impl<'a> Local<'a> {
-    fn new(name: &'a str, depth: usize, kind: ValueType) -> Self {
-        Self { name, depth, kind }
+    fn new(name: &'a str, depth: usize, ty: ValueType) -> Self {
+        Self { name, depth, ty }
     }
 }
 

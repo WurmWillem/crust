@@ -141,13 +141,19 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
 
         let mut parameters = Vec::new();
+        if !self.check(TokenType::RightParen) {
+            parameters.push(self.parse_parameter()?);
+            while self.matches(TokenType::Comma) {
+                parameters.push(self.parse_parameter()?);
+            }
+        }
 
         self.consume(TokenType::RightParen, "Expected ')' after function name.")?;
 
         let mut return_ty = ValueType::Null;
         if self.matches(TokenType::Colon) {
             return_ty = match self.advance().kind.as_value_type() {
-                Some(return_type) => return_type,
+                Some(return_ty) => return_ty,
                 _ => {
                     return Err(ParseError::new(
                         self.previous().line,
@@ -170,6 +176,22 @@ impl<'a> Parser<'a> {
         };
         let func = Stmt::new(fn_ty, line);
         Ok(func)
+    }
+    fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseError> {
+        let var_type = match self.advance().kind.as_value_type() {
+            Some(var_type) => var_type,
+            _ => {
+                return Err(ParseError::new(
+                    self.previous().line,
+                    "Expected type for parameter.",
+                ));
+            }
+        };
+
+        self.consume(TokenType::Identifier, "Expected parameter name.")?;
+        let name = self.previous().lexeme;
+
+        Ok((var_type, name))
     }
 
     fn var_decl(&mut self, ty: ValueType) -> Result<Stmt<'a>, ParseError> {

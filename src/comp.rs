@@ -56,7 +56,7 @@ impl<'a> Comp<'a> {
                 for stmt in stmts {
                     self.emit_stmt(stmt)?;
                 }
-                self.end_scope(line);
+                self.end_scope();
             }
             StmtType::If {
                 first_if,
@@ -132,8 +132,14 @@ impl<'a> Comp<'a> {
                 self.comps.patch_return_type(return_ty);
                 self.begin_scope();
 
+                for (ty, name) in parameters {
+                    self.comps.add_local(name, ty, line)?;
+                }
+
                 self.emit_stmt(*body)?;
                 self.emit_return(line);
+                // not sure if this is necessary
+                self.end_scope();
             }
         }
         Ok(())
@@ -198,13 +204,8 @@ impl<'a> Comp<'a> {
         self.comps.increment_scope_depth();
     }
 
-    fn end_scope(&mut self, line: u32) {
+    fn end_scope(&mut self) {
         self.comps.decrement_scope_depth();
-
-        while self.comps.should_remove_local() {
-            self.emit_byte(OpCode::Pop as u8, line);
-            self.comps.decrement_local_count()
-        }
     }
 
     fn end_compiler(&mut self, line: u32) -> ObjFunc {
