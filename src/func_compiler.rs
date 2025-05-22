@@ -1,7 +1,6 @@
 use crate::{
     error::ParseError,
     object::ObjFunc,
-    token::{Literal, Token, TokenType},
     value::{StackValue, ValueType},
 };
 
@@ -11,7 +10,7 @@ pub struct FuncCompilerStack<'a> {
 }
 impl<'a> FuncCompilerStack<'a> {
     pub fn new() -> Self {
-        let root = FuncCompiler::new("".to_string());
+        let root = FuncCompiler::new("".to_string(), ValueType::Null);
         Self {
             comps: vec![root],
             current: 0,
@@ -89,8 +88,8 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].patch_return_type(return_type);
     }
 
-    pub fn push(&mut self, func_name: String) {
-        let new_compiler = FuncCompiler::new(func_name);
+    pub fn push(&mut self, func_name: String, return_ty: ValueType) {
+        let new_compiler = FuncCompiler::new(func_name, return_ty);
         self.comps.push(new_compiler);
         self.current = self.comps.len() - 1;
     }
@@ -140,13 +139,13 @@ pub struct FuncCompiler<'a> {
     func: ObjFunc,
 }
 impl<'a> FuncCompiler<'a> {
-    pub fn new(func_name: String) -> Self {
+    pub fn new(func_name: String, return_ty: ValueType) -> Self {
         let local = Local::new("", 0, ValueType::None);
         Self {
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,
             scope_depth: 0,
-            func: ObjFunc::new(func_name),
+            func: ObjFunc::new(func_name, return_ty),
         }
     }
 

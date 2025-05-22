@@ -96,7 +96,7 @@ impl<'token> Parser<'token> {
         Ok(())
     }
     fn function(&mut self, name: &'token str) -> Result<(), ParseError> {
-        self.comps.push(name.to_string());
+        // self.comps.push(name.to_string());
         self.begin_scope();
 
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;

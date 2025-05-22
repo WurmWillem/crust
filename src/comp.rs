@@ -41,7 +41,7 @@ impl<'a> Comp<'a> {
             StmtType::Expr(expr) => {
                 self.emit_expr(expr)?;
                 self.emit_byte(OpCode::Pop as u8, line);
-            },
+            }
             StmtType::Println(expr) => {
                 // expr.lin
                 self.emit_expr(expr)?;
@@ -122,10 +122,23 @@ impl<'a> Comp<'a> {
                 self.emit_byte(OpCode::Pop as u8, line);
                 self.comps.decrement_local_count();
             }
-            StmtType::Func { name, parameters, body, return_ty } => todo!(),
+            StmtType::Func {
+                name,
+                parameters,
+                body,
+                return_ty,
+            } => {
+                self.comps.push(name.to_string(), return_ty);
+                self.comps.patch_return_type(return_ty);
+                self.begin_scope();
+
+                self.emit_stmt(*body)?;
+                self.emit_return(line);
+            }
         }
         Ok(())
     }
+
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         let line = expr.line;
         match expr.expr {

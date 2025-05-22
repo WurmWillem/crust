@@ -118,11 +118,11 @@ pub struct ObjFunc {
     pub return_type: ValueType,
 }
 impl ObjFunc {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, return_type: ValueType) -> Self {
         Self {
             chunk: Chunk::new(),
             name,
-            return_type: ValueType::Null, // gets patched later
+            return_type,
         }
     }
     pub fn get_name(&self) -> &String {
