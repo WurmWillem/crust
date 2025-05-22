@@ -141,6 +141,10 @@ impl<'a> Expr<'a> {
 pub enum ExprType<'a> {
     Lit(Literal<'a>),
     Var(&'a str),
+    Call {
+        name: &'a str,
+        args: Vec<Expr<'a>>,
+    },
     Assign {
         name: &'a str,
         value: Box<Expr<'a>>,

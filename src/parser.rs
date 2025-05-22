@@ -376,10 +376,6 @@ impl<'a> Parser<'a> {
         Ok(var)
     }
 
-    fn resolve_local(&mut self, _name: &str, _can_assign: bool) -> Result<bool, ParseError> {
-        todo!()
-    }
-
     fn string(&mut self) -> Result<Expr<'a>, ParseError> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
@@ -411,6 +407,27 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseError> {
+        let mut args = Vec::new();
+        while !self.check(TokenType::RightParen) {
+            args.push(self.expression()?);
+
+            if !self.matches(TokenType::Comma) {
+                break;
+            }
+        }
+        self.consume(TokenType::RightParen, "Expected ')' after function call.")?;
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+
+        if let ExprType::Var(name) = name.expr {
+            let ty = ExprType::Call { name, args };
+            let expr = Expr::new(ty, self.previous().line);
+            Ok(expr)
+        } else {
+            unreachable!()
+        }
+    }
+
     fn execute_infix(
         &mut self,
         left: Expr<'a>,
@@ -419,6 +436,7 @@ impl<'a> Parser<'a> {
     ) -> Result<Expr<'a>, ParseError> {
         match fn_type {
             FnType::Binary => self.binary(left),
+            FnType::Call => self.call(left),
             _ => unreachable!(),
         }
     }

@@ -206,6 +206,7 @@ impl<'a> Comp<'a> {
                 let op_code = op.to_op_code();
                 self.emit_byte(op_code as u8, line);
             }
+            ExprType::Call { name, args } => todo!(),
         };
         Ok(())
     }

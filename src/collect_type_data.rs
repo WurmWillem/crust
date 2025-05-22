@@ -28,7 +28,7 @@ impl<'a> FuncData<'a> {
     }
 }
 
-pub fn collect<'a>(stmts: &Vec<Stmt>) -> HashMap<&'a str, FuncData<'a>> {
+pub fn collect<'a>(stmts: &Vec<Stmt<'a>>) -> HashMap<&'a str, FuncData<'a>> {
     let mut func_data = HashMap::new();
 
     for stmt in stmts {
@@ -41,8 +41,8 @@ pub fn collect<'a>(stmts: &Vec<Stmt>) -> HashMap<&'a str, FuncData<'a>> {
         {
             let body = (**body).clone();
             let data = FuncData::new(name, parameters.clone(), body, *return_ty);
-            func_data.insert(name, data);
+            func_data.insert(*name, data);
         }
     }
-    todo!();
+    func_data
 }
