@@ -159,22 +159,57 @@ impl<'a> Parser<'a> {
             self.if_stmt()
         } else if self.matches(TokenType::While) {
             self.while_stmt()
+        } else if self.matches(TokenType::For) {
+            self.for_stmt()
         } else {
             self.expr_stmt()
         }
     }
 
-    fn return_statement(&mut self) -> Result<(), ParseError> {
+    fn return_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
         todo!()
     }
 
-    fn for_stmt(&mut self) -> Result<Stmt<'a>, ParseError>  {
+    fn for_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
         self.consume(TokenType::Identifier, "Expected variable name after 'for'.")?;
         let var = self.previous();
-        todo!()
+        let line = var.line;
+        let name = var.lexeme;
+
+        self.consume(TokenType::In, "Expected 'in' after 'for identifier'.")?;
+        let start = self.expression()?;
+
+        let kind = StmtType::Var {
+            name,
+            value: start,
+            ty: ValueType::Num,
+        };
+        let var = Stmt::new(kind, line);
+
+        self.consume(TokenType::To, "Expected 'to' after 'for identifier'.")?;
+        let end = Box::new(self.expression()?);
+
+        let start_ty = ExprType::Var(name);
+        let start = Box::new(Expr::new(start_ty, line));
+        let condition_ty = ExprType::Binary {
+            left: start,
+            op: BinaryOp::Less,
+            right: end,
+        };
+        let condition = Expr::new(condition_ty, var.line);
+
+        let body = Box::new(self.statement()?);
+        let for_ty = StmtType::For {
+            condition,
+            body,
+            var: Box::new(var),
+        };
+        let stmt = Stmt::new(for_ty, line);
+
+        Ok(stmt)
     }
 
-    fn while_stmt(&mut self) -> Result<Stmt<'a>, ParseError>  {
+    fn while_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
         let condition = self.expression()?;
         let body = Box::new(self.statement()?);
 
@@ -261,6 +296,7 @@ impl<'a> Parser<'a> {
         let block = Stmt::new(ty, self.previous().line);
         Ok(block)
     }
+
     fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseError> {
         let name = self.previous();
         let var = if can_assign && self.matches(TokenType::Equal) {

@@ -103,6 +103,7 @@ pub enum StmtType<'a> {
         body: Box<Stmt<'a>>,
     },
     For {
+        var: Box<Stmt<'a>>,
         condition: Expr<'a>,
         body: Box<Stmt<'a>>,
     },

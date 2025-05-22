@@ -89,7 +89,31 @@ impl<'a> Comp<'a> {
                 self.comps.patch_jump(exit_jump)?;
                 self.emit_byte(OpCode::Pop as u8, line);
             }
-            StmtType::For { condition, body } => todo!(),
+            StmtType::For {
+                condition,
+                body,
+                var,
+            } => {
+                self.emit_stmt(*var)?;
+                let var_arg = self.comps.get_local_count() as u8 - 1;
+                let loop_start = self.comps.get_code_len();
+                self.emit_expr(condition)?;
+
+                let exit_jump = self.emit_jump(OpCode::JumpIfFalse, line);
+                self.emit_byte(OpCode::Pop as u8, line);
+                self.emit_stmt(*body)?;
+
+                self.emit_bytes(OpCode::GetLocal as u8, var_arg, line);
+                self.emit_constant(StackValue::F64(1.), line)?;
+
+                self.emit_byte(OpCode::Add as u8, line);
+                self.emit_bytes(OpCode::SetLocal as u8, var_arg, line);
+
+                self.emit_loop(loop_start, line)?;
+
+                self.comps.patch_jump(exit_jump)?;
+                self.emit_byte(OpCode::Pop as u8, line);
+            }
         }
         Ok(())
     }

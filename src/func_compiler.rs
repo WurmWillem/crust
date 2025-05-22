@@ -49,6 +49,10 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].func.chunk.code.len()
     }
 
+    pub fn get_local_count(&self) -> usize {
+        self.comps[self.current].local_count
+    }
+
     pub fn add_local(
         &mut self,
         name: &'a str,

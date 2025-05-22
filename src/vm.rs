@@ -213,6 +213,8 @@ impl VM {
                 OpCode::Add => {
                     let rhs = self.stack_pop();
                     let lhs = self.stack_pop();
+                    dbg!(lhs);
+                    dbg!(rhs);
 
                     let new_value = match (lhs, rhs) {
                         (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs + rhs),
