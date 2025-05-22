@@ -75,6 +75,18 @@ impl<'a> Comp<'a> {
 
                 self.comps.patch_jump(if_true_jump)?;
             }
+            StmtType::While { condition, body } => {
+                let loop_start = self.comps.get_code_len();
+                self.emit_expr(condition)?;
+
+                let exit_jump = self.emit_jump(OpCode::JumpIfFalse, line);
+                self.emit_byte(OpCode::Pop as u8, line);
+                self.emit_stmt(*body)?;
+                self.emit_loop(loop_start, line)?;
+
+                self.comps.patch_jump(exit_jump)?;
+                self.emit_byte(OpCode::Pop as u8, line);
+            }
         }
         Ok(())
     }
@@ -137,6 +149,7 @@ impl<'a> Comp<'a> {
         self.comps.pop().get_func()
     }
 
+    // TODO: maybe these functions should actually be functions of self.comps
     fn emit_return(&mut self, line: u32) {
         self.emit_byte(OpCode::Null as u8, line);
         self.emit_byte(OpCode::Return as u8, line);
@@ -171,5 +184,19 @@ impl<'a> Comp<'a> {
         self.emit_byte(0xFF, line);
         self.emit_byte(0xFF, line);
         self.comps.get_code_len() - 2
+    }
+
+    fn emit_loop(&mut self, loop_start: usize, line: u32) -> Result<(), ParseError> {
+        self.emit_byte(OpCode::Loop as u8, line);
+
+        let offset = self.comps.get_code_len() - loop_start + 2;
+        if offset > u8::MAX as usize {
+            let msg = "Loop body too large.";
+            return Err(ParseError::new(line, msg));
+        }
+
+        self.emit_byte(((offset >> 8) & 0xFF) as u8, line);
+        self.emit_byte((offset & 0xFF) as u8, line);
+        Ok(())
     }
 }

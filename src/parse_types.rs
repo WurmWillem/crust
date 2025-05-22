@@ -93,9 +93,14 @@ pub enum StmtType<'a> {
     Println(Expr<'a>),
     // TODO: maybe make this an expression
     Block(Vec<Stmt<'a>>),
+    // rethink naming, boxing, and if "If" struct is necessary
     If {
         first_if: Box<If<'a>>,
         final_else: Option<Box<Stmt<'a>>>,
+    },
+    While {
+        condition: Expr<'a>,
+        body: Box<Stmt<'a>>,
     },
 }
 

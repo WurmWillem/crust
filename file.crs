@@ -1,11 +1,5 @@
-int x = 4;
-
-if x == 1 {
-  pr "First";
-} else if x == 2 {
-  pr "Second";
-} else if x == 3 {
-  pr "Third";
-} else {
-  pr "Final";
+int x = 0;
+while x < 10 {
+  pr x;
+  x = x + 1;
 }
