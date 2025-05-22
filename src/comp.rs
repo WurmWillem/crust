@@ -3,7 +3,7 @@ use crate::{
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
-    parse_types::{Expr, ExprKind, Stmt, StmtKind},
+    parse_types::{Expr, ExprType, Stmt, StmtKind},
     token::{Literal, TokenType},
     value::StackValue,
 };
@@ -24,7 +24,7 @@ impl<'a> Comp<'a> {
         let mut comp = Comp::new();
 
         for stmt in stmts {
-        comp.emit_stmt(stmt).unwrap();
+            comp.emit_stmt(stmt).unwrap();
         }
 
         let func = comp.end_compiler(69);
@@ -53,7 +53,7 @@ impl<'a> Comp<'a> {
     pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         let line = expr.line;
         match expr.expr {
-            ExprKind::Lit(lit) => match lit {
+            ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
                 Literal::Str(str) => {
                     let (object, _) = self.heap.alloc(str.to_string(), Object::Str);
@@ -65,8 +65,14 @@ impl<'a> Comp<'a> {
                 Literal::False => self.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.emit_byte(OpCode::Null as u8, line),
             },
-            ExprKind::Var(_) => todo!(),
-            ExprKind::Unary {
+            ExprType::Var(name) => {
+                if let Some((arg, kind)) = self.comps.resolve_local(name) {
+                    self.emit_bytes(OpCode::GetLocal as u8, arg, line);
+                } else {
+                    unreachable!()
+                }
+            }
+            ExprType::Unary {
                 prefix,
                 value: right,
             } => {
@@ -77,7 +83,7 @@ impl<'a> Comp<'a> {
                     _ => unreachable!(),
                 }
             }
-            ExprKind::Binary { left, op, right } => {
+            ExprType::Binary { left, op, right } => {
                 self.emit_expr(*left)?;
                 self.emit_expr(*right)?;
                 let op_code = op.to_op_code();

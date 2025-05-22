@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    parse_types::{BinaryOp, Expr, ExprKind, Stmt, StmtKind},
+    parse_types::{BinaryOp, Expr, ExprType, Stmt, StmtKind},
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
@@ -84,7 +84,7 @@ impl<'a> Parser<'a> {
         let right = Box::new(self.parse_precedence(precedence)?);
 
         let line = self.previous().line;
-        let kind = ExprKind::Binary { left, op, right };
+        let kind = ExprType::Binary { left, op, right };
         let expr = Expr::new(kind, line);
         Ok(expr)
     }
@@ -93,7 +93,7 @@ impl<'a> Parser<'a> {
         let Literal::Num(value) = self.previous().literal else {
             unreachable!();
         };
-        let kind = ExprKind::Lit(Literal::Num(value));
+        let kind = ExprType::Lit(Literal::Num(value));
         Ok(Expr::new(kind, self.previous().line))
     }
 
@@ -102,7 +102,7 @@ impl<'a> Parser<'a> {
         let value = Box::new(self.parse_precedence(Precedence::Unary)?);
 
         let line = self.previous().line;
-        let kind = ExprKind::Unary { prefix, value };
+        let kind = ExprType::Unary { prefix, value };
         let expr = Expr::new(kind, line);
         Ok(expr)
     }
@@ -114,7 +114,7 @@ impl<'a> Parser<'a> {
             TokenType::Null => Literal::Null,
             _ => unreachable!(),
         };
-        let kind = ExprKind::Lit(literal);
+        let kind = ExprType::Lit(literal);
         Ok(Expr::new(kind, self.previous().line))
     }
 
@@ -142,7 +142,7 @@ impl<'a> Parser<'a> {
             value
         } else {
             self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
-            Expr::new(ExprKind::Lit(Literal::Null), line)
+            Expr::new(ExprType::Lit(Literal::Null), line)
         };
 
         let kind = StmtKind::Var { name, value, ty };
@@ -226,9 +226,10 @@ impl<'a> Parser<'a> {
         todo!()
     }
     fn var(&mut self) -> Result<Expr<'a>, ParseError> {
-        // let name = self.previous();
-        // dbg!(name.lexeme);
-        todo!()
+        let name = self.previous();
+        let ty = ExprType::Var(name.lexeme);
+        let var = Expr::new(ty, name.line);
+        Ok(var)
     }
 
     fn resolve_local(&mut self, _name: &str, _can_assign: bool) -> Result<bool, ParseError> {
@@ -239,7 +240,7 @@ impl<'a> Parser<'a> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
         };
-        let kind = ExprKind::Lit(Literal::Str(value));
+        let kind = ExprType::Lit(Literal::Str(value));
         Ok(Expr::new(kind, self.previous().line))
     }
 

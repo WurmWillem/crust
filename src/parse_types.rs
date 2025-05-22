@@ -88,17 +88,17 @@ pub enum StmtKind<'a> {
 
 #[derive(Debug)]
 pub struct Expr<'a> {
-    pub expr: ExprKind<'a>,
+    pub expr: ExprType<'a>,
     pub line: u32,
 }
 impl<'a> Expr<'a> {
-    pub fn new(expr: ExprKind<'a>, line: u32) -> Expr<'a> {
+    pub fn new(expr: ExprType<'a>, line: u32) -> Expr<'a> {
         Expr { expr, line }
     }
 }
 
 #[derive(Debug)]
-pub enum ExprKind<'a> {
+pub enum ExprType<'a> {
     Lit(Literal<'a>),
     Var(&'a str),
     Unary {
