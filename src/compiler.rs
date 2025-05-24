@@ -2,7 +2,7 @@ use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
     error::{print_error, ParseError},
-    expr::{Expr, ExprType},
+    expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
     native_funcs,
     object::{Heap, ObjFunc, ObjNative, Object},

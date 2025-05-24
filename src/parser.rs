@@ -1,10 +1,9 @@
 use colored::Colorize;
 
 use crate::{
-    compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    expr::{Expr, ExprType},
-    parse_types::BinaryOp,
+    expression::{Expr, ExprType},
+    parse_types::{BinaryOp, FnType, ParseRule, Precedence, PARSE_RULES},
     statement::{Stmt, StmtType},
     token::{Literal, Token, TokenType},
     value::ValueType,

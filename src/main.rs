@@ -8,9 +8,8 @@ use colored::Colorize;
 
 mod chunk;
 mod compiler;
-mod compiler_types;
 mod error;
-mod expr;
+mod expression;
 mod func_compiler;
 mod native_funcs;
 mod object;
