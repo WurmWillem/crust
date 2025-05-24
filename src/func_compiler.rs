@@ -18,10 +18,6 @@ impl<'a> FuncCompilerStack<'a> {
         }
     }
 
-    pub fn get_return_type(&self) -> ValueType {
-        self.current().func.return_ty
-    }
-
     pub fn increment_scope_depth(&mut self) {
         self.comps[self.current].scope_depth += 1;
     }
@@ -78,10 +74,6 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
         self.comps[self.current].func.chunk.code[offset + 1] = (jump & 0xFF) as u8;
         Ok(())
-    }
-
-    pub fn patch_return_type(&mut self, return_type: ValueType) {
-        self.comps[self.current].patch_return_type(return_type);
     }
 
     pub fn push(&mut self, func_name: String, return_ty: ValueType) {
@@ -148,9 +140,5 @@ impl<'a> FuncCompiler<'a> {
 
     pub fn get_func(self) -> ObjFunc {
         self.func
-    }
-
-    pub fn patch_return_type(&mut self, return_ty: ValueType) {
-        self.func.return_ty = return_ty;
     }
 }

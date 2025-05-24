@@ -5,7 +5,7 @@ use colored::Colorize;
 
 use crate::error::DEBUG_TRACE_EXECUTION;
 use crate::object::Object;
-use crate::{opcode::OpCode, value::StackValue};
+use crate::{op_code::OpCode, value::StackValue};
 
 pub enum InterpretResult {
     Ok,
@@ -14,7 +14,6 @@ pub enum InterpretResult {
 
 const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 64;
-pub const MAX_FUNC_AMT: usize = 64;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -30,13 +29,11 @@ pub struct VM {
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
     heap: Heap,
-    funcs: [StackValue; MAX_FUNC_AMT],
 }
 impl VM {
     pub fn interpret(
         func: ObjFunc,
         mut heap: Heap,
-        funcs: [StackValue; MAX_FUNC_AMT],
     ) -> InterpretResult {
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
         let frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
@@ -50,7 +47,6 @@ impl VM {
             frame_count: 1,
             stack: [const { StackValue::Null }; STACK_SIZE],
             stack_top: 0,
-            funcs,
         };
 
         let frame = CallFrame {
@@ -138,13 +134,6 @@ impl VM {
                 OpCode::SetLocal => {
                     let slot = self.read_byte(frame) as usize;
                     self.stack[(*frame).slots + slot] = self.stack_peek();
-                }
-
-                // TODO: remove this
-                OpCode::GetFunc => {
-                    let slot = self.read_byte(frame) as usize;
-                    let value = self.funcs[slot];
-                    self.stack_push(value);
                 }
 
                 OpCode::True => self.stack_push(StackValue::Bool(true)),

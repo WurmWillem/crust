@@ -1,11 +1,5 @@
 
-//pr fib(40);
-//pr clock();
-pr "hoi";
-
-print(3);
-print(3);
-print(3);
+pr fib(40);
 //pr clock();
 
 fn fib(int n): int {

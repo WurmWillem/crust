@@ -29,6 +29,7 @@ impl<'a> Parser<'a> {
                 Err(err) => {
                     print_error(err.line, &err.msg);
                     had_error = true;
+                    parser.synchronize();
                 }
             }
         }
@@ -159,10 +160,6 @@ impl<'a> Parser<'a> {
                 }
             };
         }
-        // let return_ty = match self.peek().kind.as_value_type() {
-        //     Some(ty) => ty,
-        //     None => todo!(),
-        // };
 
         let body = Box::new(self.statement()?);
         let fn_ty = StmtType::Func {
@@ -340,9 +337,9 @@ impl<'a> Parser<'a> {
             match self.peek().kind {
                 TokenType::Struct
                 | TokenType::Fn
-                // | TokenType::F64 used to be 'let', but these are also used in the middle of statments
-                // | TokenType::Bool
-                // | TokenType::Str
+                | TokenType::F64
+                | TokenType::Bool
+                | TokenType::Str
                 | TokenType::For
                 | TokenType::If
                 | TokenType::While

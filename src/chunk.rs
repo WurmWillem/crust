@@ -66,8 +66,6 @@ impl Chunk {
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),
 
-            OpCode::GetFunc => self.constant_instruction("OP_GET_LOCAL", offset),
-
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
             OpCode::False => Self::simple_instruction("OP_FALSE", offset),

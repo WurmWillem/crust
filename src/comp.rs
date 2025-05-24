@@ -5,7 +5,7 @@ use crate::{
     func_compiler::FuncCompilerStack,
     native_funcs,
     object::{Heap, ObjFunc, ObjNative, Object},
-    opcode::OpCode,
+    op_code::OpCode,
     parse_types::{Expr, ExprType, Stmt, StmtType},
     token::{Literal, TokenType},
     value::StackValue,
@@ -31,6 +31,7 @@ impl<'a> Comp<'a> {
         for stmt in stmts {
             if let Err(err) = comp.emit_stmt(stmt) {
                 print_error(err.line, &err.msg);
+
                 return None;
             }
         }
@@ -221,7 +222,7 @@ impl<'a> Comp<'a> {
                     self.emit_expr(*value)?;
                     self.emit_bytes(OpCode::SetLocal as u8, arg, line);
                 } else {
-                    let msg = format!("The variable/function with name '{}' does not exist.", name);
+                    let msg = format!("The variable with name '{}' does not exist.", name);
                     return Err(ParseError::new(line, &msg));
                 }
             }
