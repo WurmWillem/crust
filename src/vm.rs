@@ -31,10 +31,7 @@ pub struct VM {
     heap: Heap,
 }
 impl VM {
-    pub fn interpret(
-        func: ObjFunc,
-        mut heap: Heap,
-    ) -> InterpretResult {
+    pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
         let frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
         unsafe {

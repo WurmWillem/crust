@@ -1,4 +1,4 @@
-use comp::Comp;
+use compiler::Compiler;
 use error::PRINT_SCAN_TOKENS;
 use op_code::OpCode;
 use scanner::Scanner;
@@ -7,9 +7,10 @@ use value::StackValue;
 use colored::Colorize;
 
 mod chunk;
-mod comp;
+mod compiler;
 mod compiler_types;
 mod error;
+mod expr;
 mod func_compiler;
 mod native_funcs;
 mod object;
@@ -17,6 +18,7 @@ mod op_code;
 mod parse_types;
 mod parser;
 mod scanner;
+mod statement;
 mod token;
 mod value;
 mod vm;
@@ -57,7 +59,7 @@ fn main() {
         }
     };
     // dbg!(&statements);
-    if let Some((func, heap)) = Comp::compile(statements) {
+    if let Some((func, heap)) = Compiler::compile(statements) {
         vm::VM::interpret(func, heap);
     } else {
         return;

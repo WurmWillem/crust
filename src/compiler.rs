@@ -2,21 +2,22 @@ use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
     error::{print_error, ParseError},
+    expr::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
     native_funcs,
     object::{Heap, ObjFunc, ObjNative, Object},
     op_code::OpCode,
-    parse_types::{Expr, ExprType, Stmt, StmtType},
+    statement::{Stmt, StmtType},
     token::{Literal, TokenType},
     value::StackValue,
 };
 
-pub struct Comp<'a> {
+pub struct Compiler<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
     funcs: HashMap<&'a str, StackValue>,
 }
-impl<'a> Comp<'a> {
+impl<'a> Compiler<'a> {
     fn new() -> Self {
         Self {
             heap: Heap::new(),
@@ -25,7 +26,7 @@ impl<'a> Comp<'a> {
         }
     }
     pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
-        let mut comp = Comp::new();
+        let mut comp = Compiler::new();
         comp.collect_type_data(&stmts);
 
         for stmt in stmts {
@@ -49,17 +50,17 @@ impl<'a> Comp<'a> {
                 self.funcs.insert($name, value);
             };
         }
-        add_func!("clock", clock); 
-        add_func!("print", print); 
-        add_func!("println", println); 
-        add_func!("sin", sin); 
-        add_func!("cos", cos); 
-        add_func!("sin", tan); 
-        add_func!("min", min); 
-        add_func!("max", max); 
-        add_func!("abs", abs); 
-        add_func!("sqrt", sqrt); 
-        add_func!("pow", pow); 
+        add_func!("clock", clock);
+        add_func!("print", print);
+        add_func!("println", println);
+        add_func!("sin", sin);
+        add_func!("cos", cos);
+        add_func!("sin", tan);
+        add_func!("min", min);
+        add_func!("max", max);
+        add_func!("abs", abs);
+        add_func!("sqrt", sqrt);
+        add_func!("pow", pow);
 
         for stmt in stmts {
             let line = stmt.line;
