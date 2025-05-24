@@ -140,6 +140,7 @@ impl VM {
                     self.stack[(*frame).slots + slot] = self.stack_peek();
                 }
 
+                // TODO: remove this
                 OpCode::GetFunc => {
                     let slot = self.read_byte(frame) as usize;
                     let value = self.funcs[slot];

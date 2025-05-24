@@ -1,5 +1,12 @@
 
-pr fib(40);
+//pr fib(40);
+//pr clock();
+pr "hoi";
+
+print(3);
+print(3);
+print(3);
+//pr clock();
 
 fn fib(int n): int {
   if n < 2 return n;

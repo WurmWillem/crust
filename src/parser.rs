@@ -313,6 +313,7 @@ impl<'a> Parser<'a> {
     fn expr_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
         let kind = StmtType::Expr(self.expression()?);
         let stmt = Stmt::new(kind, self.previous().line);
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
         Ok(stmt)
     }
 

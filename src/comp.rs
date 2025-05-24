@@ -3,7 +3,8 @@ use std::{borrow::BorrowMut, collections::HashMap};
 use crate::{
     error::{print_error, ParseError},
     func_compiler::FuncCompilerStack,
-    object::{Heap, ObjFunc, Object},
+    native_funcs,
+    object::{Heap, ObjFunc, ObjNative, Object},
     opcode::OpCode,
     parse_types::{Expr, ExprType, Stmt, StmtType},
     token::{Literal, TokenType},
@@ -39,6 +40,16 @@ impl<'a> Comp<'a> {
     }
 
     fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) {
+        let clock = ObjNative::new("clock".to_string(), native_funcs::clock);
+        let (clock, _) = self.heap.alloc(clock, Object::Native);
+        let value = StackValue::Obj(clock);
+        self.funcs.insert("clock", value);
+        
+        let clock = ObjNative::new("print".to_string(), native_funcs::print);
+        let (clock, _) = self.heap.alloc(clock, Object::Native);
+        let value = StackValue::Obj(clock);
+        self.funcs.insert("print", value);
+
         for stmt in stmts {
             let line = stmt.line;
             if let StmtType::Func {
@@ -64,7 +75,7 @@ impl<'a> Comp<'a> {
 
                 let compiled_func = self.end_compiler(line);
                 if let Object::Func(ref mut func) = func_obj.borrow_mut() {
-                   func.data = compiled_func; 
+                    func.data = compiled_func;
                 }
             }
         }
