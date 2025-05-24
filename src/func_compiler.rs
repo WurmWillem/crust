@@ -1,6 +1,7 @@
 use crate::{
     error::ParseError,
     object::ObjFunc,
+    op_code::OpCode,
     value::{StackValue, ValueType},
 };
 
@@ -18,23 +19,85 @@ impl<'a> FuncCompilerStack<'a> {
         }
     }
 
-    pub fn increment_scope_depth(&mut self) {
+    pub fn begin_scope(&mut self) {
         self.comps[self.current].scope_depth += 1;
     }
 
-    pub fn decrement_scope_depth(&mut self) {
+    pub fn end_scope(&mut self) {
         self.comps[self.current].scope_depth -= 1;
+
+        while self.should_remove_local() {
+            self.emit_byte(OpCode::Pop as u8, 69);
+            self.comps[self.current].local_count -= 1;
+        }
+    }
+
+    pub fn end_compiler(&mut self, line: u32) -> ObjFunc {
+        self.emit_return(line);
+
+        self.current = 0;
+        self.comps.pop().unwrap().get_func()
+    }
+
+    pub fn emit_return(&mut self, line: u32) {
+        self.emit_byte(OpCode::Null as u8, line);
+        self.emit_byte(OpCode::Return as u8, line);
+    }
+
+    pub fn emit_constant(&mut self, value: StackValue, line: u32) -> Result<(), ParseError> {
+        let const_index = self.make_constant(value, line)?;
+        self.emit_bytes(OpCode::Constant as u8, const_index, line);
+        Ok(())
+    }
+
+    fn make_constant(&mut self, value: StackValue, line: u32) -> Result<u8, ParseError> {
+        let const_index = self.add_constant(value);
+        if const_index > u16::MAX.into() {
+            let msg = "Too many constants in one chunk.";
+            return Err(ParseError::new(line, msg));
+        }
+        Ok(const_index as u8)
+    }
+
+    pub fn emit_byte(&mut self, byte: u8, line: u32) {
+        self.write_byte_to_chunk(byte, line);
+    }
+
+    pub fn emit_bytes(&mut self, byte_0: u8, byte_1: u8, line: u32) {
+        self.emit_byte(byte_0, line);
+        self.emit_byte(byte_1, line);
+    }
+
+    pub fn emit_jump(&mut self, instruction: OpCode, line: u32) -> usize {
+        self.emit_byte(instruction as u8, line);
+        self.emit_byte(0xFF, line);
+        self.emit_byte(0xFF, line);
+        self.get_code_len() - 2
+    }
+
+    pub fn emit_loop(&mut self, loop_start: usize, line: u32) -> Result<(), ParseError> {
+        self.emit_byte(OpCode::Loop as u8, line);
+
+        let offset = self.get_code_len() - loop_start + 2;
+        if offset > u8::MAX as usize {
+            let msg = "Loop body too large.";
+            return Err(ParseError::new(line, msg));
+        }
+
+        self.emit_byte(((offset >> 8) & 0xFF) as u8, line);
+        self.emit_byte((offset & 0xFF) as u8, line);
+        Ok(())
     }
 
     pub fn decrement_local_count(&mut self) {
         self.comps[self.current].local_count -= 1;
     }
 
-    pub fn add_constant(&mut self, value: StackValue) -> usize {
+    fn add_constant(&mut self, value: StackValue) -> usize {
         self.comps[self.current].func.chunk.add_constant(value)
     }
 
-    pub fn write_byte_to_chunk(&mut self, byte: u8, line: u32) {
+    fn write_byte_to_chunk(&mut self, byte: u8, line: u32) {
         self.comps[self.current]
             .func
             .chunk
@@ -82,11 +145,6 @@ impl<'a> FuncCompilerStack<'a> {
         self.current = self.comps.len() - 1;
     }
 
-    pub fn pop(&mut self) -> FuncCompiler {
-        self.current = 0;
-        self.comps.pop().unwrap()
-    }
-
     pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
         // TODO: shadowing doesn't remove the old var as of now
         for i in (0..self.current().local_count).rev() {
@@ -97,7 +155,7 @@ impl<'a> FuncCompilerStack<'a> {
         None
     }
 
-    pub fn should_remove_local(&self) -> bool {
+    fn should_remove_local(&self) -> bool {
         let depth = self.current().locals[self.current().local_count - 1].depth;
         self.current().local_count > 0 && depth > self.current().scope_depth
     }
