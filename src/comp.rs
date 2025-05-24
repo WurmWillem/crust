@@ -40,15 +40,25 @@ impl<'a> Comp<'a> {
     }
 
     fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) {
-        let clock = ObjNative::new("clock".to_string(), native_funcs::clock);
-        let (clock, _) = self.heap.alloc(clock, Object::Native);
-        let value = StackValue::Obj(clock);
-        self.funcs.insert("clock", value);
-        
-        let clock = ObjNative::new("print".to_string(), native_funcs::print);
-        let (clock, _) = self.heap.alloc(clock, Object::Native);
-        let value = StackValue::Obj(clock);
-        self.funcs.insert("print", value);
+        macro_rules! add_func {
+            ($name: expr, $func: ident) => {
+                let func = ObjNative::new($name.to_string(), native_funcs::$func);
+                let (func, _) = self.heap.alloc(func, Object::Native);
+                let value = StackValue::Obj(func);
+                self.funcs.insert($name, value);
+            };
+        }
+        add_func!("clock", clock); 
+        add_func!("print", print); 
+        add_func!("println", println); 
+        add_func!("sin", sin); 
+        add_func!("cos", cos); 
+        add_func!("sin", tan); 
+        add_func!("min", min); 
+        add_func!("max", max); 
+        add_func!("abs", abs); 
+        add_func!("sqrt", sqrt); 
+        add_func!("pow", pow); 
 
         for stmt in stmts {
             let line = stmt.line;
