@@ -114,15 +114,16 @@ impl<'a> Comp<'a> {
                 self.end_scope();
             }
             StmtType::If {
-                first_if,
                 final_else,
+                condition,
+                body,
             } => {
-                self.emit_expr(first_if.condition)?;
+                self.emit_expr(condition)?;
 
                 let if_false_jump = self.emit_jump(OpCode::JumpIfFalse, line);
 
                 self.emit_byte(OpCode::Pop as u8, line);
-                self.emit_stmt(first_if.block)?;
+                self.emit_stmt(*body)?;
 
                 let if_true_jump = self.emit_jump(OpCode::Jump, line);
 

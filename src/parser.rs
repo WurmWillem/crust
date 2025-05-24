@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     compiler_types::*,
     error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
-    parse_types::{BinaryOp, Expr, ExprType, If, Stmt, StmtType},
+    parse_types::{BinaryOp, Expr, ExprType, Stmt, StmtType},
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
@@ -286,9 +286,8 @@ impl<'a> Parser<'a> {
     fn if_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
         let line = self.previous().line;
 
-        let first_condition = self.expression()?;
-        let first_body = self.statement()?;
-        let first_if = Box::new(If::new(first_condition, first_body));
+        let condition = self.expression()?;
+        let body = Box::new(self.statement()?);
 
         let mut final_else = None;
         if self.matches(TokenType::Else) {
@@ -296,7 +295,8 @@ impl<'a> Parser<'a> {
         }
 
         let ty = StmtType::If {
-            first_if,
+            condition,
+            body,
             final_else,
         };
         Ok(Stmt::new(ty, line))

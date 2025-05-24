@@ -92,11 +92,10 @@ pub enum StmtType<'a> {
     },
     Println(Expr<'a>),
     Return(Expr<'a>),
-    // TODO: maybe make this an expression
     Block(Vec<Stmt<'a>>),
-    // rethink naming, boxing, and if "If" struct is necessary
     If {
-        first_if: Box<If<'a>>,
+        condition: Expr<'a>,
+        body: Box<Stmt<'a>>,
         final_else: Option<Box<Stmt<'a>>>,
     },
     While {
@@ -114,17 +113,6 @@ pub enum StmtType<'a> {
         body: Box<Stmt<'a>>,
         return_ty: ValueType,
     },
-}
-
-#[derive(Debug, Clone)]
-pub struct If<'a> {
-    pub condition: Expr<'a>,
-    pub block: Stmt<'a>,
-}
-impl<'a> If<'a> {
-    pub fn new(condition: Expr<'a>, block: Stmt<'a>) -> If<'a> {
-        If { condition, block }
-    }
 }
 
 #[derive(Debug, Clone)]
