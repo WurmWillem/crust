@@ -50,9 +50,8 @@ fn main() {
     }
 
     let statements = parser::Parser::compile(tokens);
-    let (funcs, comps) = collect_type_data::collect(&statements);
     // dbg!(&statements);
-    if let Some((func, heap)) = Comp::compile(statements, funcs, comps) {
+    if let Some((func, heap)) = Comp::compile(statements) {
         let funcs = [StackValue::Null; 64];
         vm::VM::interpret(func, heap, funcs);
     } else {

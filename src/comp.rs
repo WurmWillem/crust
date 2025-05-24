@@ -14,22 +14,19 @@ use crate::{
 pub struct Comp<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
-    funcs: HashMap<&'a str, FuncData<'a>>, // decl_types: DeclaredTypes<'token>,
+    funcs: HashMap<&'a str, u8>,
 }
 impl<'a> Comp<'a> {
-    fn new(funcs: HashMap<&'a str, FuncData<'a>>, comps: FuncCompilerStack<'a>) -> Self {
+    fn new() -> Self {
         Self {
             heap: Heap::new(),
-            comps,
-            funcs,
+            comps: FuncCompilerStack::new(),
+            funcs: HashMap::new(),
         }
     }
-    pub fn compile(
-        stmts: Vec<Stmt>,
-        funcs: HashMap<&'a str, FuncData>,
-        comps: FuncCompilerStack<'a>,
-    ) -> Option<(ObjFunc, Heap)> {
-        let mut comp = Comp::new(funcs, comps);
+    pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
+        let mut comp = Comp::new();
+        comp.collect_type_data(&stmts);
 
         for stmt in stmts {
             if let Err(err) = comp.emit_stmt(stmt) {
@@ -43,7 +40,39 @@ impl<'a> Comp<'a> {
         // None
     }
 
-    pub fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {
+    pub fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) {
+        for stmt in stmts {
+            let line = stmt.line;
+            if let StmtType::Func {
+                name,
+                parameters,
+                body,
+                return_ty,
+            } = &stmt.stmt
+            {
+                let body = body.clone();
+                self.comps.push(name.to_string(), *return_ty);
+                self.comps.increment_scope_depth();
+                for (ty, name) in parameters {
+                    self.comps.add_local(name, *ty, line).unwrap();
+                }
+
+                self.emit_stmt(*body).unwrap();
+
+                self.emit_return(line);
+
+                let func = self.end_compiler(line);
+                let (func_object, _) = self.heap.alloc(func, Object::Func);
+
+                let value = StackValue::Obj(func_object);
+                let constant = self.make_constant(value, line).unwrap();
+                dbg!("func");
+                self.funcs.insert(*name, constant);
+            }
+        }
+    }
+
+    fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {
         let line = stmt.line;
         match stmt.stmt {
             StmtType::Expr(expr) => {
@@ -150,7 +179,7 @@ impl<'a> Comp<'a> {
         add func to hashmap<Name, FuncDecl> in first pass
     */
 
-    pub fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
+    fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         let line = expr.line;
         match expr.expr {
             ExprType::Lit(lit) => match lit {
@@ -201,25 +230,27 @@ impl<'a> Comp<'a> {
                 self.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
-                let func_data = self.funcs.get(name).unwrap();
-                let body = func_data.body.clone();
-                let return_ty = func_data.return_ty;
-                self.comps.push(name.to_string(), return_ty);
-                self.comps.increment_scope_depth();
-
+                let func_const = *self.funcs.get(name).unwrap();
+                self.emit_bytes(OpCode::Constant as u8, func_const, line);
+                //let func_data = self.funcs.get(name).unwrap();
+                //let body = func_data.body.clone();
+                //let return_ty = func_data.return_ty;
+                //self.comps.push(name.to_string(), return_ty);
+                //self.comps.increment_scope_depth();
                 //
-                // WARN: cloning
-                for (ty, name) in func_data.parameters.clone() {
-                    self.comps.add_local(name, ty, line)?;
-                }
-                for var in args.clone() {
-                    self.emit_expr(var)?;
-                }
-
-                self.emit_stmt(body)?;
-                self.emit_return(line);
-                // // not sure if this is necessary
-                self.end_scope();
+                ////
+                //// WARN: cloning
+                //for (ty, name) in func_data.parameters.clone() {
+                //    self.comps.add_local(name, ty, line)?;
+                //}
+                //for var in args.clone() {
+                //    self.emit_expr(var)?;
+                //}
+                //
+                //self.emit_stmt(body)?;
+                //self.emit_return(line);
+                //// // not sure if this is necessary
+                //self.end_scope();
             }
         };
         Ok(())

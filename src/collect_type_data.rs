@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::{
-    func_compiler::FuncCompilerStack, parse_types::{Stmt, StmtType}, value::ValueType
+    func_compiler::FuncCompilerStack,
+    parse_types::{Stmt, StmtType},
+    value::ValueType,
 };
 
 pub struct FuncData<'a> {
@@ -27,24 +29,3 @@ impl<'a> FuncData<'a> {
     }
 }
 
-pub fn collect<'a>(stmts: &Vec<Stmt<'a>>) -> (HashMap<&'a str, FuncData<'a>>, FuncCompilerStack<'a>) {
-    let mut func_data = HashMap::new();
-    let mut comps = FuncCompilerStack::new();
-
-    for stmt in stmts {
-        if let StmtType::Func {
-            name,
-            parameters,
-            body,
-            return_ty,
-        } = &stmt.stmt
-        {
-            let body = (**body).clone();
-            let data = FuncData::new(name, parameters.clone(), body, *return_ty);
-            func_data.insert(*name, data);
-
-            //comps.add_local(name, ValueType::None, stmt.line).unwrap();
-        }
-    }
-    (func_data, comps)
-}
