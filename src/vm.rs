@@ -66,51 +66,6 @@ impl VM {
         unsafe { vm.run() }
     }
 
-    #[inline(always)]
-    fn stack_push(&mut self, value: StackValue) {
-        unsafe {
-            *self.stack.get_unchecked_mut(self.stack_top) = value;
-            self.stack_top += 1;
-        }
-    }
-
-    #[inline(always)]
-    fn stack_pop(&mut self) -> StackValue {
-        unsafe {
-            self.stack_top -= 1;
-            self.stack.as_ptr().add(self.stack_top).read()
-        }
-    }
-
-    #[inline(always)]
-    fn pop_no_return(&mut self) {
-        self.stack_top -= 1;
-    }
-
-    #[inline(always)]
-    fn stack_peek(&mut self) -> StackValue {
-        unsafe { self.stack.as_ptr().add(self.stack_top - 1).read() }
-    }
-
-    #[inline(always)]
-    unsafe fn read_byte(&mut self, frame: *mut CallFrame) -> u8 {
-        // let mut ip = frame.ip;
-        let byte = *(*frame).ip;
-        (*frame).ip = (*frame).ip.add(1);
-        byte
-    }
-
-    #[inline(always)]
-    unsafe fn read_short(&mut self, frame: *mut CallFrame) -> u16 {
-        let ip = &mut (*frame).ip;
-        *ip = ip.add(2);
-
-        let high = *ip.offset(-2);
-        let low = *ip.offset(-1);
-
-        ((high as u16) << 8) | (low as u16)
-    }
-
     unsafe fn run(&mut self) -> InterpretResult {
         let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
 
@@ -127,8 +82,8 @@ impl VM {
                 }};
             }
 
-            let opcode = std::mem::transmute::<u8, OpCode>(self.read_byte(frame));
-            match opcode {
+            let op_code = std::mem::transmute::<u8, OpCode>(self.read_byte(frame));
+            match op_code {
                 OpCode::Return => {
                     let result = self.stack_pop();
 
@@ -191,15 +146,9 @@ impl VM {
                     self.stack_push(value);
                 }
 
-                OpCode::True => {
-                    self.stack_push(StackValue::Bool(true));
-                }
-                OpCode::False => {
-                    self.stack_push(StackValue::Bool(false));
-                }
-                OpCode::Null => {
-                    self.stack_push(StackValue::Null);
-                }
+                OpCode::True => self.stack_push(StackValue::Bool(true)),
+                OpCode::False => self.stack_push(StackValue::Bool(false)),
+                OpCode::Null => self.stack_push(StackValue::Null),
 
                 OpCode::Negate => {
                     let new_value = -self.stack_pop();
@@ -256,6 +205,51 @@ impl VM {
             // break InterpretResult::Ok;
         }
         // InterpretResult::RuntimeError
+    }
+
+    #[inline(always)]
+    fn stack_push(&mut self, value: StackValue) {
+        unsafe {
+            *self.stack.get_unchecked_mut(self.stack_top) = value;
+            self.stack_top += 1;
+        }
+    }
+
+    #[inline(always)]
+    fn stack_pop(&mut self) -> StackValue {
+        unsafe {
+            self.stack_top -= 1;
+            self.stack.as_ptr().add(self.stack_top).read()
+        }
+    }
+
+    #[inline(always)]
+    fn pop_no_return(&mut self) {
+        self.stack_top -= 1;
+    }
+
+    #[inline(always)]
+    fn stack_peek(&mut self) -> StackValue {
+        unsafe { self.stack.as_ptr().add(self.stack_top - 1).read() }
+    }
+
+    #[inline(always)]
+    unsafe fn read_byte(&mut self, frame: *mut CallFrame) -> u8 {
+        // let mut ip = frame.ip;
+        let byte = *(*frame).ip;
+        (*frame).ip = (*frame).ip.add(1);
+        byte
+    }
+
+    #[inline(always)]
+    unsafe fn read_short(&mut self, frame: *mut CallFrame) -> u16 {
+        let ip = &mut (*frame).ip;
+        *ip = ip.add(2);
+
+        let high = *ip.offset(-2);
+        let low = *ip.offset(-1);
+
+        ((high as u16) << 8) | (low as u16)
     }
 
     unsafe fn call(&mut self, frame: *mut CallFrame) {

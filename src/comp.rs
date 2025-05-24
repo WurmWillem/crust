@@ -162,6 +162,10 @@ impl<'a> Comp<'a> {
                 body: _,
                 return_ty: _,
             } => {}
+            StmtType::Return(value) => {
+                self.emit_expr(value)?;
+                self.emit_byte(OpCode::Return as u8, line);
+            }
         }
         Ok(())
     }
@@ -217,7 +221,6 @@ impl<'a> Comp<'a> {
                 self.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
-                dbg!(&self.funcs);
                 let fn_ptr = *self.funcs.get(name).unwrap();
                 self.emit_constant(fn_ptr, line)?;
 

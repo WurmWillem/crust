@@ -91,6 +91,7 @@ pub enum StmtType<'a> {
         ty: ValueType,
     },
     Println(Expr<'a>),
+    Return(Expr<'a>),
     // TODO: maybe make this an expression
     Block(Vec<Stmt<'a>>),
     // rethink naming, boxing, and if "If" struct is necessary

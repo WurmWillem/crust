@@ -7,12 +7,12 @@ use value::StackValue;
 use colored::Colorize;
 
 mod chunk;
+mod collect_type_data;
 mod comp;
 mod compiler;
 mod compiler_types;
 mod declared_func;
 mod error;
-mod collect_type_data;
 mod func_compiler;
 mod native_funcs;
 mod object;
@@ -49,7 +49,16 @@ fn main() {
         println!();
     }
 
-    let statements = parser::Parser::compile(tokens);
+    let statements = match parser::Parser::compile(tokens) {
+        Some(statements) => statements,
+        None => {
+            println!(
+                "{}",
+                "Compile error(s) detected, terminating program.".purple()
+            );
+            return;
+        }
+    };
     // dbg!(&statements);
     if let Some((func, heap)) = Comp::compile(statements) {
         let funcs = [StackValue::Null; 64];

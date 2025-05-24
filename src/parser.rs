@@ -13,7 +13,7 @@ pub struct Parser<'token> {
     current_token: usize,
 }
 impl<'a> Parser<'a> {
-    pub fn compile(tokens: Vec<Token<'a>>) -> Vec<Stmt<'a>> {
+    pub fn compile(tokens: Vec<Token<'a>>) -> Option<Vec<Stmt<'a>>> {
         let mut parser = Parser {
             tokens,
             current_token: 0,
@@ -35,16 +35,13 @@ impl<'a> Parser<'a> {
         parser.current_token += 1;
 
         if had_error {
-            panic!(
-                "{}",
-                "Compile error(s) detected, terminating program.".purple()
-            );
+            return None;
         }
 
         if parser.current_token != parser.tokens.len() {
             println!("{}", "Not all tokens were parsed.".red());
         }
-        statements
+        Some(statements)
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseError> {
@@ -224,13 +221,19 @@ impl<'a> Parser<'a> {
             self.while_stmt()
         } else if self.matches(TokenType::For) {
             self.for_stmt()
+        } else if self.matches(TokenType::Return) {
+            self.return_statement()
         } else {
             self.expr_stmt()
         }
     }
 
     fn return_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
-        todo!()
+        let expr = self.expression()?;
+        let stmt_ty = StmtType::Return(expr);
+        let stmt = Stmt::new(stmt_ty, self.previous().line);
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+        Ok(stmt)
     }
 
     fn for_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
@@ -417,7 +420,6 @@ impl<'a> Parser<'a> {
             }
         }
         self.consume(TokenType::RightParen, "Expected ')' after function call.")?;
-        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
 
         if let ExprType::Var(name) = name.expr {
             let ty = ExprType::Call { name, args };
