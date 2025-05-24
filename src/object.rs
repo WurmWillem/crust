@@ -90,11 +90,11 @@ impl<T> ops::Deref for Gc<T> {
         unsafe { self.ptr.as_ref() }
     }
 }
-// impl<T> ops::DerefMut for Gc<T> {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         unsafe { self.ptr.as_mut() }
-//     }
-// }
+ impl<T> ops::DerefMut for Gc<T> {
+     fn deref_mut(&mut self) -> &mut Self::Target {
+         unsafe { self.ptr.as_mut() }
+     }
+ }
 
 #[derive(Debug)]
 pub struct GcData<T> {
@@ -115,14 +115,14 @@ pub enum Object {
 pub struct ObjFunc {
     pub chunk: Chunk,
     name: String,
-    pub return_type: ValueType,
+    pub return_ty: ValueType,
 }
 impl ObjFunc {
-    pub fn new(name: String, return_type: ValueType) -> Self {
+    pub fn new(name: String, return_ty: ValueType) -> Self {
         Self {
             chunk: Chunk::new(),
             name,
-            return_type,
+            return_ty,
         }
     }
     pub fn get_name(&self) -> &String {

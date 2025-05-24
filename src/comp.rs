@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
     error::{print_error, ParseError},
@@ -38,7 +38,7 @@ impl<'a> Comp<'a> {
         Some((func, comp.heap))
     }
 
-    pub fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) {
+    fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) {
         for stmt in stmts {
             let line = stmt.line;
             if let StmtType::Func {
@@ -48,22 +48,24 @@ impl<'a> Comp<'a> {
                 return_ty,
             } = &stmt.stmt
             {
-                let body = body.clone();
+                let dummy = ObjFunc::new(name.to_string(), *return_ty);
+                let (mut func_obj, _) = self.heap.alloc(dummy, Object::Func);
+                self.funcs.insert(*name, StackValue::Obj(func_obj));
+
                 self.comps.push(name.to_string(), *return_ty);
                 self.comps.increment_scope_depth();
                 for (ty, name) in parameters {
                     self.comps.add_local(name, *ty, line).unwrap();
                 }
 
-                self.emit_stmt(*body).unwrap();
+                self.emit_stmt(*body.clone()).unwrap();
 
                 self.emit_return(line);
 
-                let func = self.end_compiler(line);
-                let (func_object, _) = self.heap.alloc(func, Object::Func);
-
-                let value = StackValue::Obj(func_object);
-                self.funcs.insert(*name, value);
+                let compiled_func = self.end_compiler(line);
+                if let Object::Func(ref mut func) = func_obj.borrow_mut() {
+                   func.data = compiled_func; 
+                }
             }
         }
     }
@@ -155,23 +157,14 @@ impl<'a> Comp<'a> {
                 self.comps.decrement_local_count();
             }
             StmtType::Func {
-                name,
-                parameters,
-                body,
-                return_ty,
+                name: _,
+                parameters: _,
+                body: _,
+                return_ty: _,
             } => {}
         }
         Ok(())
     }
-
-    /*
-        expression callable with name
-
-        function decl stmt
-        later gets pushed as local
-
-        add func to hashmap<Name, FuncDecl> in first pass
-    */
 
     fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
         let line = expr.line;
@@ -224,6 +217,7 @@ impl<'a> Comp<'a> {
                 self.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
+                dbg!(&self.funcs);
                 let fn_ptr = *self.funcs.get(name).unwrap();
                 self.emit_constant(fn_ptr, line)?;
 

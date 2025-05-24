@@ -19,7 +19,7 @@ impl<'a> FuncCompilerStack<'a> {
     }
 
     pub fn get_return_type(&self) -> ValueType {
-        self.current().func.return_type
+        self.current().func.return_ty
     }
 
     pub fn increment_scope_depth(&mut self) {
@@ -53,12 +53,7 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].local_count
     }
 
-    pub fn add_local(
-        &mut self,
-        name: &'a str,
-        ty: ValueType,
-        line: u32,
-    ) -> Result<(), ParseError> {
+    pub fn add_local(&mut self, name: &'a str, ty: ValueType, line: u32) -> Result<(), ParseError> {
         if self.current().local_count == MAX_LOCAL_AMT {
             let msg = "Too many local variables in function.";
             return Err(ParseError::new(line, msg));
@@ -155,7 +150,7 @@ impl<'a> FuncCompiler<'a> {
         self.func
     }
 
-    pub fn patch_return_type(&mut self, return_type: ValueType) {
-        self.func.return_type = return_type;
+    pub fn patch_return_type(&mut self, return_ty: ValueType) {
+        self.func.return_ty = return_ty;
     }
 }
