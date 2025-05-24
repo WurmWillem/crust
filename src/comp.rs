@@ -1,27 +1,31 @@
+use std::collections::HashMap;
+
 use crate::{
+    collect_type_data::FuncData,
     error::{print_error, ParseError},
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
     opcode::OpCode,
     parse_types::{Expr, ExprType, Stmt, StmtType},
     token::{Literal, TokenType},
-    value::{StackValue, ValueType},
+    value::StackValue,
 };
 
 pub struct Comp<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
-    // decl_types: DeclaredTypes<'token>,
+    funcs: HashMap<&'a str, FuncData<'a>>, // decl_types: DeclaredTypes<'token>,
 }
 impl<'a> Comp<'a> {
-    fn new() -> Self {
+    fn new(funcs: HashMap<&'a str, FuncData<'a>>, comps: FuncCompilerStack<'a>) -> Self {
         Self {
             heap: Heap::new(),
-            comps: FuncCompilerStack::new(),
+            comps,
+            funcs,
         }
     }
-    pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
-        let mut comp = Comp::new();
+    pub fn compile(stmts: Vec<Stmt>, funcs: HashMap<&'a str, FuncData>, comps: FuncCompilerStack<'a>) -> Option<(ObjFunc, Heap)> {
+        let mut comp = Comp::new(funcs, comps);
 
         for stmt in stmts {
             if let Err(err) = comp.emit_stmt(stmt) {
@@ -128,20 +132,6 @@ impl<'a> Comp<'a> {
                 body,
                 return_ty,
             } => {
-                // should this actually be None?
-                // self.comps.add_local(name, ValueType::None, line)?;
-                // self.comps.push(name.to_string(), return_ty);
-                // self.comps.patch_return_type(return_ty);
-                // self.begin_scope();
-                //
-                // for (ty, name) in parameters {
-                //     self.comps.add_local(name, ty, line)?;
-                // }
-                //
-                // self.emit_stmt(*body)?;
-                // self.emit_return(line);
-                // // not sure if this is necessary
-                // self.end_scope();
             }
         }
         Ok(())
@@ -150,9 +140,9 @@ impl<'a> Comp<'a> {
     /*
         expression callable with name
 
-        function decl stmt 
+        function decl stmt
         later gets pushed as local
-        
+
         add func to hashmap<Name, FuncDecl> in first pass
     */
 
@@ -206,7 +196,28 @@ impl<'a> Comp<'a> {
                 let op_code = op.to_op_code();
                 self.emit_byte(op_code as u8, line);
             }
-            ExprType::Call { name, args } => todo!(),
+            ExprType::Call { name, args } => {
+                let func_data = self.funcs.get(name).unwrap();
+                let body = func_data.body.clone();
+                let return_ty = func_data.return_ty;
+                self.comps.push(name.to_string(), return_ty);
+                self.comps.patch_return_type(return_ty);
+                self.comps.increment_scope_depth();
+
+                //
+                // WARN: cloning
+                for (ty, name) in func_data.parameters.clone() {
+                    self.comps.add_local(name, ty, line)?;
+                }
+                for var in args.clone() {
+                    self.emit_expr(var)?;
+                }
+
+                self.emit_stmt(body)?;
+                // self.emit_return(line);
+                // // not sure if this is necessary
+                // self.end_scope();
+            }
         };
         Ok(())
     }
