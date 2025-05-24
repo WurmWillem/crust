@@ -24,7 +24,11 @@ impl<'a> Comp<'a> {
             funcs,
         }
     }
-    pub fn compile(stmts: Vec<Stmt>, funcs: HashMap<&'a str, FuncData>, comps: FuncCompilerStack<'a>) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(
+        stmts: Vec<Stmt>,
+        funcs: HashMap<&'a str, FuncData>,
+        comps: FuncCompilerStack<'a>,
+    ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Comp::new(funcs, comps);
 
         for stmt in stmts {
@@ -47,6 +51,7 @@ impl<'a> Comp<'a> {
                 self.emit_byte(OpCode::Pop as u8, line);
             }
             StmtType::Println(expr) => {
+                dbg!("print");
                 // expr.lin
                 self.emit_expr(expr)?;
                 self.emit_byte(OpCode::Print as u8, line);
@@ -131,8 +136,7 @@ impl<'a> Comp<'a> {
                 parameters,
                 body,
                 return_ty,
-            } => {
-            }
+            } => {}
         }
         Ok(())
     }
@@ -201,7 +205,6 @@ impl<'a> Comp<'a> {
                 let body = func_data.body.clone();
                 let return_ty = func_data.return_ty;
                 self.comps.push(name.to_string(), return_ty);
-                self.comps.patch_return_type(return_ty);
                 self.comps.increment_scope_depth();
 
                 //
@@ -214,9 +217,9 @@ impl<'a> Comp<'a> {
                 }
 
                 self.emit_stmt(body)?;
-                // self.emit_return(line);
+                self.emit_return(line);
                 // // not sure if this is necessary
-                // self.end_scope();
+                self.end_scope();
             }
         };
         Ok(())
@@ -229,6 +232,11 @@ impl<'a> Comp<'a> {
 
     fn end_scope(&mut self) {
         self.comps.decrement_scope_depth();
+
+        while self.comps.should_remove_local() {
+            self.emit_byte(OpCode::Pop as u8, 69);
+            self.comps.decrement_local_count()
+        }
     }
 
     fn end_compiler(&mut self, line: u32) -> ObjFunc {

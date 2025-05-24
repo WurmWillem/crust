@@ -31,8 +31,6 @@ pub fn collect<'a>(stmts: &Vec<Stmt<'a>>) -> (HashMap<&'a str, FuncData<'a>>, Fu
     let mut func_data = HashMap::new();
     let mut comps = FuncCompilerStack::new();
 
-    // pretty sure you should add local here as well
-
     for stmt in stmts {
         if let StmtType::Func {
             name,
@@ -45,8 +43,7 @@ pub fn collect<'a>(stmts: &Vec<Stmt<'a>>) -> (HashMap<&'a str, FuncData<'a>>, Fu
             let data = FuncData::new(name, parameters.clone(), body, *return_ty);
             func_data.insert(*name, data);
 
-            
-            comps.add_local(name, ValueType::None, stmt.line);
+            //comps.add_local(name, ValueType::None, stmt.line).unwrap();
         }
     }
     (func_data, comps)

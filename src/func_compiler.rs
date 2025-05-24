@@ -4,6 +4,7 @@ use crate::{
     value::{StackValue, ValueType},
 };
 
+#[derive(Debug)]
 pub struct FuncCompilerStack<'a> {
     comps: Vec<FuncCompiler<'a>>,
     current: usize,
@@ -132,6 +133,7 @@ impl<'a> Local<'a> {
 }
 
 const MAX_LOCAL_AMT: usize = u8::MAX as usize;
+#[derive(Debug)]
 pub struct FuncCompiler<'a> {
     locals: [Local<'a>; MAX_LOCAL_AMT],
     local_count: usize,
