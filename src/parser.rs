@@ -229,10 +229,17 @@ impl<'a> Parser<'a> {
     }
 
     fn return_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
-        let expr = self.expression()?;
-        let stmt_ty = StmtType::Return(expr);
-        let stmt = Stmt::new(stmt_ty, self.previous().line);
+        let value_ty = ExprType::Lit(Literal::Null);
+        let mut value = Expr::new(value_ty, self.previous().line);
+
+        if !self.check(TokenType::Semicolon) {
+            value = self.expression()?;
+        }
+
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+
+        let stmt_ty = StmtType::Return(value);
+        let stmt = Stmt::new(stmt_ty, self.previous().line);
         Ok(stmt)
     }
 
