@@ -8,6 +8,7 @@ print("end");
 fn add(int a, int b): int {
   pr a + b;
 }
+
 fn print(str msg) {
   pr msg;
 }

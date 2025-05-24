@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::{
-    collect_type_data::FuncData,
     error::{print_error, ParseError},
     func_compiler::FuncCompilerStack,
     object::{Heap, ObjFunc, Object},
@@ -14,7 +13,7 @@ use crate::{
 pub struct Comp<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
-    funcs: HashMap<&'a str, u8>,
+    funcs: HashMap<&'a str, StackValue>,
 }
 impl<'a> Comp<'a> {
     fn new() -> Self {
@@ -37,7 +36,6 @@ impl<'a> Comp<'a> {
 
         let func = comp.end_compiler(69);
         Some((func, comp.heap))
-        // None
     }
 
     pub fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) {
@@ -65,8 +63,7 @@ impl<'a> Comp<'a> {
                 let (func_object, _) = self.heap.alloc(func, Object::Func);
 
                 let value = StackValue::Obj(func_object);
-                let constant = self.make_constant(value, line).unwrap();
-                self.funcs.insert(*name, constant);
+                self.funcs.insert(*name, value);
             }
         }
     }
@@ -227,8 +224,9 @@ impl<'a> Comp<'a> {
                 self.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
-                let func_const = *self.funcs.get(name).unwrap();
-                self.emit_bytes(OpCode::Constant as u8, func_const, line);
+                let fn_ptr = *self.funcs.get(name).unwrap();
+                self.emit_constant(fn_ptr, line)?;
+
                 for var in args.clone() {
                     self.emit_expr(var)?;
                 }
