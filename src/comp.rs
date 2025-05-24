@@ -66,7 +66,6 @@ impl<'a> Comp<'a> {
 
                 let value = StackValue::Obj(func_object);
                 let constant = self.make_constant(value, line).unwrap();
-                dbg!("func");
                 self.funcs.insert(*name, constant);
             }
         }
@@ -80,8 +79,6 @@ impl<'a> Comp<'a> {
                 self.emit_byte(OpCode::Pop as u8, line);
             }
             StmtType::Println(expr) => {
-                dbg!("print");
-                // expr.lin
                 self.emit_expr(expr)?;
                 self.emit_byte(OpCode::Print as u8, line);
             }
@@ -232,25 +229,10 @@ impl<'a> Comp<'a> {
             ExprType::Call { name, args } => {
                 let func_const = *self.funcs.get(name).unwrap();
                 self.emit_bytes(OpCode::Constant as u8, func_const, line);
-                //let func_data = self.funcs.get(name).unwrap();
-                //let body = func_data.body.clone();
-                //let return_ty = func_data.return_ty;
-                //self.comps.push(name.to_string(), return_ty);
-                //self.comps.increment_scope_depth();
-                //
-                ////
-                //// WARN: cloning
-                //for (ty, name) in func_data.parameters.clone() {
-                //    self.comps.add_local(name, ty, line)?;
-                //}
-                //for var in args.clone() {
-                //    self.emit_expr(var)?;
-                //}
-                //
-                //self.emit_stmt(body)?;
-                //self.emit_return(line);
-                //// // not sure if this is necessary
-                //self.end_scope();
+                for var in args.clone() {
+                    self.emit_expr(var)?;
+                }
+                self.emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
             }
         };
         Ok(())
