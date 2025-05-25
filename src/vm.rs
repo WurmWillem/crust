@@ -15,7 +15,7 @@ pub enum InterpretResult {
 const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 64;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 struct CallFrame {
     func: Gc<ObjFunc>,
@@ -24,7 +24,7 @@ struct CallFrame {
 }
 
 pub struct VM {
-    frames: [MaybeUninit<CallFrame>; FRAMES_SIZE],
+    frames: [CallFrame; FRAMES_SIZE],
     frame_count: usize,
     stack: [StackValue; STACK_SIZE],
     stack_top: usize,
@@ -33,10 +33,13 @@ pub struct VM {
 impl VM {
     pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
         let (func_object, gc_obj) = heap.alloc(func, Object::Func);
-        let frames: [MaybeUninit<CallFrame>; FRAMES_SIZE];
-        unsafe {
-            frames = MaybeUninit::uninit().assume_init();
-        }
+
+        let frame = CallFrame {
+            ip: gc_obj.data.chunk.get_ptr(),
+            slots: 0,
+            func: gc_obj,
+        };
+        let frames = [frame; FRAMES_SIZE];
 
         let mut vm = Self {
             heap,
@@ -46,21 +49,15 @@ impl VM {
             stack_top: 0,
         };
 
-        let frame = CallFrame {
-            ip: gc_obj.data.chunk.get_ptr(),
-            slots: 0,
-            func: gc_obj,
-        };
-
-        unsafe { vm.frames[0].as_mut_ptr().write(frame) }
-
         vm.stack_push(StackValue::Obj(func_object));
 
         unsafe { vm.run() }
     }
 
     unsafe fn run(&mut self) -> InterpretResult {
-        let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
+        //let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
+        //let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
+        let mut frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
 
         loop {
             if DEBUG_TRACE_EXECUTION {
@@ -98,7 +95,7 @@ impl VM {
 
                 OpCode::Call => {
                     self.call(frame);
-                    frame = self.frames[self.frame_count - 1].assume_init_mut();
+                    frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                 }
 
                 OpCode::Return => {
@@ -112,7 +109,7 @@ impl VM {
 
                     self.stack_top = (*frame).slots;
                     self.stack_push(result);
-                    frame = self.frames[self.frame_count - 1].assume_init_mut();
+                    frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                 }
 
                 OpCode::Jump => {
@@ -133,7 +130,6 @@ impl VM {
                 OpCode::True => self.stack_push(StackValue::Bool(true)),
                 OpCode::False => self.stack_push(StackValue::Bool(false)),
                 OpCode::Null => self.stack_push(StackValue::Null),
-
 
                 OpCode::Negate => {
                     let new_value = -self.stack_pop();
@@ -193,6 +189,40 @@ impl VM {
         }
     }
 
+    unsafe fn call(&mut self, frame: *mut CallFrame) {
+        let arg_count = self.read_byte(frame) as usize;
+        let slots = self.stack_top - arg_count;
+        let value = self.stack[slots];
+
+        if let StackValue::Obj(obj) = value {
+            match obj {
+                Object::Func(func) => {
+                    let frame = CallFrame {
+                        ip: func.data.chunk.get_ptr(),
+                        slots,
+                        func,
+                    };
+
+                    unsafe { self.frames.as_mut_ptr().add(self.frame_count).write(frame) }
+                    self.frame_count += 1;
+                    //*frameee = self.frames[self.frame_count - 1].assume_init_mut();
+                }
+                Object::Native(func) => {
+                    let args_ptr = self.stack.as_ptr().add(slots + 1);
+                    let args = std::slice::from_raw_parts(args_ptr, arg_count);
+
+                    let value = (func.data.func)(args);
+
+                    self.stack_top = slots;
+                    self.stack_push(value);
+                }
+                _ => unreachable!(),
+            }
+        } else {
+            unreachable!()
+        }
+    }
+
     #[inline(always)]
     fn stack_push(&mut self, value: StackValue) {
         unsafe {
@@ -236,40 +266,6 @@ impl VM {
         let low = *ip.offset(-1);
 
         ((high as u16) << 8) | (low as u16)
-    }
-
-    unsafe fn call(&mut self, frame: *mut CallFrame) {
-        let arg_count = self.read_byte(frame) as usize;
-        let slots = self.stack_top - arg_count;
-        let value = self.stack[slots];
-
-        if let StackValue::Obj(obj) = value {
-            match obj {
-                Object::Func(func) => {
-                    let frame = CallFrame {
-                        ip: func.data.chunk.get_ptr(),
-                        slots,
-                        func,
-                    };
-
-                    unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
-                    self.frame_count += 1;
-                    //*frameee = self.frames[self.frame_count - 1].assume_init_mut();
-                }
-                Object::Native(func) => {
-                    let args_ptr = self.stack.as_ptr().add(slots + 1);
-                    let args = std::slice::from_raw_parts(args_ptr, arg_count);
-
-                    let value = (func.data.func)(args);
-
-                    self.stack_top = slots;
-                    self.stack_push(value);
-                }
-                _ => unreachable!(),
-            }
-        } else {
-            unreachable!()
-        }
     }
 
     unsafe fn debug_trace(&self, frame: *mut CallFrame) {
