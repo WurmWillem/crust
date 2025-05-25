@@ -1,5 +1,5 @@
 
-pr fib(35);
+pr fib(40);
 //pr clock();
 
 fn fib(int n): int {

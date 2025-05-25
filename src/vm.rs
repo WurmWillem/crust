@@ -77,6 +77,30 @@ impl VM {
 
             let op_code = std::mem::transmute::<u8, OpCode>(self.read_byte(frame));
             match op_code {
+                OpCode::Pop => {
+                    self.pop_no_return();
+                }
+                OpCode::Constant => {
+                    let index = self.read_byte(frame) as usize;
+                    let constant = (*frame).func.data.chunk.constants[index];
+                    self.stack_push(constant);
+                }
+
+                OpCode::GetLocal => {
+                    let slot = self.read_byte(frame) as usize;
+                    let value = self.stack[(*frame).slots + slot];
+                    self.stack_push(value);
+                }
+                OpCode::SetLocal => {
+                    let slot = self.read_byte(frame) as usize;
+                    self.stack[(*frame).slots + slot] = self.stack_peek();
+                }
+
+                OpCode::Call => {
+                    self.call(frame);
+                    frame = self.frames[self.frame_count - 1].assume_init_mut();
+                }
+
                 OpCode::Return => {
                     let result = self.stack_pop();
 
@@ -89,14 +113,6 @@ impl VM {
                     self.stack_top = (*frame).slots;
                     self.stack_push(result);
                     frame = self.frames[self.frame_count - 1].assume_init_mut();
-                }
-                OpCode::Constant => {
-                    let index = self.read_byte(frame) as usize;
-                    let constant = (*frame).func.data.chunk.constants[index];
-                    self.stack_push(constant);
-                }
-                OpCode::Pop => {
-                    self.pop_no_return();
                 }
 
                 OpCode::Jump => {
@@ -114,29 +130,10 @@ impl VM {
                     (*frame).ip = (*frame).ip.sub(offset);
                 }
 
-                OpCode::Print => {
-                    let string = self.stack_pop().to_string().green();
-                    println!("{}", string);
-                }
-
-                OpCode::Call => {
-                    self.call(frame);
-                    frame = self.frames[self.frame_count - 1].assume_init_mut();
-                }
-
-                OpCode::GetLocal => {
-                    let slot = self.read_byte(frame) as usize;
-                    let value = self.stack[(*frame).slots + slot];
-                    self.stack_push(value);
-                }
-                OpCode::SetLocal => {
-                    let slot = self.read_byte(frame) as usize;
-                    self.stack[(*frame).slots + slot] = self.stack_peek();
-                }
-
                 OpCode::True => self.stack_push(StackValue::Bool(true)),
                 OpCode::False => self.stack_push(StackValue::Bool(false)),
                 OpCode::Null => self.stack_push(StackValue::Null),
+
 
                 OpCode::Negate => {
                     let new_value = -self.stack_pop();
@@ -188,6 +185,10 @@ impl VM {
                 OpCode::GreaterEqual => binary_op!(is_greater_equal_than),
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
+                OpCode::Print => {
+                    let string = self.stack_pop().to_string().green();
+                    println!("{}", string);
+                }
             }
         }
     }
