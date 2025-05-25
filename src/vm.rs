@@ -88,7 +88,7 @@ impl VM {
 
                     self.stack_top = (*frame).slots;
                     self.stack_push(result);
-                    // frame = self.frames[self.frame_count - 1].assume_init_mut();
+                    frame = self.frames[self.frame_count - 1].assume_init_mut();
                 }
                 OpCode::Constant => {
                     let index = self.read_byte(frame) as usize;
@@ -121,6 +121,7 @@ impl VM {
 
                 OpCode::Call => {
                     self.call(frame);
+                    frame = self.frames[self.frame_count - 1].assume_init_mut();
                 }
 
                 OpCode::GetLocal => {
@@ -188,10 +189,7 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
             }
-            frame = self.frames[self.frame_count - 1].assume_init_mut();
-            // break InterpretResult::Ok;
         }
-        // InterpretResult::RuntimeError
     }
 
     #[inline(always)]
@@ -255,6 +253,7 @@ impl VM {
 
                     unsafe { self.frames[self.frame_count].as_mut_ptr().write(frame) }
                     self.frame_count += 1;
+                    //*frameee = self.frames[self.frame_count - 1].assume_init_mut();
                 }
                 Object::Native(func) => {
                     let args_ptr = self.stack.as_ptr().add(slots + 1);

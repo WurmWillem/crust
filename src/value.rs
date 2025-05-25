@@ -41,7 +41,7 @@ macro_rules! add_num_operation {
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
-                _ => unreachable!("$fun_name is only available for numbers"),
+                _ => unreachable!("operation is only available for numbers"),
             }
         }
     };

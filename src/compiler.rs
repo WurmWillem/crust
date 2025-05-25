@@ -251,7 +251,8 @@ impl<'a> Compiler<'a> {
                 for var in args.clone() {
                     self.emit_expr(var)?;
                 }
-                self.comps.emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
+                self.comps
+                    .emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
             }
         };
         Ok(())
