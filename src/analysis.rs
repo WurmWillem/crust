@@ -2,11 +2,54 @@ use crate::{
     error::print_error,
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
-    parse_types::{BinaryOp, Operator},
+    parse_types::BinaryOp,
     statement::{Stmt, StmtType},
     token::TokenType,
     value::ValueType,
 };
+
+#[derive(Debug, Clone, Copy)]
+enum Operator {
+    // binary
+    Add,
+    Sub,
+    Mul,
+    Div,
+
+    Equal,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+
+    And,
+    Or,
+
+    //unary
+    Minus,
+    Bang,
+}
+impl core::fmt::Display for Operator {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            Operator::Add => write!(f, "+"),
+            Operator::Sub => write!(f, "-"),
+            Operator::Mul => write!(f, "*"),
+            Operator::Div => write!(f, "/"),
+            Operator::Equal => write!(f, "="),
+            Operator::NotEqual => write!(f, "=="),
+            Operator::Less => write!(f, "<"),
+            Operator::LessEqual => write!(f, "<="),
+            Operator::Greater => write!(f, ">"),
+            Operator::GreaterEqual => write!(f, ">="),
+            Operator::And => write!(f, "&&"),
+            Operator::Or => write!(f, "||"),
+            Operator::Minus => write!(f, "-"),
+            Operator::Bang => write!(f, "!"),
+        }
+    }
+}
 
 pub struct SemanticError {
     ty: ErrTy,
@@ -31,7 +74,7 @@ impl SemanticError {
             ErrTy::InvalidPrefix => format!("invalid prefix."),
             ErrTy::InvalidInfix => format!("invalid infix."),
             ErrTy::UndefinedVar(name) => {
-                format!("Variable '{}' has not been defined in this scope.", &name)
+                format!("Variable '{}' has not been defined in this scope.", name)
             }
             ErrTy::TooManyLocals => format!("invalid prefix bozo"),
             ErrTy::OpTypeMismatch(expected, op, found) => {

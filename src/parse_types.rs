@@ -1,6 +1,4 @@
-use core::fmt;
-
-use crate::{token::TokenType, OpCode};
+use crate::{analysis::Operator, token::TokenType, OpCode};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
@@ -118,49 +116,6 @@ pub const PARSE_RULES: [ParseRule; 45] = {
         none!(), // EOF
     ]
 };
-
-#[derive(Debug, Clone, Copy)]
-pub enum Operator {
-    // binary
-    Add,
-    Sub,
-    Mul,
-    Div,
-
-    Equal,
-    NotEqual,
-    Less,
-    LessEqual,
-    Greater,
-    GreaterEqual,
-
-    And,
-    Or,
-
-    //unary
-    Minus,
-    Bang,
-}
-impl fmt::Display for Operator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Operator::Add => write!(f, "+"),
-            Operator::Sub => write!(f, "-"),
-            Operator::Mul => write!(f, "*"),
-            Operator::Div => write!(f, "/"),
-            Operator::Equal => write!(f, "="),
-            Operator::NotEqual => write!(f, "=="),
-            Operator::Less => write!(f, "<"),
-            Operator::LessEqual => write!(f, "<="),
-            Operator::Greater => write!(f, ">"),
-            Operator::GreaterEqual => write!(f, ">="),
-            Operator::And => write!(f, "&&"),
-            Operator::Or => write!(f, "||"),
-            Operator::Minus => write!(f, "-"),
-            Operator::Bang => write!(f, "!"),
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy)]
 pub enum BinaryOp {
