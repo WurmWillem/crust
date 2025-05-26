@@ -55,8 +55,6 @@ impl VM {
     }
 
     unsafe fn run(&mut self) -> InterpretResult {
-        //let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
-        //let mut frame = self.frames[self.frame_count - 1].as_mut_ptr();
         let mut frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
 
         loop {

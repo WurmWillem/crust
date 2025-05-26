@@ -27,7 +27,11 @@ impl<'a> Compiler<'a> {
     }
     pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
         let mut comp = Compiler::new();
-        comp.collect_type_data(&stmts);
+        if let Err(err) = comp.collect_type_data(&stmts) {
+            print_error(err.line, &err.msg);
+
+            return None;
+        }
 
         for stmt in stmts {
             if let Err(err) = comp.emit_stmt(stmt) {
@@ -41,7 +45,7 @@ impl<'a> Compiler<'a> {
         Some((func, comp.heap))
     }
 
-    fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) {
+    fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) -> Result<(), ParseError> {
         macro_rules! add_func {
             ($name: expr, $func: ident) => {
                 let func = ObjNative::new($name.to_string(), native_funcs::$func);
@@ -78,19 +82,22 @@ impl<'a> Compiler<'a> {
                 self.comps.push(name.to_string(), *return_ty);
                 self.comps.begin_scope();
                 for (ty, name) in parameters {
-                    self.comps.add_local(name, *ty, line).unwrap();
+                    self.comps.add_local(name, *ty, line)?;
                 }
 
-                self.emit_stmt(*body.clone()).unwrap();
+                self.emit_stmt(*body.clone())?;
 
                 self.comps.emit_return(line);
 
                 let compiled_func = self.comps.end_compiler(line);
                 if let Object::Func(ref mut func) = func_obj.borrow_mut() {
                     func.data = compiled_func;
+                } else {
+                    unreachable!()
                 }
             }
         }
+        Ok(())
     }
 
     fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {

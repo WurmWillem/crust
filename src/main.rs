@@ -1,3 +1,4 @@
+use analysis::Analyser;
 use compiler::Compiler;
 use error::PRINT_SCAN_TOKENS;
 use op_code::OpCode;
@@ -6,6 +7,7 @@ use value::StackValue;
 
 use colored::Colorize;
 
+mod analysis;
 mod chunk;
 mod compiler;
 mod error;
@@ -57,6 +59,9 @@ fn main() {
             return;
         }
     };
+    if Analyser::analyse_stmts(&statements) {
+        return;
+    }
     // dbg!(&statements);
     if let Some((func, heap)) = Compiler::compile(statements) {
         vm::VM::interpret(func, heap);

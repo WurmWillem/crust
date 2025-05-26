@@ -1,6 +1,6 @@
 use crate::value::ValueType;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub enum Literal<'source> {
     None,
     Str(&'source str),
@@ -9,8 +9,19 @@ pub enum Literal<'source> {
     False,
     Null,
 }
+impl<'source> Literal<'source> {
+    pub fn as_value_type(self) -> ValueType {
+        match self {
+            Literal::None => unreachable!(),
+            Literal::Str(_) => ValueType::Str,
+            Literal::Num(_) => ValueType::Num,
+            Literal::True | Literal::False => ValueType::Bool,
+            Literal::Null => ValueType::Null,
+        }
+    }
+}
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct Token<'source> {
     pub kind: TokenType,
     pub lexeme: &'source str,
