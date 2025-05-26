@@ -18,15 +18,15 @@ pub struct Compiler<'a> {
     funcs: HashMap<&'a str, StackValue>,
 }
 impl<'a> Compiler<'a> {
-    fn new() -> Self {
+    fn new(comps: FuncCompilerStack<'a>) -> Self {
         Self {
             heap: Heap::new(),
-            comps: FuncCompilerStack::new(),
+            comps,
             funcs: HashMap::new(),
         }
     }
-    pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
-        let mut comp = Compiler::new();
+    pub fn compile(stmts: Vec<Stmt>, comps: FuncCompilerStack) -> Option<(ObjFunc, Heap)> {
+        let mut comp = Compiler::new(comps);
         if let Err(err) = comp.collect_type_data(&stmts) {
             print_error(err.line, &err.msg);
 

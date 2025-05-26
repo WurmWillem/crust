@@ -1,6 +1,7 @@
 use crate::{
     error::print_error,
     expression::{Expr, ExprType},
+    func_compiler::FuncCompilerStack,
     parse_types::{BinaryOp, Operator},
     statement::{Stmt, StmtType},
     token::TokenType,
@@ -44,20 +45,24 @@ impl SemanticError {
     }
 }
 
-pub struct Analyser {}
-impl Analyser {
+pub struct Analyser<'a> {
+    comps: FuncCompilerStack<'a>,
+}
+impl<'a> Analyser<'a> {
     fn new() -> Self {
-        Self {}
+        Self {
+            comps: FuncCompilerStack::new(),
+        }
     }
-    pub fn analyse_stmts(stmts: &Vec<Stmt>) -> bool {
+    pub fn analyse_stmts(stmts: &Vec<Stmt>) -> Option<FuncCompilerStack<'a>> {
         let mut analyser = Analyser::new();
         for stmt in stmts {
             if let Err(err) = analyser.analyse_stmt(stmt) {
                 err.print();
-                return true;
+                return Some(analyser.comps);
             }
         }
-        false
+        None
     }
 
     fn analyse_stmt(&mut self, stmt: &Stmt) -> Result<(), SemanticError> {

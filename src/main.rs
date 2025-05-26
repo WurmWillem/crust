@@ -59,11 +59,14 @@ fn main() {
             return;
         }
     };
-    if Analyser::analyse_stmts(&statements) {
-        return;
-    }
+
+    let comps = match Analyser::analyse_stmts(&statements) {
+        Some(comps) => comps,
+        None => return,
+    };
+
     // dbg!(&statements);
-    if let Some((func, heap)) = Compiler::compile(statements) {
+    if let Some((func, heap)) = Compiler::compile(statements, comps) {
         vm::VM::interpret(func, heap);
     } else {
         return;
