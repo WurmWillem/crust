@@ -92,9 +92,11 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Block(stmts) => {
+                self.comps.begin_scope();
                 for stmt in stmts {
                     self.analyse_stmt(stmt)?;
                 }
+                self.comps.end_scope();
             }
             StmtType::If {
                 condition,
@@ -143,7 +145,20 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::Call { name, args } => todo!(),
-            ExprType::Assign { name, value } => todo!(),
+            ExprType::Assign { name, value } => match self.comps.resolve_local(name) {
+                Some((_, ty)) => {
+                    let value_ty = self.analyse_expr(value)?;
+                    if ty != value_ty {
+                        let err_ty = ErrTy::VarTypeMisMatch(ty, value_ty);
+                        return Err(SemanticError::new(line, err_ty));
+                    }
+                    ty
+                }
+                None => {
+                    let ty = ErrTy::UndefinedVar(name.to_string());
+                    return Err(SemanticError::new(line, ty));
+                }
+            },
             ExprType::Unary { prefix, value } => {
                 let value_ty = self.analyse_expr(value)?;
                 match prefix {

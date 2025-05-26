@@ -119,11 +119,9 @@ impl<'a> Compiler<'a> {
                 self.emit_expr(value)?;
             }
             StmtType::Block(stmts) => {
-                self.comps.begin_scope();
                 for stmt in stmts {
                     self.emit_stmt(stmt)?;
                 }
-                self.comps.end_scope();
             }
             StmtType::If {
                 final_else,
