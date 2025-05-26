@@ -29,13 +29,13 @@ impl SemanticError {
             ErrTy::InvalidInfix => format!("invalid infix bozo"),
             ErrTy::OpTypeMismatch(expected, op, found) => {
                 format!(
-                    "Operator '{}' Expects type '{}', but found type '{}'",
+                    "Operator '{}' Expects type '{}', but found type '{}'.",
                     op, expected, found
                 )
             }
             ErrTy::VarTypeMisMatch(expected, found) => {
                 format!(
-                    "Variable was given type '{}' but found type '{}'",
+                    "Variable was given type '{}' but found type '{}'.",
                     expected, found
                 )
             }
@@ -60,39 +60,64 @@ impl Analyser {
         false
     }
 
-    fn analyse_stmt(&mut self, stmt: &Stmt) -> Result<ValueType, SemanticError> {
+    fn analyse_stmt(&mut self, stmt: &Stmt) -> Result<(), SemanticError> {
         let line = stmt.line;
         match &stmt.stmt {
-            StmtType::Expr(expr) => self.analyse_expr(expr),
-            StmtType::Var { name, value, ty } => {
+            StmtType::Expr(expr) => {
+                self.analyse_expr(expr)?;
+            }
+            StmtType::Var { name: _, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
                     let err_ty = ErrTy::VarTypeMisMatch(*ty, value_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
-                todo!()
             }
-            StmtType::Println(_) => todo!(),
-            StmtType::Return(_) => todo!(),
-            StmtType::Block(_) => todo!(),
+            StmtType::Println(expr) => {
+                self.analyse_expr(expr)?;
+            }
+            StmtType::Return(expr) => {
+                self.analyse_expr(expr)?;
+            }
+            StmtType::Block(stmts) => {
+                for stmt in stmts {
+                    self.analyse_stmt(stmt)?;
+                }
+            }
             StmtType::If {
                 condition,
                 body,
                 final_else,
-            } => todo!(),
-            StmtType::While { condition, body } => todo!(),
+            } => {
+                self.analyse_expr(condition)?;
+                self.analyse_stmt(body)?;
+                if let Some(final_else) = final_else {
+                    self.analyse_stmt(final_else)?;
+                }
+            }
+            StmtType::While { condition, body } => {
+                self.analyse_expr(condition)?;
+                self.analyse_stmt(body)?;
+            }
             StmtType::For {
                 var,
                 condition,
                 body,
-            } => todo!(),
+            } => {
+                self.analyse_stmt(var)?;
+                self.analyse_expr(condition)?;
+                self.analyse_stmt(body)?;
+            }
             StmtType::Func {
-                name,
-                parameters,
+                name: _,
+                parameters: _,
                 body,
-                return_ty,
-            } => todo!(),
-        }
+                return_ty: _,
+            } => {
+                self.analyse_stmt(body)?;
+            }
+        };
+        Ok(())
     }
     fn analyse_expr(&mut self, expr: &Expr) -> Result<ValueType, SemanticError> {
         let line = expr.line;
@@ -131,6 +156,7 @@ impl Analyser {
                     let err_ty = ErrTy::OpTypeMismatch(left_ty, op, right_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
+
                 use BinaryOp as BO;
                 let x = match op {
                     BO::Add => left_ty == ValueType::Num || left_ty == ValueType::Str,
@@ -141,6 +167,7 @@ impl Analyser {
                     }
                     BO::And | BO::Or => left_ty == ValueType::Bool,
                 };
+
                 if x {
                     left_ty
                 } else {
