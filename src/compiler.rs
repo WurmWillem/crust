@@ -82,7 +82,7 @@ impl<'a> Compiler<'a> {
                 self.comps.push(name.to_string(), *return_ty);
                 self.comps.begin_scope();
                 for (ty, name) in parameters {
-                    self.comps.add_local(name, *ty, line)?;
+                    self.comps.add_local(name, *ty, line);
                 }
 
                 self.emit_stmt(*body.clone())?;
@@ -111,9 +111,12 @@ impl<'a> Compiler<'a> {
                 self.emit_expr(expr)?;
                 self.comps.emit_byte(OpCode::Print as u8, line);
             }
-            StmtType::Var { name, value, ty } => {
+            StmtType::Var {
+                name: _,
+                value,
+                ty: _,
+            } => {
                 self.emit_expr(value)?;
-                self.comps.add_local(name, ty, line)?;
             }
             StmtType::Block(stmts) => {
                 self.comps.begin_scope();

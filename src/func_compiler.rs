@@ -1,4 +1,5 @@
 use crate::{
+    analysis::{ErrTy, SemanticError},
     error::ParseError,
     object::ObjFunc,
     op_code::OpCode,
@@ -112,10 +113,14 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].local_count
     }
 
-    pub fn add_local(&mut self, name: &'a str, ty: ValueType, line: u32) -> Result<(), ParseError> {
+    pub fn add_local(
+        &mut self,
+        name: &'a str,
+        ty: ValueType,
+        line: u32,
+    ) -> Result<(), SemanticError> {
         if self.current().local_count == MAX_LOCAL_AMT {
-            let msg = "Too many local variables in function.";
-            return Err(ParseError::new(line, msg));
+            return Err(SemanticError::new(line, ErrTy::TooManyLocals));
         }
 
         let local = Local::new(name, self.current().scope_depth, ty);

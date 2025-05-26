@@ -13,21 +13,27 @@ pub struct SemanticError {
     line: u32,
 }
 impl SemanticError {
-    fn new(line: u32, ty: ErrTy) -> Self {
+    pub fn new(line: u32, ty: ErrTy) -> Self {
         Self { ty, line }
     }
 }
-enum ErrTy {
+pub enum ErrTy {
     InvalidPrefix,
     InvalidInfix,
+    TooManyLocals,
+    UndefinedVar(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
     VarTypeMisMatch(ValueType, ValueType),
 }
 impl SemanticError {
     fn print(&self) {
-        let msg = match self.ty {
-            ErrTy::InvalidPrefix => format!("invalid prefix bozo"),
-            ErrTy::InvalidInfix => format!("invalid infix bozo"),
+        let msg = match &self.ty {
+            ErrTy::InvalidPrefix => format!("invalid prefix."),
+            ErrTy::InvalidInfix => format!("invalid infix."),
+            ErrTy::UndefinedVar(name) => {
+                format!("Variable '{}' has not been defined in this scope.", &name)
+            }
+            ErrTy::TooManyLocals => format!("invalid prefix bozo"),
             ErrTy::OpTypeMismatch(expected, op, found) => {
                 format!(
                     "Operator '{}' Expects type '{}', but found type '{}'.",
@@ -54,29 +60,30 @@ impl<'a> Analyser<'a> {
             comps: FuncCompilerStack::new(),
         }
     }
-    pub fn analyse_stmts(stmts: &Vec<Stmt>) -> Option<FuncCompilerStack<'a>> {
+    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<FuncCompilerStack<'a>> {
         let mut analyser = Analyser::new();
         for stmt in stmts {
             if let Err(err) = analyser.analyse_stmt(stmt) {
                 err.print();
-                return Some(analyser.comps);
+                return None;
             }
         }
-        None
+        Some(analyser.comps)
     }
 
-    fn analyse_stmt(&mut self, stmt: &Stmt) -> Result<(), SemanticError> {
+    fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticError> {
         let line = stmt.line;
         match &stmt.stmt {
             StmtType::Expr(expr) => {
                 self.analyse_expr(expr)?;
             }
-            StmtType::Var { name: _, value, ty } => {
+            StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
                     let err_ty = ErrTy::VarTypeMisMatch(*ty, value_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
+                self.comps.add_local(name, *ty, line)?;
             }
             StmtType::Println(expr) => {
                 self.analyse_expr(expr)?;
@@ -128,7 +135,13 @@ impl<'a> Analyser<'a> {
         let line = expr.line;
         let result = match &expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
-            ExprType::Var(name) => todo!(),
+            ExprType::Var(name) => match self.comps.resolve_local(name) {
+                Some((_, ty)) => ty,
+                None => {
+                    let ty = ErrTy::UndefinedVar(name.to_string());
+                    return Err(SemanticError::new(line, ty));
+                }
+            },
             ExprType::Call { name, args } => todo!(),
             ExprType::Assign { name, value } => todo!(),
             ExprType::Unary { prefix, value } => {
