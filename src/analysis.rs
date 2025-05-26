@@ -1,7 +1,7 @@
 use crate::{
     error::print_error,
     expression::{Expr, ExprType},
-    parse_types::BinaryOp,
+    parse_types::{BinaryOp, Operator},
     statement::{Stmt, StmtType},
     token::TokenType,
     value::ValueType,
@@ -19,15 +19,25 @@ impl SemanticError {
 enum ErrTy {
     InvalidPrefix,
     InvalidInfix,
-    TypeMismatch(ValueType, ValueType),
+    OpTypeMismatch(ValueType, Operator, ValueType),
+    VarTypeMisMatch(ValueType, ValueType),
 }
 impl SemanticError {
     fn print(&self) {
         let msg = match self.ty {
             ErrTy::InvalidPrefix => format!("invalid prefix bozo"),
             ErrTy::InvalidInfix => format!("invalid infix bozo"),
-            ErrTy::TypeMismatch(expected, found) => {
-                format!("Expected '{}', found '{}'", expected, found)
+            ErrTy::OpTypeMismatch(expected, op, found) => {
+                format!(
+                    "Operator '{}' Expects type '{}', but found type '{}'",
+                    op, expected, found
+                )
+            }
+            ErrTy::VarTypeMisMatch(expected, found) => {
+                format!(
+                    "Variable was given type '{}' but found type '{}'",
+                    expected, found
+                )
             }
         };
         print_error(self.line, &msg);
@@ -57,7 +67,7 @@ impl Analyser {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    let err_ty = ErrTy::TypeMismatch(*ty, value_ty);
+                    let err_ty = ErrTy::VarTypeMisMatch(*ty, value_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
                 todo!()
@@ -96,14 +106,16 @@ impl Analyser {
                 match prefix {
                     TokenType::Minus => {
                         if value_ty != ValueType::Num {
-                            let err_ty = ErrTy::TypeMismatch(ValueType::Num, value_ty);
+                            let err_ty =
+                                ErrTy::OpTypeMismatch(ValueType::Num, Operator::Minus, value_ty);
                             return Err(SemanticError::new(line, err_ty));
                         }
                         value_ty
                     }
                     TokenType::Bang => {
                         if value_ty != ValueType::Bool {
-                            let err_ty = ErrTy::TypeMismatch(ValueType::Bool, value_ty);
+                            let err_ty =
+                                ErrTy::OpTypeMismatch(ValueType::Bool, Operator::Bang, value_ty);
                             return Err(SemanticError::new(line, err_ty));
                         }
                         value_ty
@@ -115,7 +127,8 @@ impl Analyser {
                 let left_ty = self.analyse_expr(left)?;
                 let right_ty = self.analyse_expr(right)?;
                 if left_ty != right_ty {
-                    let err_ty = ErrTy::TypeMismatch(left_ty, right_ty);
+                    let op = op.to_operator();
+                    let err_ty = ErrTy::OpTypeMismatch(left_ty, op, right_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
                 use BinaryOp as BO;

@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::{token::TokenType, OpCode};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -118,6 +120,49 @@ pub const PARSE_RULES: [ParseRule; 45] = {
 };
 
 #[derive(Debug, Clone, Copy)]
+pub enum Operator {
+    // binary
+    Add,
+    Sub,
+    Mul,
+    Div,
+
+    Equal,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+
+    And,
+    Or,
+
+    //unary
+    Minus,
+    Bang,
+}
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Operator::Add => write!(f, "+"),
+            Operator::Sub => write!(f, "-"),
+            Operator::Mul => write!(f, "*"),
+            Operator::Div => write!(f, "/"),
+            Operator::Equal => write!(f, "="),
+            Operator::NotEqual => write!(f, "=="),
+            Operator::Less => write!(f, "<"),
+            Operator::LessEqual => write!(f, "<="),
+            Operator::Greater => write!(f, ">"),
+            Operator::GreaterEqual => write!(f, ">="),
+            Operator::And => write!(f, "&&"),
+            Operator::Or => write!(f, "||"),
+            Operator::Minus => write!(f, "-"),
+            Operator::Bang => write!(f, "!"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum BinaryOp {
     Add,
     Sub,
@@ -166,6 +211,22 @@ impl BinaryOp {
         }
     }
 
+    pub fn to_operator(self) -> Operator {
+        match self {
+            BinaryOp::Add => Operator::Add,
+            BinaryOp::Sub => Operator::Sub,
+            BinaryOp::Mul => Operator::Mul,
+            BinaryOp::Div => Operator::Div,
+            BinaryOp::Equal => Operator::Equal,
+            BinaryOp::NotEqual => Operator::NotEqual,
+            BinaryOp::Less => Operator::Less,
+            BinaryOp::LessEqual => Operator::LessEqual,
+            BinaryOp::Greater => Operator::Greater,
+            BinaryOp::GreaterEqual => Operator::GreaterEqual,
+            BinaryOp::And => Operator::And,
+            BinaryOp::Or => Operator::Or,
+        }
+    }
     pub fn to_op_code(self) -> OpCode {
         match self {
             BinaryOp::Add => OpCode::Add,
