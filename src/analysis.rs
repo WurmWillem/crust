@@ -1,4 +1,5 @@
 use crate::{
+    error::print_error,
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
@@ -6,16 +7,30 @@ use crate::{
     value::ValueType,
 };
 
-enum SemanticError {
+pub struct SemanticError {
+    ty: ErrTy,
+    line: u32,
+}
+impl SemanticError {
+    fn new(line: u32, ty: ErrTy) -> Self {
+        Self { ty, line }
+    }
+}
+enum ErrTy {
     InvalidPrefix,
     InvalidInfix,
+    TypeMismatch(ValueType, ValueType),
 }
 impl SemanticError {
     fn print(&self) {
-        match self {
-            SemanticError::InvalidPrefix => println!("invalid prefix bozo"),
-            SemanticError::InvalidInfix => println!("invalid infix bozo"),
-        }
+        let msg = match self.ty {
+            ErrTy::InvalidPrefix => format!("invalid prefix bozo"),
+            ErrTy::InvalidInfix => format!("invalid infix bozo"),
+            ErrTy::TypeMismatch(expected, found) => {
+                format!("Expected '{}', found '{}'", expected, found)
+            }
+        };
+        print_error(self.line, &msg);
     }
 }
 
@@ -36,10 +51,17 @@ impl Analyser {
     }
 
     fn analyse_stmt(&mut self, stmt: &Stmt) -> Result<ValueType, SemanticError> {
-        //let line = stmt.line;
+        let line = stmt.line;
         match &stmt.stmt {
             StmtType::Expr(expr) => self.analyse_expr(expr),
-            StmtType::Var { name, value, ty } => todo!(),
+            StmtType::Var { name, value, ty } => {
+                let value_ty = self.analyse_expr(value)?;
+                if value_ty != *ty {
+                    let err_ty = ErrTy::TypeMismatch(*ty, value_ty);
+                    return Err(SemanticError::new(line, err_ty));
+                }
+                todo!()
+            }
             StmtType::Println(_) => todo!(),
             StmtType::Return(_) => todo!(),
             StmtType::Block(_) => todo!(),
@@ -63,6 +85,7 @@ impl Analyser {
         }
     }
     fn analyse_expr(&mut self, expr: &Expr) -> Result<ValueType, SemanticError> {
+        let line = expr.line;
         let result = match &expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
             ExprType::Var(name) => todo!(),
@@ -71,15 +94,29 @@ impl Analyser {
             ExprType::Unary { prefix, value } => {
                 let value_ty = self.analyse_expr(value)?;
                 match prefix {
-                    TokenType::Minus | TokenType::Bang => return Ok(value_ty),
-                    _ => return Err(SemanticError::InvalidPrefix),
+                    TokenType::Minus => {
+                        if value_ty != ValueType::Num {
+                            let err_ty = ErrTy::TypeMismatch(ValueType::Num, value_ty);
+                            return Err(SemanticError::new(line, err_ty));
+                        }
+                        value_ty
+                    }
+                    TokenType::Bang => {
+                        if value_ty != ValueType::Bool {
+                            let err_ty = ErrTy::TypeMismatch(ValueType::Bool, value_ty);
+                            return Err(SemanticError::new(line, err_ty));
+                        }
+                        value_ty
+                    }
+                    _ => return Err(SemanticError::new(line, ErrTy::InvalidPrefix)),
                 }
             }
             ExprType::Binary { left, op, right } => {
                 let left_ty = self.analyse_expr(left)?;
                 let right_ty = self.analyse_expr(right)?;
                 if left_ty != right_ty {
-                    return Err(SemanticError::InvalidInfix);
+                    let err_ty = ErrTy::TypeMismatch(left_ty, right_ty);
+                    return Err(SemanticError::new(line, err_ty));
                 }
                 use BinaryOp as BO;
                 let x = match op {
@@ -94,7 +131,7 @@ impl Analyser {
                 if x {
                     left_ty
                 } else {
-                    return Err(SemanticError::InvalidInfix);
+                    return Err(SemanticError::new(line, ErrTy::InvalidInfix));
                 }
             }
         };
