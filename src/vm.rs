@@ -1,11 +1,11 @@
-use std::mem::MaybeUninit;
-
-use crate::object::{Gc, Heap, ObjFunc};
 use colored::Colorize;
 
-use crate::error::DEBUG_TRACE_EXECUTION;
-use crate::object::Object;
-use crate::{op_code::OpCode, value::StackValue};
+use crate::{
+    error::DEBUG_TRACE_EXECUTION,
+    object::{Gc, Heap, ObjFunc, Object},
+    op_code::OpCode,
+    value::StackValue,
+};
 
 pub enum InterpretResult {
     Ok,

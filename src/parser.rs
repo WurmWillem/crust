@@ -376,7 +376,6 @@ impl<'a> Parser<'a> {
                 name: name.lexeme,
                 value,
             };
-            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
             Expr::new(ty, name.line)
         } else {
             let ty = ExprType::Var(name.lexeme);
