@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use crate::{
     error::print_error,
     expression::{Expr, ExprType},
-    func_compiler::FuncCompilerStack,
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
     token::TokenType,
@@ -71,7 +70,7 @@ pub enum ErrType {
     UndefinedVar(String),
     AlreadyDefinedVar(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
-    VarTypeMisMatch(ValueType, ValueType),
+    TypeMismatch(ValueType, ValueType),
 }
 impl SemanticError {
     fn print(&self) {
@@ -105,7 +104,7 @@ impl SemanticError {
                     op, expected, found
                 )
             }
-            ErrType::VarTypeMisMatch(expected, found) => {
+            ErrType::TypeMismatch(expected, found) => {
                 format!(
                     "Variable was given type '{}' but found type '{}'.",
                     expected, found
@@ -229,7 +228,7 @@ impl<'a> Analyser<'a> {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    let err_ty = ErrType::VarTypeMisMatch(*ty, value_ty);
+                    let err_ty = ErrType::TypeMismatch(*ty, value_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
                 self.symbols.declare(Symbol::new(name, *ty), line)?;
@@ -296,36 +295,41 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticError::new(line, ty));
                 }
             },
-            ExprType::Call { name, args } => match self.func_data.get(name) {
-                Some(data) => {
-                    if args.len() != data.parameters.len() {
-                        let err_ty = ErrType::IncorrectArity(
-                            name.to_string(),
-                            args.len() as u8,
-                            data.parameters.len() as u8,
-                        );
+            ExprType::Call { name, args } => {
+                let data = match self.func_data.remove(name) {
+                    Some(data) => data,
+                    None => {
+                        let ty = ErrType::UndefinedFunc(name.to_string());
+                        return Err(SemanticError::new(line, ty));
+                    }
+                };
+                if args.len() != data.parameters.len() {
+                    let err_ty = ErrType::IncorrectArity(
+                        name.to_string(),
+                        args.len() as u8,
+                        data.parameters.len() as u8,
+                    );
+                    return Err(SemanticError::new(line, err_ty));
+                }
+                for (i, arg) in args.iter().enumerate() {
+                    let arg_ty = self.analyse_expr(arg)?;
+                    if arg_ty != data.parameters[i].0 {
+                        let err_ty = ErrType::TypeMismatch(data.parameters[i].0, arg_ty);
                         return Err(SemanticError::new(line, err_ty));
                     }
-                    for i in 0..args.len() {
-                        let param_ty = data.parameters[i].0;
-                        let arg_ty = self.analyse_expr(&args[i])?;
-                        if arg_ty != param_ty {
+                }
 
-                        }
-                    }
-                    // analyse body
-                    data.return_ty
-                }
-                None => {
-                    let ty = ErrType::UndefinedFunc(name.to_string());
-                    return Err(SemanticError::new(line, ty));
-                }
-            },
+                self.analyse_stmt(&data.body)?;
+
+                let return_ty = data.return_ty;
+                self.func_data.insert(name, data);
+                return_ty
+            }
             ExprType::Assign { name, value } => match self.symbols.resolve(name) {
                 Some(symbol) => {
                     let value_ty = self.analyse_expr(value)?;
                     if symbol.ty != value_ty {
-                        let err_ty = ErrType::VarTypeMisMatch(symbol.ty, value_ty);
+                        let err_ty = ErrType::TypeMismatch(symbol.ty, value_ty);
                         return Err(SemanticError::new(line, err_ty));
                     }
                     symbol.ty
