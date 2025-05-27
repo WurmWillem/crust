@@ -54,18 +54,20 @@ impl core::fmt::Display for Operator {
 }
 
 pub struct SemanticError {
-    ty: ErrTy,
+    ty: ErrType,
     line: u32,
 }
 impl SemanticError {
-    pub fn new(line: u32, ty: ErrTy) -> Self {
+    pub fn new(line: u32, ty: ErrType) -> Self {
         Self { ty, line }
     }
 }
-pub enum ErrTy {
+pub enum ErrType {
     InvalidPrefix,
     InvalidInfix,
     TooManyLocals,
+    UndefinedFunc(String),
+    IncorrectArity(String, u8, u8),
     UndefinedVar(String),
     AlreadyDefinedVar(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
@@ -74,25 +76,36 @@ pub enum ErrTy {
 impl SemanticError {
     fn print(&self) {
         let msg = match &self.ty {
-            ErrTy::InvalidPrefix => format!("invalid prefix."),
-            ErrTy::InvalidInfix => format!("invalid infix."),
-            ErrTy::UndefinedVar(name) => {
+            ErrType::InvalidPrefix => format!("invalid prefix."),
+            ErrType::InvalidInfix => format!("invalid infix."),
+
+            ErrType::IncorrectArity(name, expected, found) => {
+                format!(
+                    "Function '{}' expected {} arguments, but found {}.",
+                    name, expected, found
+                )
+            }
+
+            ErrType::UndefinedFunc(name) => format!("Function '{}' has not been defined.", name),
+            ErrType::UndefinedVar(name) => {
                 format!("Variable '{}' has not been defined in this scope.", name)
             }
-            ErrTy::AlreadyDefinedVar(name) => {
+            ErrType::AlreadyDefinedVar(name) => {
                 format!(
                     "Variable '{}' has already been defined in this scope.",
                     name
                 )
             }
-            ErrTy::TooManyLocals => format!("invalid prefix bozo"),
-            ErrTy::OpTypeMismatch(expected, op, found) => {
+
+            ErrType::TooManyLocals => format!("invalid prefix bozo"),
+
+            ErrType::OpTypeMismatch(expected, op, found) => {
                 format!(
                     "Operator '{}' Expects type '{}', but found type '{}'.",
                     op, expected, found
                 )
             }
-            ErrTy::VarTypeMisMatch(expected, found) => {
+            ErrType::VarTypeMisMatch(expected, found) => {
                 format!(
                     "Variable was given type '{}' but found type '{}'.",
                     expected, found
@@ -166,7 +179,7 @@ impl<'a> SemanticScope<'a> {
         if current.contains_key(symbol.name) {
             return Err(SemanticError::new(
                 line,
-                ErrTy::AlreadyDefinedVar(symbol.name.to_string()),
+                ErrType::AlreadyDefinedVar(symbol.name.to_string()),
             ));
         }
         current.insert(symbol.name, symbol);
@@ -216,7 +229,7 @@ impl<'a> Analyser<'a> {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    let err_ty = ErrTy::VarTypeMisMatch(*ty, value_ty);
+                    let err_ty = ErrType::VarTypeMisMatch(*ty, value_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
                 self.symbols.declare(Symbol::new(name, *ty), line)?;
@@ -272,29 +285,53 @@ impl<'a> Analyser<'a> {
         };
         Ok(())
     }
-    fn analyse_expr(&mut self, expr: &Expr) -> Result<ValueType, SemanticError> {
+    fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticError> {
         let line = expr.line;
         let result = match &expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
             ExprType::Var(name) => match self.symbols.resolve(name) {
                 Some(symbol) => symbol.ty,
                 None => {
-                    let ty = ErrTy::UndefinedVar(name.to_string());
+                    let ty = ErrType::UndefinedVar(name.to_string());
                     return Err(SemanticError::new(line, ty));
                 }
             },
-            ExprType::Call { name, args } => todo!(),
+            ExprType::Call { name, args } => match self.func_data.get(name) {
+                Some(data) => {
+                    if args.len() != data.parameters.len() {
+                        let err_ty = ErrType::IncorrectArity(
+                            name.to_string(),
+                            args.len() as u8,
+                            data.parameters.len() as u8,
+                        );
+                        return Err(SemanticError::new(line, err_ty));
+                    }
+                    for i in 0..args.len() {
+                        let param_ty = data.parameters[i].0;
+                        let arg_ty = self.analyse_expr(&args[i])?;
+                        if arg_ty != param_ty {
+
+                        }
+                    }
+                    // analyse body
+                    data.return_ty
+                }
+                None => {
+                    let ty = ErrType::UndefinedFunc(name.to_string());
+                    return Err(SemanticError::new(line, ty));
+                }
+            },
             ExprType::Assign { name, value } => match self.symbols.resolve(name) {
                 Some(symbol) => {
                     let value_ty = self.analyse_expr(value)?;
                     if symbol.ty != value_ty {
-                        let err_ty = ErrTy::VarTypeMisMatch(symbol.ty, value_ty);
+                        let err_ty = ErrType::VarTypeMisMatch(symbol.ty, value_ty);
                         return Err(SemanticError::new(line, err_ty));
                     }
                     symbol.ty
                 }
                 None => {
-                    let ty = ErrTy::UndefinedVar(name.to_string());
+                    let ty = ErrType::UndefinedVar(name.to_string());
                     return Err(SemanticError::new(line, ty));
                 }
             },
@@ -304,7 +341,7 @@ impl<'a> Analyser<'a> {
                     TokenType::Minus => {
                         if value_ty != ValueType::Num {
                             let err_ty =
-                                ErrTy::OpTypeMismatch(ValueType::Num, Operator::Minus, value_ty);
+                                ErrType::OpTypeMismatch(ValueType::Num, Operator::Minus, value_ty);
                             return Err(SemanticError::new(line, err_ty));
                         }
                         value_ty
@@ -312,12 +349,12 @@ impl<'a> Analyser<'a> {
                     TokenType::Bang => {
                         if value_ty != ValueType::Bool {
                             let err_ty =
-                                ErrTy::OpTypeMismatch(ValueType::Bool, Operator::Bang, value_ty);
+                                ErrType::OpTypeMismatch(ValueType::Bool, Operator::Bang, value_ty);
                             return Err(SemanticError::new(line, err_ty));
                         }
                         value_ty
                     }
-                    _ => return Err(SemanticError::new(line, ErrTy::InvalidPrefix)),
+                    _ => return Err(SemanticError::new(line, ErrType::InvalidPrefix)),
                 }
             }
             ExprType::Binary { left, op, right } => {
@@ -325,7 +362,7 @@ impl<'a> Analyser<'a> {
                 let right_ty = self.analyse_expr(right)?;
                 if left_ty != right_ty {
                     let op = op.to_operator();
-                    let err_ty = ErrTy::OpTypeMismatch(left_ty, op, right_ty);
+                    let err_ty = ErrType::OpTypeMismatch(left_ty, op, right_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
 
@@ -343,7 +380,7 @@ impl<'a> Analyser<'a> {
                 if x {
                     left_ty
                 } else {
-                    return Err(SemanticError::new(line, ErrTy::InvalidInfix));
+                    return Err(SemanticError::new(line, ErrType::InvalidInfix));
                 }
             }
         };

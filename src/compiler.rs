@@ -111,11 +111,7 @@ impl<'a> Compiler<'a> {
                 self.emit_expr(expr)?;
                 self.comps.emit_byte(OpCode::Print as u8, line);
             }
-            StmtType::Var {
-                name,
-                value,
-                ty,
-            } => {
+            StmtType::Var { name, value, ty } => {
                 self.comps.add_local(name, ty, line);
                 self.emit_expr(value)?;
             }

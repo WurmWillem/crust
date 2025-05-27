@@ -1,5 +1,4 @@
 int x = 3;
-pr y;
 //fn add(int a, int b): int {
 //    return a + b;
 //}

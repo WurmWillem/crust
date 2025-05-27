@@ -1,5 +1,5 @@
 use crate::{
-    analysis::{ErrTy, SemanticError},
+    analysis::{ErrType, SemanticError},
     error::ParseError,
     object::ObjFunc,
     op_code::OpCode,
@@ -120,7 +120,7 @@ impl<'a> FuncCompilerStack<'a> {
         line: u32,
     ) -> Result<(), SemanticError> {
         if self.current().local_count == MAX_LOCAL_AMT {
-            return Err(SemanticError::new(line, ErrTy::TooManyLocals));
+            return Err(SemanticError::new(line, ErrType::TooManyLocals));
         }
 
         let local = Local::new(name, self.current().scope_depth, ty);
