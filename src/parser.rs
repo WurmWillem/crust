@@ -162,7 +162,14 @@ impl<'a> Parser<'a> {
             };
         }
 
-        let body = Box::new(self.statement()?);
+        let mut body = vec![];
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
+            body.push(self.declaration()?);
+        }
+        if self.peek().kind != TokenType::Eof {
+            self.consume(TokenType::RightBrace, "Expected '}' at end of function.")?;
+        }
+
         let fn_ty = StmtType::Func {
             name,
             parameters,

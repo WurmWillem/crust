@@ -117,7 +117,7 @@ impl SemanticError {
 
 struct FuncData<'a> {
     parameters: Vec<(ValueType, &'a str)>,
-    body: Box<Stmt<'a>>,
+    body: Vec<Stmt<'a>>,
     return_ty: ValueType,
 }
 
@@ -275,11 +275,25 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Func {
                 name: _,
-                parameters: _,
+                parameters,
                 body,
                 return_ty: _,
             } => {
-                self.analyse_stmt(body)?;
+                //let data = match self.func_data.remove(name) {
+                //    Some(data) => data,
+                //    None => {
+                //        let ty = ErrType::UndefinedFunc(name.to_string());
+                //        return Err(SemanticError::new(line, ty));
+                //    }
+                //};
+                self.symbols.begin_scope();
+                for (ty, name) in parameters {
+                    self.symbols.declare(Symbol::new(name, *ty), line)?;
+                }
+                for stmt in body {
+                    self.analyse_stmt(stmt)?;
+                }
+                self.symbols.end_scope();
             }
         };
         Ok(())
@@ -318,8 +332,6 @@ impl<'a> Analyser<'a> {
                         return Err(SemanticError::new(line, err_ty));
                     }
                 }
-
-                self.analyse_stmt(&data.body)?;
 
                 let return_ty = data.return_ty;
                 self.func_data.insert(name, data);

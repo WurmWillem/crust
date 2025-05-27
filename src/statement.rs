@@ -39,7 +39,7 @@ pub enum StmtType<'a> {
     Func {
         name: &'a str,
         parameters: Vec<(ValueType, &'a str)>,
-        body: Box<Stmt<'a>>,
+        body: Vec<Stmt<'a>>,
         return_ty: ValueType,
     },
 }

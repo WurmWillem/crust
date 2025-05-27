@@ -1,4 +1,6 @@
 int x = 3;
-//fn add(int a, int b): int {
-//    return a + b;
-//}
+fn add(int a, int b): int {
+    return a + b;
+}
+
+add(1, 2);

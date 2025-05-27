@@ -85,7 +85,7 @@ impl<'a> Compiler<'a> {
                     self.comps.add_local(name, *ty, line);
                 }
 
-                self.emit_stmt(*body.clone())?;
+                //self.emit_stmt(*body.clone())?;
 
                 self.comps.emit_return(line);
 
