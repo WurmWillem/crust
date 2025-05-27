@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     error::print_error,
     expression::{Expr, ExprType},
@@ -94,17 +96,49 @@ impl SemanticError {
     }
 }
 
+struct FuncData<'a> {
+    parameters: Vec<(ValueType, &'a str)>,
+    body: Box<Stmt<'a>>,
+    return_ty: ValueType,
+}
+
+fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> HashMap<&'a str, FuncData<'a>> {
+    let mut funcs = HashMap::new();
+    for stmt in stmts {
+        if let StmtType::Func {
+            name,
+            parameters,
+            body,
+            return_ty,
+        } = &stmt.stmt
+        {
+            let func_data = FuncData {
+                parameters: parameters.clone(),
+                body: body.clone(),
+                return_ty: *return_ty,
+            };
+            // WARN: add error handling
+            funcs.insert(*name, func_data);
+        }
+    }
+    funcs
+}
+
 pub struct Analyser<'a> {
     comps: FuncCompilerStack<'a>,
+    func_data: HashMap<&'a str, FuncData<'a>>,
 }
 impl<'a> Analyser<'a> {
-    fn new() -> Self {
+    fn new(func_data: HashMap<&'a str, FuncData<'a>>) -> Self {
         Self {
             comps: FuncCompilerStack::new(),
+            func_data,
         }
     }
     pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<FuncCompilerStack<'a>> {
-        let mut analyser = Analyser::new();
+        let func_data = get_func_data(stmts);
+        let mut analyser = Analyser::new(func_data);
+
         for stmt in stmts {
             if let Err(err) = analyser.analyse_stmt(stmt) {
                 err.print();
