@@ -1,4 +1,4 @@
-use crate::{analysis::Operator, token::TokenType, OpCode};
+use crate::{analysis_types::Operator, token::TokenType, OpCode};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]

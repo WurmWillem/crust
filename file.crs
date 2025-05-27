@@ -1,4 +1,4 @@
-pr add(1, 2);
+pr add(3, 2);
 
 fn add(int a, int b): int {
     return a + b;

@@ -8,6 +8,7 @@ use value::StackValue;
 use colored::Colorize;
 
 mod analysis;
+mod analysis_types;
 mod chunk;
 mod compiler;
 mod error;

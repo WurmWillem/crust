@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-use crate::{analysis::Operator, value::ValueType};
+use crate::{analysis_types::Operator, value::ValueType};
 
 pub const PRINT_SCAN_TOKENS: bool = false;
 pub const DEBUG_TRACE_EXECUTION: bool = true;

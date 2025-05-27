@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis::FuncData,
+    analysis_types::FuncData,
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,

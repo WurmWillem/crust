@@ -162,15 +162,21 @@ impl<'a> Parser<'a> {
             };
         }
 
-        self.consume(TokenType::LeftBrace, "Expected '{' at begin of function body.")?;
-        
+        self.consume(
+            TokenType::LeftBrace,
+            "Expected '{' at begin of function body.",
+        )?;
+
         let mut body = vec![];
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
             body.push(self.declaration()?);
         }
-        
+
         if self.peek().kind != TokenType::Eof {
-            self.consume(TokenType::RightBrace, "Expected '}' at end of function body.")?;
+            self.consume(
+                TokenType::RightBrace,
+                "Expected '}' at end of function body.",
+            )?;
         }
 
         let fn_ty = StmtType::Func {
@@ -408,11 +414,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn execute_prefix(
-        &mut self,
-        fn_type: FnType,
-        can_assign: bool,
-    ) -> Result<Expr<'a>, ParseErr> {
+    fn execute_prefix(&mut self, fn_type: FnType, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         // dbg!(fn_type);
         match fn_type {
             FnType::Grouping => self.grouping(),
