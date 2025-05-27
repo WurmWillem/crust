@@ -2,7 +2,7 @@ use std::ops;
 use std::ptr::NonNull;
 
 use crate::chunk::Chunk;
-use crate::value::{StackValue, ValueType};
+use crate::value::StackValue;
 
 pub struct Heap {
     // TODO: maybe add support for Table so you won't have to reallocate every time
@@ -115,14 +115,12 @@ pub enum Object {
 pub struct ObjFunc {
     pub chunk: Chunk,
     name: String,
-    pub return_ty: ValueType,
 }
 impl ObjFunc {
-    pub fn new(name: String, return_ty: ValueType) -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             chunk: Chunk::new(),
             name,
-            return_ty,
         }
     }
     pub fn get_name(&self) -> &String {

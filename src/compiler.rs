@@ -74,14 +74,13 @@ impl<'a> Compiler<'a> {
         add_func!("pow", pow);
 
         for (name, data) in func_data.drain() {
-            let return_ty = data.return_ty;
             let line = data.line;
 
-            let dummy = ObjFunc::new(name.to_string(), return_ty);
+            let dummy = ObjFunc::new(name.to_string());
             let (mut func_obj, _) = self.heap.alloc(dummy, Object::Func);
             self.funcs.insert(name, StackValue::Obj(func_obj));
 
-            self.comps.push(name.to_string(), return_ty);
+            self.comps.push(name.to_string());
             self.comps.begin_scope();
             for (ty, name) in data.parameters {
                 self.comps.add_local(name, ty, line)?;
