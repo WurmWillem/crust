@@ -2,7 +2,7 @@ use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
     analysis::FuncData,
-    error::{print_error, ParseError},
+    error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
     native_funcs,
@@ -52,7 +52,7 @@ impl<'a> Compiler<'a> {
     fn collect_type_data(
         &mut self,
         mut func_data: HashMap<&'a str, FuncData<'a>>,
-    ) -> Result<(), ParseError> {
+    ) -> Result<(), EmitErr> {
         macro_rules! add_func {
             ($name: expr, $func: ident) => {
                 let func = ObjNative::new($name.to_string(), native_funcs::$func);
@@ -84,7 +84,7 @@ impl<'a> Compiler<'a> {
             self.comps.push(name.to_string(), return_ty);
             self.comps.begin_scope();
             for (ty, name) in data.parameters {
-                self.comps.add_local(name, ty, line);
+                self.comps.add_local(name, ty, line)?;
             }
 
             for stmt in data.body {
@@ -104,7 +104,7 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), ParseError> {
+    fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), EmitErr> {
         let line = stmt.line;
         match stmt.stmt {
             StmtType::Expr(expr) => {
@@ -116,7 +116,7 @@ impl<'a> Compiler<'a> {
                 self.comps.emit_byte(OpCode::Print as u8, line);
             }
             StmtType::Var { name, value, ty } => {
-                self.comps.add_local(name, ty, line);
+                self.comps.add_local(name, ty, line)?;
                 self.emit_expr(value)?;
             }
             StmtType::Block(stmts) => {
@@ -205,7 +205,7 @@ impl<'a> Compiler<'a> {
         Ok(())
     }
 
-    fn emit_expr(&mut self, expr: Expr) -> Result<(), ParseError> {
+    fn emit_expr(&mut self, expr: Expr) -> Result<(), EmitErr> {
         let line = expr.line;
         match expr.expr {
             ExprType::Lit(lit) => match lit {

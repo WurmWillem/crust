@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    error::print_error,
+    error::{ErrType, SemanticError},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
@@ -52,68 +52,6 @@ impl core::fmt::Display for Operator {
     }
 }
 
-pub struct SemanticError {
-    ty: ErrType,
-    line: u32,
-}
-impl SemanticError {
-    pub fn new(line: u32, ty: ErrType) -> Self {
-        Self { ty, line }
-    }
-}
-pub enum ErrType {
-    InvalidPrefix,
-    InvalidInfix,
-    TooManyLocals,
-    UndefinedFunc(String),
-    IncorrectArity(String, u8, u8),
-    UndefinedVar(String),
-    AlreadyDefinedVar(String),
-    OpTypeMismatch(ValueType, Operator, ValueType),
-    TypeMismatch(ValueType, ValueType),
-}
-impl SemanticError {
-    fn print(&self) {
-        let msg = match &self.ty {
-            ErrType::InvalidPrefix => format!("invalid prefix."),
-            ErrType::InvalidInfix => format!("invalid infix."),
-
-            ErrType::IncorrectArity(name, expected, found) => {
-                format!(
-                    "Function '{}' expected {} arguments, but found {}.",
-                    name, expected, found
-                )
-            }
-
-            ErrType::UndefinedFunc(name) => format!("Function '{}' has not been defined.", name),
-            ErrType::UndefinedVar(name) => {
-                format!("Variable '{}' has not been defined in this scope.", name)
-            }
-            ErrType::AlreadyDefinedVar(name) => {
-                format!(
-                    "Variable '{}' has already been defined in this scope.",
-                    name
-                )
-            }
-
-            ErrType::TooManyLocals => format!("invalid prefix bozo"),
-
-            ErrType::OpTypeMismatch(expected, op, found) => {
-                format!(
-                    "Operator '{}' Expects type '{}', but found type '{}'.",
-                    op, expected, found
-                )
-            }
-            ErrType::TypeMismatch(expected, found) => {
-                format!(
-                    "Variable was given type '{}' but found type '{}'.",
-                    expected, found
-                )
-            }
-        };
-        print_error(self.line, &msg);
-    }
-}
 
 pub struct FuncData<'a> {
     pub parameters: Vec<(ValueType, &'a str)>,
@@ -234,7 +172,6 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticError::new(line, err_ty));
                 }
                 self.symbols.declare(Symbol::new(name, *ty), line)?;
-                //self.comps.add_local(name, *ty, line)?;
             }
             StmtType::Println(expr) => {
                 self.analyse_expr(expr)?;
@@ -243,12 +180,10 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Block(stmts) => {
-                //self.comps.begin_scope();
                 self.symbols.begin_scope();
                 for stmt in stmts {
                     self.analyse_stmt(stmt)?;
                 }
-                //self.comps.end_scope();
                 self.symbols.end_scope();
             }
             StmtType::If {

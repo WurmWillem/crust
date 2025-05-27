@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::{
-    error::{print_error, ParseError, EXPECTED_SEMICOLON_MSG},
+    error::{print_error, ParseErr, EXPECTED_SEMICOLON_MSG},
     expression::{Expr, ExprType},
     parse_types::{BinaryOp, FnType, ParseRule, Precedence, PARSE_RULES},
     statement::{Stmt, StmtType},
@@ -46,7 +46,7 @@ impl<'a> Parser<'a> {
         Some(statements)
     }
 
-    fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseError> {
+    fn parse_precedence(&mut self, precedence: Precedence) -> Result<Expr<'a>, ParseErr> {
         self.advance();
         let (can_assign, mut expr) = self.parse_prefix(precedence)?;
 
@@ -60,13 +60,13 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseError> {
+    fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseErr> {
         let kind = self.previous().kind;
 
         let prefix = self.get_rule(kind).prefix;
         if prefix == FnType::Empty {
             let msg = "Expected expression.";
-            let err = ParseError::new(self.previous().line, msg);
+            let err = ParseErr::new(self.previous().line, msg);
             return Err(err);
         }
 
@@ -75,7 +75,7 @@ impl<'a> Parser<'a> {
         Ok((can_assign, expr))
     }
 
-    fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseError> {
+    fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         let left = Box::new(left);
         let op = BinaryOp::from_token_type(self.previous().kind);
 
@@ -88,7 +88,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn number(&mut self) -> Result<Expr<'a>, ParseError> {
+    fn number(&mut self) -> Result<Expr<'a>, ParseErr> {
         let Literal::Num(value) = self.previous().literal else {
             unreachable!();
         };
@@ -96,7 +96,7 @@ impl<'a> Parser<'a> {
         Ok(Expr::new(kind, self.previous().line))
     }
 
-    fn unary(&mut self) -> Result<Expr<'a>, ParseError> {
+    fn unary(&mut self) -> Result<Expr<'a>, ParseErr> {
         let prefix = self.previous().kind;
         let value = Box::new(self.parse_precedence(Precedence::Unary)?);
 
@@ -106,7 +106,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn literal(&mut self) -> Result<Expr<'a>, ParseError> {
+    fn literal(&mut self) -> Result<Expr<'a>, ParseErr> {
         let literal = match self.previous().kind {
             TokenType::True => Literal::True,
             TokenType::False => Literal::False,
@@ -117,11 +117,11 @@ impl<'a> Parser<'a> {
         Ok(Expr::new(kind, self.previous().line))
     }
 
-    fn expression(&mut self) -> Result<Expr<'a>, ParseError> {
+    fn expression(&mut self) -> Result<Expr<'a>, ParseErr> {
         self.parse_precedence(Precedence::Assignment)
     }
 
-    fn declaration(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn declaration(&mut self) -> Result<Stmt<'a>, ParseErr> {
         if let Some(var_type) = self.peek().kind.as_value_type() {
             self.advance();
             self.var_decl(var_type)
@@ -132,7 +132,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn func_decl(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn func_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous().lexeme;
         let line = self.previous().line;
@@ -154,7 +154,7 @@ impl<'a> Parser<'a> {
             return_ty = match self.advance().kind.as_value_type() {
                 Some(return_ty) => return_ty,
                 _ => {
-                    return Err(ParseError::new(
+                    return Err(ParseErr::new(
                         self.previous().line,
                         "Expected return type after finding ':'.",
                     ));
@@ -182,11 +182,11 @@ impl<'a> Parser<'a> {
         let func = Stmt::new(fn_ty, line);
         Ok(func)
     }
-    fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseError> {
+    fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseErr> {
         let var_type = match self.advance().kind.as_value_type() {
             Some(var_type) => var_type,
             _ => {
-                return Err(ParseError::new(
+                return Err(ParseErr::new(
                     self.previous().line,
                     "Expected type for parameter.",
                 ));
@@ -199,7 +199,7 @@ impl<'a> Parser<'a> {
         Ok((var_type, name))
     }
 
-    fn var_decl(&mut self, ty: ValueType) -> Result<Stmt<'a>, ParseError> {
+    fn var_decl(&mut self, ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous().lexeme;
         let line = self.previous().line;
@@ -218,7 +218,7 @@ impl<'a> Parser<'a> {
         return Ok(var);
     }
 
-    fn statement(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn statement(&mut self) -> Result<Stmt<'a>, ParseErr> {
         if self.matches(TokenType::Print) {
             self.print_statement()
         } else if self.matches(TokenType::LeftBrace) {
@@ -236,7 +236,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn return_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn return_statement(&mut self) -> Result<Stmt<'a>, ParseErr> {
         let value_ty = ExprType::Lit(Literal::Null);
         let mut value = Expr::new(value_ty, self.previous().line);
 
@@ -251,7 +251,7 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
-    fn for_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn for_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {
         self.consume(TokenType::Identifier, "Expected variable name after 'for'.")?;
         let var = self.previous();
         let line = var.line;
@@ -289,7 +289,7 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
-    fn while_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn while_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {
         let condition = self.expression()?;
         let body = Box::new(self.statement()?);
 
@@ -298,7 +298,7 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
-    fn if_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn if_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {
         let line = self.previous().line;
 
         let condition = self.expression()?;
@@ -317,7 +317,7 @@ impl<'a> Parser<'a> {
         Ok(Stmt::new(ty, line))
     }
 
-    fn print_statement(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn print_statement(&mut self) -> Result<Stmt<'a>, ParseErr> {
         let kind = StmtType::Println(self.expression()?);
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
 
@@ -325,7 +325,7 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
-    fn expr_stmt(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn expr_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {
         let kind = StmtType::Expr(self.expression()?);
         let stmt = Stmt::new(kind, self.previous().line);
         self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
@@ -366,7 +366,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn block(&mut self) -> Result<Stmt<'a>, ParseError> {
+    fn block(&mut self) -> Result<Stmt<'a>, ParseErr> {
         let mut stmts = vec![];
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
             stmts.push(self.declaration()?);
@@ -378,7 +378,7 @@ impl<'a> Parser<'a> {
         Ok(block)
     }
 
-    fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseError> {
+    fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         let name = self.previous();
         let var = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
@@ -394,7 +394,7 @@ impl<'a> Parser<'a> {
         Ok(var)
     }
 
-    fn string(&mut self) -> Result<Expr<'a>, ParseError> {
+    fn string(&mut self) -> Result<Expr<'a>, ParseErr> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
         };
@@ -402,7 +402,7 @@ impl<'a> Parser<'a> {
         Ok(Expr::new(kind, self.previous().line))
     }
 
-    fn grouping(&mut self) -> Result<Expr<'a>, ParseError> {
+    fn grouping(&mut self) -> Result<Expr<'a>, ParseErr> {
         let expr = self.expression()?;
         self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
         Ok(expr)
@@ -412,7 +412,7 @@ impl<'a> Parser<'a> {
         &mut self,
         fn_type: FnType,
         can_assign: bool,
-    ) -> Result<Expr<'a>, ParseError> {
+    ) -> Result<Expr<'a>, ParseErr> {
         // dbg!(fn_type);
         match fn_type {
             FnType::Grouping => self.grouping(),
@@ -425,7 +425,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseError> {
+    fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         let mut args = Vec::new();
         while !self.check(TokenType::RightParen) {
             args.push(self.expression()?);
@@ -450,7 +450,7 @@ impl<'a> Parser<'a> {
         left: Expr<'a>,
         fn_type: FnType,
         _can_assign: bool,
-    ) -> Result<Expr<'a>, ParseError> {
+    ) -> Result<Expr<'a>, ParseErr> {
         match fn_type {
             FnType::Binary => self.binary(left),
             FnType::Call => self.call(left),
@@ -462,12 +462,12 @@ impl<'a> Parser<'a> {
         PARSE_RULES[kind as usize]
     }
 
-    fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<(), ParseError> {
+    fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<(), ParseErr> {
         if self.check(token_type) {
             self.advance();
             Ok(())
         } else {
-            Err(ParseError {
+            Err(ParseErr {
                 line: self.previous().line,
                 msg: msg.to_string(),
             })

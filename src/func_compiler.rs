@@ -1,6 +1,5 @@
 use crate::{
-    analysis::{ErrType, SemanticError},
-    error::ParseError,
+    error::EmitErr,
     object::ObjFunc,
     op_code::OpCode,
     value::{StackValue, ValueType},
@@ -45,17 +44,17 @@ impl<'a> FuncCompilerStack<'a> {
         self.emit_byte(OpCode::Return as u8, line);
     }
 
-    pub fn emit_constant(&mut self, value: StackValue, line: u32) -> Result<(), ParseError> {
+    pub fn emit_constant(&mut self, value: StackValue, line: u32) -> Result<(), EmitErr> {
         let const_index = self.make_constant(value, line)?;
         self.emit_bytes(OpCode::Constant as u8, const_index, line);
         Ok(())
     }
 
-    fn make_constant(&mut self, value: StackValue, line: u32) -> Result<u8, ParseError> {
+    fn make_constant(&mut self, value: StackValue, line: u32) -> Result<u8, EmitErr> {
         let const_index = self.add_constant(value);
         if const_index > u16::MAX.into() {
             let msg = "Too many constants in one chunk.";
-            return Err(ParseError::new(line, msg));
+            return Err(EmitErr::new(line, msg));
         }
         Ok(const_index as u8)
     }
@@ -76,13 +75,13 @@ impl<'a> FuncCompilerStack<'a> {
         self.get_code_len() - 2
     }
 
-    pub fn emit_loop(&mut self, loop_start: usize, line: u32) -> Result<(), ParseError> {
+    pub fn emit_loop(&mut self, loop_start: usize, line: u32) -> Result<(), EmitErr> {
         self.emit_byte(OpCode::Loop as u8, line);
 
         let offset = self.get_code_len() - loop_start + 2;
         if offset > u8::MAX as usize {
             let msg = "Loop body too large.";
-            return Err(ParseError::new(line, msg));
+            return Err(EmitErr::new(line, msg));
         }
 
         self.emit_byte(((offset >> 8) & 0xFF) as u8, line);
@@ -113,14 +112,9 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].local_count
     }
 
-    pub fn add_local(
-        &mut self,
-        name: &'a str,
-        ty: ValueType,
-        line: u32,
-    ) -> Result<(), SemanticError> {
+    pub fn add_local(&mut self, name: &'a str, ty: ValueType, line: u32) -> Result<(), EmitErr> {
         if self.current().local_count == MAX_LOCAL_AMT {
-            return Err(SemanticError::new(line, ErrType::TooManyLocals));
+            return Err(EmitErr::new(line, "Too many locals."));
         }
 
         let local = Local::new(name, self.current().scope_depth, ty);
@@ -131,12 +125,12 @@ impl<'a> FuncCompilerStack<'a> {
         Ok(())
     }
 
-    pub fn patch_jump(&mut self, offset: usize) -> Result<(), ParseError> {
+    pub fn patch_jump(&mut self, offset: usize) -> Result<(), EmitErr> {
         let jump = self.get_code_len() - offset - 2;
 
         if jump > u16::MAX as usize {
             let msg = "Too much code to jump over.";
-            return Err(ParseError::new(0, msg));
+            return Err(EmitErr::new(0, msg));
         }
 
         self.comps[self.current].func.chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
