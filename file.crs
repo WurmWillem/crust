@@ -3,4 +3,4 @@ fn add(int a, int b): int {
     return a + b;
 }
 
-add(1, 2);
+pr add(1, 2);

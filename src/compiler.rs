@@ -1,6 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
+    analysis::FuncData,
     error::{print_error, ParseError},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
@@ -25,9 +26,9 @@ impl<'a> Compiler<'a> {
             funcs: HashMap::new(),
         }
     }
-    pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(stmts: Vec<Stmt>, func_data: HashMap<&'a str, FuncData<'a>>) -> Option<(ObjFunc, Heap)> {
         let mut comp = Compiler::new();
-        if let Err(err) = comp.collect_type_data(&stmts) {
+        if let Err(err) = comp.collect_type_data(&stmts, func_data) {
             print_error(err.line, &err.msg);
 
             return None;
@@ -45,7 +46,11 @@ impl<'a> Compiler<'a> {
         Some((func, comp.heap))
     }
 
-    fn collect_type_data(&mut self, stmts: &Vec<Stmt<'a>>) -> Result<(), ParseError> {
+    fn collect_type_data(
+        &mut self,
+        stmts: &Vec<Stmt<'a>>,
+        mut func_data: HashMap<&'a str, FuncData<'a>>,
+    ) -> Result<(), ParseError> {
         macro_rules! add_func {
             ($name: expr, $func: ident) => {
                 let func = ObjNative::new($name.to_string(), native_funcs::$func);
@@ -66,37 +71,34 @@ impl<'a> Compiler<'a> {
         add_func!("sqrt", sqrt);
         add_func!("pow", pow);
 
-        for stmt in stmts {
-            let line = stmt.line;
-            if let StmtType::Func {
-                name,
-                parameters,
-                body,
-                return_ty,
-            } = &stmt.stmt
-            {
-                let dummy = ObjFunc::new(name.to_string(), *return_ty);
-                let (mut func_obj, _) = self.heap.alloc(dummy, Object::Func);
-                self.funcs.insert(*name, StackValue::Obj(func_obj));
+        for (name, data) in func_data.drain() {
+            let return_ty = data.return_ty;
+            let line = data.line;
 
-                self.comps.push(name.to_string(), *return_ty);
-                self.comps.begin_scope();
-                for (ty, name) in parameters {
-                    self.comps.add_local(name, *ty, line);
-                }
+            let dummy = ObjFunc::new(name.to_string(), return_ty);
+            let (mut func_obj, _) = self.heap.alloc(dummy, Object::Func);
+            self.funcs.insert(name, StackValue::Obj(func_obj));
 
-                //self.emit_stmt(*body.clone())?;
+            self.comps.push(name.to_string(), return_ty);
+            self.comps.begin_scope();
+            for (ty, name) in data.parameters {
+                self.comps.add_local(name, ty, line);
+            }
 
-                self.comps.emit_return(line);
+            for stmt in data.body {
+                self.emit_stmt(stmt)?;
+            }
 
-                let compiled_func = self.comps.end_compiler(line);
-                if let Object::Func(ref mut func) = func_obj.borrow_mut() {
-                    func.data = compiled_func;
-                } else {
-                    unreachable!()
-                }
+            self.comps.emit_return(line);
+
+            let compiled_func = self.comps.end_compiler(line);
+            if let Object::Func(ref mut func) = func_obj.borrow_mut() {
+                func.data = compiled_func;
+            } else {
+                unreachable!()
             }
         }
+
         Ok(())
     }
 

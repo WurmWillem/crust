@@ -115,10 +115,11 @@ impl SemanticError {
     }
 }
 
-struct FuncData<'a> {
-    parameters: Vec<(ValueType, &'a str)>,
-    body: Vec<Stmt<'a>>,
-    return_ty: ValueType,
+pub struct FuncData<'a> {
+    pub parameters: Vec<(ValueType, &'a str)>,
+    pub body: Vec<Stmt<'a>>,
+    pub return_ty: ValueType,
+    pub line: u32,
 }
 
 fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> HashMap<&'a str, FuncData<'a>> {
@@ -135,6 +136,7 @@ fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> HashMap<&'a str, FuncData<'a>> {
                 parameters: parameters.clone(),
                 body: body.clone(),
                 return_ty: *return_ty,
+                line: stmt.line,
             };
             // WARN: add error handling
             funcs.insert(*name, func_data);
@@ -206,7 +208,7 @@ impl<'a> Analyser<'a> {
             symbols: SemanticScope::new(),
         }
     }
-    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<()> {
+    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<HashMap<&'a str, FuncData<'a>>> {
         let func_data = get_func_data(stmts);
         let mut analyser = Analyser::new(func_data);
 
@@ -216,7 +218,7 @@ impl<'a> Analyser<'a> {
                 return None;
             }
         }
-        Some(())
+        Some(analyser.func_data)
     }
 
     fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticError> {
@@ -279,13 +281,6 @@ impl<'a> Analyser<'a> {
                 body,
                 return_ty: _,
             } => {
-                //let data = match self.func_data.remove(name) {
-                //    Some(data) => data,
-                //    None => {
-                //        let ty = ErrType::UndefinedFunc(name.to_string());
-                //        return Err(SemanticError::new(line, ty));
-                //    }
-                //};
                 self.symbols.begin_scope();
                 for (ty, name) in parameters {
                     self.symbols.declare(Symbol::new(name, *ty), line)?;
