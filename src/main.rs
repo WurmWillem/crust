@@ -60,13 +60,13 @@ fn main() {
         }
     };
 
-    let comps = match Analyser::analyse_stmts(&statements) {
-        Some(comps) => comps,
+    match Analyser::analyse_stmts(&statements) {
+        Some(_) => (),
         None => return,
-    };
+    }
 
     // dbg!(&statements);
-    if let Some((func, heap)) = Compiler::compile(statements, comps) {
+    if let Some((func, heap)) = Compiler::compile(statements) {
         vm::VM::interpret(func, heap);
     } else {
         return;

@@ -18,15 +18,15 @@ pub struct Compiler<'a> {
     funcs: HashMap<&'a str, StackValue>,
 }
 impl<'a> Compiler<'a> {
-    fn new(comps: FuncCompilerStack<'a>) -> Self {
+    fn new() -> Self {
         Self {
             heap: Heap::new(),
-            comps,
+            comps: FuncCompilerStack::new(),
             funcs: HashMap::new(),
         }
     }
-    pub fn compile(stmts: Vec<Stmt>, comps: FuncCompilerStack) -> Option<(ObjFunc, Heap)> {
-        let mut comp = Compiler::new(comps);
+    pub fn compile(stmts: Vec<Stmt>) -> Option<(ObjFunc, Heap)> {
+        let mut comp = Compiler::new();
         if let Err(err) = comp.collect_type_data(&stmts) {
             print_error(err.line, &err.msg);
 
@@ -112,16 +112,19 @@ impl<'a> Compiler<'a> {
                 self.comps.emit_byte(OpCode::Print as u8, line);
             }
             StmtType::Var {
-                name: _,
+                name,
                 value,
-                ty: _,
+                ty,
             } => {
+                self.comps.add_local(name, ty, line);
                 self.emit_expr(value)?;
             }
             StmtType::Block(stmts) => {
+                self.comps.begin_scope();
                 for stmt in stmts {
                     self.emit_stmt(stmt)?;
                 }
+                self.comps.end_scope();
             }
             StmtType::If {
                 final_else,
@@ -221,9 +224,7 @@ impl<'a> Compiler<'a> {
                 if let Some((arg, _kind)) = self.comps.resolve_local(name) {
                     self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
                 } else {
-                    // TODO: report these errors in earlier stage
-                    let msg = format!("The variable/function with name '{}' does not exist.", name);
-                    return Err(ParseError::new(line, &msg));
+                    unreachable!()
                 }
             }
             ExprType::Assign { name, value } => {
@@ -231,8 +232,7 @@ impl<'a> Compiler<'a> {
                     self.emit_expr(*value)?;
                     self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
                 } else {
-                    let msg = format!("The variable with name '{}' does not exist.", name);
-                    return Err(ParseError::new(line, &msg));
+                    unreachable!()
                 }
             }
             ExprType::Unary {

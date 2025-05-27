@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy)]
-enum Operator {
+pub enum Operator {
     // binary
     Add,
     Sub,
@@ -67,6 +67,7 @@ pub enum ErrTy {
     InvalidInfix,
     TooManyLocals,
     UndefinedVar(String),
+    AlreadyDefinedVar(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
     VarTypeMisMatch(ValueType, ValueType),
 }
@@ -77,6 +78,12 @@ impl SemanticError {
             ErrTy::InvalidInfix => format!("invalid infix."),
             ErrTy::UndefinedVar(name) => {
                 format!("Variable '{}' has not been defined in this scope.", name)
+            }
+            ErrTy::AlreadyDefinedVar(name) => {
+                format!(
+                    "Variable '{}' has already been defined in this scope.",
+                    name
+                )
             }
             ErrTy::TooManyLocals => format!("invalid prefix bozo"),
             ErrTy::OpTypeMismatch(expected, op, found) => {
@@ -124,18 +131,70 @@ fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> HashMap<&'a str, FuncData<'a>> {
     funcs
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct Symbol<'a> {
+    name: &'a str,
+    ty: ValueType,
+}
+impl<'a> Symbol<'a> {
+    pub fn new(name: &'a str, ty: ValueType) -> Self {
+        Self { name, ty }
+    }
+}
+
+pub struct SemanticScope<'a> {
+    stack: Vec<HashMap<&'a str, Symbol<'a>>>,
+}
+
+impl<'a> SemanticScope<'a> {
+    pub fn new() -> Self {
+        Self {
+            stack: vec![HashMap::new()],
+        } // global scope
+    }
+
+    pub fn begin_scope(&mut self) {
+        self.stack.push(HashMap::new());
+    }
+
+    pub fn end_scope(&mut self) {
+        self.stack.pop();
+    }
+
+    pub fn declare(&mut self, symbol: Symbol<'a>, line: u32) -> Result<(), SemanticError> {
+        let current = self.stack.last_mut().unwrap();
+        if current.contains_key(symbol.name) {
+            return Err(SemanticError::new(
+                line,
+                ErrTy::AlreadyDefinedVar(symbol.name.to_string()),
+            ));
+        }
+        current.insert(symbol.name, symbol);
+        Ok(())
+    }
+
+    pub fn resolve(&self, name: &str) -> Option<Symbol<'a>> {
+        for scope in self.stack.iter().rev() {
+            if let Some(sym) = scope.get(name) {
+                return Some(*sym);
+            }
+        }
+        None
+    }
+}
+
 pub struct Analyser<'a> {
-    comps: FuncCompilerStack<'a>,
     func_data: HashMap<&'a str, FuncData<'a>>,
+    symbols: SemanticScope<'a>,
 }
 impl<'a> Analyser<'a> {
     fn new(func_data: HashMap<&'a str, FuncData<'a>>) -> Self {
         Self {
-            comps: FuncCompilerStack::new(),
             func_data,
+            symbols: SemanticScope::new(),
         }
     }
-    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<FuncCompilerStack<'a>> {
+    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<()> {
         let func_data = get_func_data(stmts);
         let mut analyser = Analyser::new(func_data);
 
@@ -145,7 +204,7 @@ impl<'a> Analyser<'a> {
                 return None;
             }
         }
-        Some(analyser.comps)
+        Some(())
     }
 
     fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticError> {
@@ -160,7 +219,8 @@ impl<'a> Analyser<'a> {
                     let err_ty = ErrTy::VarTypeMisMatch(*ty, value_ty);
                     return Err(SemanticError::new(line, err_ty));
                 }
-                self.comps.add_local(name, *ty, line)?;
+                self.symbols.declare(Symbol::new(name, *ty), line)?;
+                //self.comps.add_local(name, *ty, line)?;
             }
             StmtType::Println(expr) => {
                 self.analyse_expr(expr)?;
@@ -169,11 +229,13 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Block(stmts) => {
-                self.comps.begin_scope();
+                //self.comps.begin_scope();
+                self.symbols.begin_scope();
                 for stmt in stmts {
                     self.analyse_stmt(stmt)?;
                 }
-                self.comps.end_scope();
+                //self.comps.end_scope();
+                self.symbols.end_scope();
             }
             StmtType::If {
                 condition,
@@ -214,22 +276,22 @@ impl<'a> Analyser<'a> {
         let line = expr.line;
         let result = match &expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
-            ExprType::Var(name) => match self.comps.resolve_local(name) {
-                Some((_, ty)) => ty,
+            ExprType::Var(name) => match self.symbols.resolve(name) {
+                Some(symbol) => symbol.ty,
                 None => {
                     let ty = ErrTy::UndefinedVar(name.to_string());
                     return Err(SemanticError::new(line, ty));
                 }
             },
             ExprType::Call { name, args } => todo!(),
-            ExprType::Assign { name, value } => match self.comps.resolve_local(name) {
-                Some((_, ty)) => {
+            ExprType::Assign { name, value } => match self.symbols.resolve(name) {
+                Some(symbol) => {
                     let value_ty = self.analyse_expr(value)?;
-                    if ty != value_ty {
-                        let err_ty = ErrTy::VarTypeMisMatch(ty, value_ty);
+                    if symbol.ty != value_ty {
+                        let err_ty = ErrTy::VarTypeMisMatch(symbol.ty, value_ty);
                         return Err(SemanticError::new(line, err_ty));
                     }
-                    ty
+                    symbol.ty
                 }
                 None => {
                     let ty = ErrTy::UndefinedVar(name.to_string());
