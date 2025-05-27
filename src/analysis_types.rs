@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    error::{ErrType, SemanticError},
+    error::{ErrType, SemanticErr},
     statement::{Stmt, StmtType},
     value::ValueType,
 };
@@ -108,10 +108,10 @@ impl<'a> SemanticScope<'a> {
         self.stack.pop();
     }
 
-    pub fn declare(&mut self, symbol: Symbol<'a>, line: u32) -> Result<(), SemanticError> {
+    pub fn declare(&mut self, symbol: Symbol<'a>, line: u32) -> Result<(), SemanticErr> {
         let current = self.stack.last_mut().unwrap();
         if current.contains_key(symbol.name) {
-            return Err(SemanticError::new(
+            return Err(SemanticErr::new(
                 line,
                 ErrType::AlreadyDefinedVar(symbol.name.to_string()),
             ));

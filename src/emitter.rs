@@ -13,12 +13,12 @@ use crate::{
     value::StackValue,
 };
 
-pub struct Compiler<'a> {
+pub struct Emitter<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
     funcs: HashMap<&'a str, StackValue>,
 }
-impl<'a> Compiler<'a> {
+impl<'a> Emitter<'a> {
     fn new() -> Self {
         Self {
             heap: Heap::new(),
@@ -30,7 +30,7 @@ impl<'a> Compiler<'a> {
         stmts: Vec<Stmt>,
         func_data: HashMap<&'a str, FuncData<'a>>,
     ) -> Option<(ObjFunc, Heap)> {
-        let mut comp = Compiler::new();
+        let mut comp = Emitter::new();
         if let Err(err) = comp.collect_type_data(func_data) {
             print_error(err.line, &err.msg);
 

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     analysis_types::{get_func_data, FuncData, Operator, SemanticScope, Symbol},
-    error::{ErrType, SemanticError},
+    error::{ErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
@@ -34,7 +34,7 @@ impl<'a> Analyser<'a> {
         Some(analyser.func_data)
     }
 
-    fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticError> {
+    fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticErr> {
         let line = stmt.line;
         match &stmt.stmt {
             StmtType::Expr(expr) => {
@@ -44,7 +44,7 @@ impl<'a> Analyser<'a> {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
                     let err_ty = ErrType::TypeMismatch(*ty, value_ty);
-                    return Err(SemanticError::new(line, err_ty));
+                    return Err(SemanticErr::new(line, err_ty));
                 }
                 self.symbols.declare(Symbol::new(name, *ty), line)?;
             }
@@ -103,7 +103,7 @@ impl<'a> Analyser<'a> {
         };
         Ok(())
     }
-    fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticError> {
+    fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticErr> {
         let line = expr.line;
         let result = match &expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
@@ -111,7 +111,7 @@ impl<'a> Analyser<'a> {
                 Some(symbol) => symbol.ty,
                 None => {
                     let ty = ErrType::UndefinedVar(name.to_string());
-                    return Err(SemanticError::new(line, ty));
+                    return Err(SemanticErr::new(line, ty));
                 }
             },
             ExprType::Call { name, args } => {
@@ -119,7 +119,7 @@ impl<'a> Analyser<'a> {
                     Some(data) => data,
                     None => {
                         let ty = ErrType::UndefinedFunc(name.to_string());
-                        return Err(SemanticError::new(line, ty));
+                        return Err(SemanticErr::new(line, ty));
                     }
                 };
                 if args.len() != data.parameters.len() {
@@ -128,13 +128,13 @@ impl<'a> Analyser<'a> {
                         args.len() as u8,
                         data.parameters.len() as u8,
                     );
-                    return Err(SemanticError::new(line, err_ty));
+                    return Err(SemanticErr::new(line, err_ty));
                 }
                 for (i, arg) in args.iter().enumerate() {
                     let arg_ty = self.analyse_expr(arg)?;
                     if arg_ty != data.parameters[i].0 {
                         let err_ty = ErrType::TypeMismatch(data.parameters[i].0, arg_ty);
-                        return Err(SemanticError::new(line, err_ty));
+                        return Err(SemanticErr::new(line, err_ty));
                     }
                 }
 
@@ -147,13 +147,13 @@ impl<'a> Analyser<'a> {
                     let value_ty = self.analyse_expr(value)?;
                     if symbol.ty != value_ty {
                         let err_ty = ErrType::TypeMismatch(symbol.ty, value_ty);
-                        return Err(SemanticError::new(line, err_ty));
+                        return Err(SemanticErr::new(line, err_ty));
                     }
                     symbol.ty
                 }
                 None => {
                     let ty = ErrType::UndefinedVar(name.to_string());
-                    return Err(SemanticError::new(line, ty));
+                    return Err(SemanticErr::new(line, ty));
                 }
             },
             ExprType::Unary { prefix, value } => {
@@ -163,7 +163,7 @@ impl<'a> Analyser<'a> {
                         if value_ty != ValueType::Num {
                             let err_ty =
                                 ErrType::OpTypeMismatch(ValueType::Num, Operator::Minus, value_ty);
-                            return Err(SemanticError::new(line, err_ty));
+                            return Err(SemanticErr::new(line, err_ty));
                         }
                         value_ty
                     }
@@ -171,11 +171,11 @@ impl<'a> Analyser<'a> {
                         if value_ty != ValueType::Bool {
                             let err_ty =
                                 ErrType::OpTypeMismatch(ValueType::Bool, Operator::Bang, value_ty);
-                            return Err(SemanticError::new(line, err_ty));
+                            return Err(SemanticErr::new(line, err_ty));
                         }
                         value_ty
                     }
-                    _ => return Err(SemanticError::new(line, ErrType::InvalidPrefix)),
+                    _ => return Err(SemanticErr::new(line, ErrType::InvalidPrefix)),
                 }
             }
             ExprType::Binary { left, op, right } => {
@@ -184,7 +184,7 @@ impl<'a> Analyser<'a> {
                 if left_ty != right_ty {
                     let op = op.to_operator();
                     let err_ty = ErrType::OpTypeMismatch(left_ty, op, right_ty);
-                    return Err(SemanticError::new(line, err_ty));
+                    return Err(SemanticErr::new(line, err_ty));
                 }
 
                 use BinaryOp as BO;
@@ -201,7 +201,7 @@ impl<'a> Analyser<'a> {
                 if x {
                     left_ty
                 } else {
-                    return Err(SemanticError::new(line, ErrType::InvalidInfix));
+                    return Err(SemanticErr::new(line, ErrType::InvalidInfix));
                 }
             }
         };

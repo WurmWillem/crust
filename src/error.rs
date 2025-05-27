@@ -41,11 +41,11 @@ impl EmitErr {
         }
     }
 }
-pub struct SemanticError {
+pub struct SemanticErr {
     ty: ErrType,
     line: u32,
 }
-impl SemanticError {
+impl SemanticErr {
     pub fn new(line: u32, ty: ErrType) -> Self {
         Self { ty, line }
     }
@@ -60,7 +60,7 @@ pub enum ErrType {
     OpTypeMismatch(ValueType, Operator, ValueType),
     TypeMismatch(ValueType, ValueType),
 }
-impl SemanticError {
+impl SemanticErr {
     pub fn print(&self) {
         let msg = match &self.ty {
             ErrType::InvalidPrefix => format!("invalid prefix."),

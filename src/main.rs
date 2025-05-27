@@ -1,5 +1,5 @@
 use analysis::Analyser;
-use compiler::Compiler;
+use emitter::Emitter;
 use error::PRINT_SCAN_TOKENS;
 use op_code::OpCode;
 use scanner::Scanner;
@@ -10,7 +10,7 @@ use colored::Colorize;
 mod analysis;
 mod analysis_types;
 mod chunk;
-mod compiler;
+mod emitter;
 mod error;
 mod expression;
 mod func_compiler;
@@ -67,7 +67,7 @@ fn main() {
     };
 
     // dbg!(&statements);
-    if let Some((func, heap)) = Compiler::compile(statements, func_data) {
+    if let Some((func, heap)) = Emitter::compile(statements, func_data) {
         vm::VM::interpret(func, heap);
     } else {
         return;
