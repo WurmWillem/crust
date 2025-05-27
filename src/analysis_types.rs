@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     error::{ErrType, SemanticErr},
+    object::NativeFunc,
     statement::{Stmt, StmtType},
     value::ValueType,
 };
@@ -55,8 +56,56 @@ pub struct FuncData<'a> {
     pub return_ty: ValueType,
     pub line: u32,
 }
+pub struct NatFuncData {
+    pub parameters: Vec<ValueType>,
+    pub func: NativeFunc,
+    pub return_ty: ValueType,
+}
 
-pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> HashMap<&'a str, FuncData<'a>> {
+pub fn get_func_data<'a>(
+    stmts: &Vec<Stmt<'a>>,
+) -> (
+    HashMap<&'a str, FuncData<'a>>,
+    HashMap<&'a str, NatFuncData>,
+) {
+    let mut nat_funcs = HashMap::new();
+    macro_rules! add_func {
+        ($name: expr, $func: ident, $parameters: expr, $return_ty: expr) => {
+            let nat_func = NatFuncData {
+                parameters: $parameters,
+                func: crate::native_funcs::$func,
+                return_ty: $return_ty,
+            };
+            nat_funcs.insert($name, nat_func);
+        };
+    }
+    add_func!("clock", clock, vec![], ValueType::Num);
+    add_func!("print", print, vec![ValueType::Any], ValueType::Null);
+    add_func!("println", println, vec![ValueType::Any], ValueType::Null);
+    add_func!("sin", sin, vec![ValueType::Num], ValueType::Num);
+    add_func!("cos", cos, vec![ValueType::Num], ValueType::Num);
+    add_func!("tan", tan, vec![ValueType::Num], ValueType::Num);
+    add_func!(
+        "min",
+        min,
+        vec![ValueType::Num, ValueType::Num],
+        ValueType::Num
+    );
+    add_func!(
+        "max",
+        max,
+        vec![ValueType::Num, ValueType::Num],
+        ValueType::Num
+    );
+    add_func!("abs", abs, vec![ValueType::Num], ValueType::Num);
+    add_func!("sqrt", sqrt, vec![ValueType::Num], ValueType::Num);
+    add_func!(
+        "pow",
+        pow,
+        vec![ValueType::Num, ValueType::Num],
+        ValueType::Num
+    );
+
     let mut funcs = HashMap::new();
     for stmt in stmts {
         if let StmtType::Func {
@@ -76,7 +125,7 @@ pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> HashMap<&'a str, FuncData<'a>
             funcs.insert(*name, func_data);
         }
     }
-    funcs
+    (funcs, nat_funcs)
 }
 
 #[derive(Debug, Clone, Copy)]

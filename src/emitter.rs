@@ -66,7 +66,7 @@ impl<'a> Emitter<'a> {
         add_func!("println", println);
         add_func!("sin", sin);
         add_func!("cos", cos);
-        add_func!("sin", tan);
+        add_func!("tan", tan);
         add_func!("min", min);
         add_func!("max", max);
         add_func!("abs", abs);

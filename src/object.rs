@@ -128,15 +128,15 @@ impl ObjFunc {
     }
 }
 
-type NativeFn = fn(&[StackValue]) -> StackValue;
+pub type NativeFunc = fn(&[StackValue]) -> StackValue;
 #[derive(Debug, Clone)]
 pub struct ObjNative {
     // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
     name: String,
-    pub func: NativeFn,
+    pub func: NativeFunc,
 }
 impl ObjNative {
-    pub fn new(name: String, func: NativeFn) -> Self {
+    pub fn new(name: String, func: NativeFunc) -> Self {
         Self { name, func }
     }
     pub fn get_name(&self) -> &String {

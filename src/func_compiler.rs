@@ -145,7 +145,6 @@ impl<'a> FuncCompilerStack<'a> {
     }
 
     pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
-        // TODO: shadowing doesn't remove the old var as of now
         for i in (0..self.current().local_count).rev() {
             if self.current().locals[i].name == name {
                 return Some((i as u8, self.current().locals[i].ty));
