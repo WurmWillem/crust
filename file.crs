@@ -1,6 +1,5 @@
-int x = 3;
+
+pr add(1, 2);
 fn add(int a, int b): int {
     return a + b;
 }
-
-pr add(1, 2);

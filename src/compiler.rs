@@ -26,9 +26,12 @@ impl<'a> Compiler<'a> {
             funcs: HashMap::new(),
         }
     }
-    pub fn compile(stmts: Vec<Stmt>, func_data: HashMap<&'a str, FuncData<'a>>) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(
+        stmts: Vec<Stmt>,
+        func_data: HashMap<&'a str, FuncData<'a>>,
+    ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Compiler::new();
-        if let Err(err) = comp.collect_type_data(&stmts, func_data) {
+        if let Err(err) = comp.collect_type_data(func_data) {
             print_error(err.line, &err.msg);
 
             return None;
@@ -48,7 +51,6 @@ impl<'a> Compiler<'a> {
 
     fn collect_type_data(
         &mut self,
-        stmts: &Vec<Stmt<'a>>,
         mut func_data: HashMap<&'a str, FuncData<'a>>,
     ) -> Result<(), ParseError> {
         macro_rules! add_func {

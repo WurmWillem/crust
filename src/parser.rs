@@ -162,12 +162,15 @@ impl<'a> Parser<'a> {
             };
         }
 
+        self.consume(TokenType::LeftBrace, "Expected '{' at begin of function body.")?;
+        
         let mut body = vec![];
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Eof) {
             body.push(self.declaration()?);
         }
+        
         if self.peek().kind != TokenType::Eof {
-            self.consume(TokenType::RightBrace, "Expected '}' at end of function.")?;
+            self.consume(TokenType::RightBrace, "Expected '}' at end of function body.")?;
         }
 
         let fn_ty = StmtType::Func {
