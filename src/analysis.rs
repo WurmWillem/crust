@@ -12,6 +12,7 @@ pub struct Analyser<'a> {
     func_data: FuncHash<'a>,
     nat_func_data: NatFuncHash<'a>,
     symbols: SemanticScope<'a>,
+    current_return_ty: ValueType,
 }
 impl<'a> Analyser<'a> {
     fn new(func_data: FuncHash<'a>, nat_func_data: NatFuncHash<'a>) -> Self {
@@ -19,6 +20,7 @@ impl<'a> Analyser<'a> {
             func_data,
             nat_func_data,
             symbols: SemanticScope::new(),
+            current_return_ty: ValueType::None,
         }
     }
     pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
@@ -58,7 +60,12 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Return(expr) => {
-                self.analyse_expr(expr)?;
+                let return_ty = self.analyse_expr(expr)?;
+
+                if return_ty != self.current_return_ty && return_ty != ValueType::Null {
+                    let err_ty = ErrType::IncorrectReturnTy(self.current_return_ty, return_ty);
+                    return Err(SemanticErr::new(line, err_ty));
+                }
             }
             StmtType::Block(stmts) => {
                 self.symbols.begin_scope();
@@ -95,8 +102,11 @@ impl<'a> Analyser<'a> {
                 name: _,
                 parameters,
                 body,
-                return_ty: _,
+                return_ty,
             } => {
+                let prev_return_ty = self.current_return_ty;
+                self.current_return_ty = *return_ty;
+
                 self.symbols.begin_scope();
                 for (ty, name) in parameters {
                     self.symbols.declare(Symbol::new(name, *ty), line)?;
@@ -105,6 +115,7 @@ impl<'a> Analyser<'a> {
                     self.analyse_stmt(stmt)?;
                 }
                 self.symbols.end_scope();
+                self.current_return_ty = prev_return_ty;
             }
         };
         Ok(())

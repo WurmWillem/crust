@@ -56,6 +56,7 @@ pub enum ErrType {
     InvalidInfix,
     UndefinedFunc(String),
     IncorrectArity(String, u8, u8),
+    IncorrectReturnTy(ValueType, ValueType),
     UndefinedVar(String),
     AlreadyDefinedVar(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
@@ -67,6 +68,12 @@ impl SemanticErr {
             ErrType::InvalidPrefix => "invalid prefix.".to_string(),
             ErrType::InvalidInfix => "invalid infix.".to_string(),
 
+            ErrType::IncorrectReturnTy(expected, found) => {
+                format!(
+                    "Function expected return type {}, but found type {}.",
+                    expected, found
+                )
+            }
             ErrType::IncorrectArity(name, expected, found) => {
                 format!(
                     "Function '{}' expected {} arguments, but found {}.",
