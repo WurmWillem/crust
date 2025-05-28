@@ -148,8 +148,6 @@ impl<'a> FuncCompilerStack<'a> {
             return Err(EmitErr::new(line, msg));
         }
 
-        dbg!(((jump >> 8) & 0xFF) as u8);
-        dbg!((jump & 0xFF) as u8);
         self.comps[self.current].func.chunk.code[from] = ((jump >> 8) & 0xFF) as u8;
         self.comps[self.current].func.chunk.code[from + 1] = (jump & 0xFF) as u8;
         Ok(())
