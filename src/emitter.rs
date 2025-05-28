@@ -274,10 +274,12 @@ impl<'a> Emitter<'a> {
                     .emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
             }
             ExprType::Array(arr) => {
-                //self.emit_expr(*left)?;
-                let (object, _) = self.heap.alloc(str.to_string(), Object::Arr);
-                let stack_value = StackValue::Obj(object);
-                self.comps.emit_constant(stack_value, line)?;
+                let arr_len = arr.len() as f64;
+                for value in arr {
+                    self.emit_expr(value)?;
+                }
+                self.comps.emit_constant(StackValue::F64(arr_len), line)?;
+                self.comps.emit_byte(OpCode::AllocArr as u8, line);
             }
         };
         Ok(())

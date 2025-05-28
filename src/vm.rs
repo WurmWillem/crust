@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use crate::{
     error::DEBUG_TRACE_EXECUTION,
-    object::{Gc, Heap, ObjFunc, Object},
+    object::{Gc, Heap, ObjArr, ObjFunc, Object},
     op_code::OpCode,
     value::StackValue,
 };
@@ -89,6 +89,24 @@ impl VM {
                 OpCode::SetLocal => {
                     let slot = self.read_byte(frame) as usize;
                     self.stack[(*frame).slots + slot] = self.stack_peek();
+                }
+
+                OpCode::AllocArr => {
+                    let len = self.stack_pop();
+                    let len = if let StackValue::F64(len) = len {
+                        len as usize
+                    } else {
+                        unreachable!()
+                    };
+                    let mut values = Vec::new();
+                    for _ in 0..len {
+                        values.push(self.stack_pop());
+                    }
+
+                    let obj = ObjArr::new(values);
+                    let (object, _) = self.heap.alloc(obj, Object::Arr);
+                    let arr = StackValue::Obj(object);
+                    self.stack_push(arr);
                 }
 
                 OpCode::Call => {
@@ -180,7 +198,7 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
                 OpCode::Print => {
-                    let string = self.stack_pop().as_string().green();
+                    let string = self.stack_pop().display().green();
                     println!("{}", string);
                 }
             }

@@ -1,5 +1,5 @@
 use std::{
-    fmt,
+    fmt::{self, Display},
     ops::{Neg, Not},
 };
 
@@ -123,20 +123,22 @@ impl Not for StackValue {
         }
     }
 }
-impl StackValue {
-    pub fn as_string(&self) -> String {
+impl Display for StackValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            StackValue::Null => "null".to_string(),
-            StackValue::Bool(b) => b.to_string(),
-            StackValue::F64(f) => f.to_string(),
+            StackValue::Null => write!(f, "null"),
+            StackValue::Bool(b) => write!(f, "{}", b),
+            StackValue::F64(num) => write!(f, "{}", num),
             StackValue::Obj(o) => match o {
-                Object::Str(s) => s.data.to_string(),
+                Object::Str(s) => write!(f, "{}", s.data.to_string()),
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
-                Object::Arr(_) => todo!(),
+                Object::Arr(a) => write!(f, "{:?}", a.data.values),
             },
         }
     }
+}
+impl StackValue {
     pub fn display(&self) -> String {
         match self {
             StackValue::Null => "null".to_string(),
@@ -146,7 +148,7 @@ impl StackValue {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
-                Object::Arr(_) => todo!(),
+                Object::Arr(a) => format!("{:?}", a.data.values),
             },
         }
     }

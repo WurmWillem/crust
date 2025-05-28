@@ -118,11 +118,16 @@ pub enum Object {
 
 #[derive(Debug, Clone)]
 pub struct ObjArr {
-    values: Vec<StackValue>,
+    pub values: Vec<StackValue>,
 }
 impl ObjArr {
     pub fn new(values: Vec<StackValue>) -> Self {
         Self { values }
+    }
+}
+impl std::fmt::Display for ObjArr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.values)
     }
 }
 
