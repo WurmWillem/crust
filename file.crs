@@ -33,7 +33,7 @@ fn battle(str name, int player_hp, int player_atk, int player_def, int enemy_hp,
         println("Enemy HP: ");
         println(enemy_hp);
 
-        if !is_alive(enemy_hp) break;
+        //if !is_alive(enemy_hp) break;
 
         println("The enemy strikes you!");
         player_hp = enemy_attack(player_def, enemy_atk, player_hp);
@@ -51,33 +51,12 @@ fn battle(str name, int player_hp, int player_atk, int player_def, int enemy_hp,
 }
 
 fn main() {
-    println(greet());
-    print_separator();
-
-    str player_name = "Hero";
-    int player_hp = 30;
-    int player_atk = 8;
-    int player_def = 3;
-
-    println("Name: " + player_name);
-    println("Starting HP: ");
-    println(player_hp);
-
-    print_separator();
-    bool won_battle = battle("Slime", player_hp, player_atk, player_def, 20, 4);
-
-    if won_battle {
-        println("You venture deeper into the dungeon...");
-        print_separator();
-
-        bool won_boss = battle("Dragon", player_hp, player_atk + 2, player_def + 1, 50, 10);
-        if won_boss {
-            println("You have conquered the dungeon!");
-        } else {
-            println("The dragon proved too mighty.");
+    int x = 3;
+    while true {
+        if x > 3 {
+            break;
         }
-    } else {
-        println("Your journey ends here.");
+        pr x;
     }
 }
 

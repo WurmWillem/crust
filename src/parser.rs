@@ -236,13 +236,13 @@ impl<'a> Parser<'a> {
         } else if self.matches(TokenType::For) {
             self.for_stmt()
         } else if self.matches(TokenType::Return) {
-            self.return_statement()
+            self.return_stmt()
         } else {
             self.expr_stmt()
         }
     }
 
-    fn return_statement(&mut self) -> Result<Stmt<'a>, ParseErr> {
+    fn return_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {
         let value_ty = ExprType::Lit(Literal::Null);
         let mut value = Expr::new(value_ty, self.previous().line);
 

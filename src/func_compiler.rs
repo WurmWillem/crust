@@ -144,6 +144,18 @@ impl<'a> FuncCompilerStack<'a> {
         self.current = self.comps.len() - 1;
     }
 
+    pub fn push_new_break_stack(&mut self) {
+        self.comps[self.current].break_stack.push(vec![]);
+    }
+
+    pub fn patch_breaks(&mut self) -> Result<(), EmitErr> {
+        let breaks = self.comps[self.current].break_stack.pop().unwrap();
+        for jump in breaks {
+            self.patch_jump(jump)?;
+        }
+        Ok(())
+    }
+
     pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
         for i in (0..self.current().local_count).rev() {
             if self.current().locals[i].name == name {
@@ -176,12 +188,14 @@ impl<'a> Local<'a> {
 }
 
 const MAX_LOCAL_AMT: usize = u8::MAX as usize;
+
 #[derive(Debug)]
 pub struct FuncCompiler<'a> {
     locals: [Local<'a>; MAX_LOCAL_AMT],
     local_count: usize,
     scope_depth: usize,
     func: ObjFunc,
+    break_stack: Vec<Vec<usize>>,
 }
 impl<'a> FuncCompiler<'a> {
     pub fn new(func_name: String) -> Self {
@@ -191,6 +205,7 @@ impl<'a> FuncCompiler<'a> {
             local_count: 1,
             scope_depth: 0,
             func: ObjFunc::new(func_name),
+            break_stack: vec![],
         }
     }
 

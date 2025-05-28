@@ -39,6 +39,7 @@ impl<'a> Analyser<'a> {
                 return None;
             }
         }
+
         Some((analyser.func_data, analyser.nat_func_data))
     }
 

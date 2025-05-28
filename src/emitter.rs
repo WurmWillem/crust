@@ -148,11 +148,16 @@ impl<'a> Emitter<'a> {
 
                 let exit_jump = self.comps.emit_jump(OpCode::JumpIfFalse, line);
                 self.comps.emit_byte(OpCode::Pop as u8, line);
+
+                self.comps.push_new_break_stack();
                 self.emit_stmt(*body)?;
+
                 self.comps.emit_loop(loop_start, line)?;
 
                 self.comps.patch_jump(exit_jump)?;
                 self.comps.emit_byte(OpCode::Pop as u8, line);
+
+                self.comps.patch_breaks()?;
             }
             StmtType::For {
                 condition,
