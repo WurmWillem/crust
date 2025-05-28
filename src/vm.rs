@@ -108,6 +108,19 @@ impl VM {
                     let arr = StackValue::Obj(object);
                     self.stack_push(arr);
                 }
+                OpCode::IndexArr => {
+                    let index = if let StackValue::F64(index) = self.stack_pop() {
+                        index as usize
+                    } else {
+                        unreachable!()
+                    };
+                    
+                    let arr = self.stack_pop();
+                    if let StackValue::Obj(Object::Arr(arr)) = arr {
+                        let value = arr.data.values[index];
+                        self.stack_push(value);
+                    }
+                }
 
                 OpCode::Call => {
                     self.call(frame);

@@ -101,16 +101,16 @@ impl<'a> Emitter<'a> {
         let line = stmt.line;
         match stmt.stmt {
             StmtType::Expr(expr) => {
-                self.emit_expr(expr)?;
+                self.emit_expr(&expr)?;
                 self.comps.emit_byte(OpCode::Pop as u8, line);
             }
             StmtType::Println(expr) => {
-                self.emit_expr(expr)?;
+                self.emit_expr(&expr)?;
                 self.comps.emit_byte(OpCode::Print as u8, line);
             }
             StmtType::Var { name, value, ty } => {
                 self.comps.add_local(name, ty, line)?;
-                self.emit_expr(value)?;
+                self.emit_expr(&value)?;
             }
             StmtType::Block(stmts) => {
                 self.comps.begin_scope();
@@ -124,7 +124,7 @@ impl<'a> Emitter<'a> {
                 condition,
                 body,
             } => {
-                self.emit_expr(condition)?;
+                self.emit_expr(&condition)?;
 
                 let if_false_jump = self.comps.emit_jump(OpCode::JumpIfFalse, line);
 
@@ -144,7 +144,7 @@ impl<'a> Emitter<'a> {
             }
             StmtType::While { condition, body } => {
                 let loop_start = self.comps.get_code_len();
-                self.emit_expr(condition)?;
+                self.emit_expr(&condition)?;
 
                 let exit_jump = self.comps.emit_jump(OpCode::JumpIfFalse, line);
                 self.comps.emit_byte(OpCode::Pop as u8, line);
@@ -170,7 +170,7 @@ impl<'a> Emitter<'a> {
                 self.emit_stmt(*var)?;
                 let var_arg = self.comps.get_local_count() as u8 - 1;
                 let loop_start = self.comps.get_code_len();
-                self.emit_expr(condition)?;
+                self.emit_expr(&condition)?;
 
                 let exit_jump = self.comps.emit_jump(OpCode::JumpIfFalse, line);
                 self.comps.emit_byte(OpCode::Pop as u8, line);
@@ -203,7 +203,7 @@ impl<'a> Emitter<'a> {
                 return_ty: _,
             } => {}
             StmtType::Return(value) => {
-                self.emit_expr(value)?;
+                self.emit_expr(&value)?;
                 self.comps.emit_byte(OpCode::Return as u8, line);
             }
             StmtType::Break => {
@@ -216,9 +216,9 @@ impl<'a> Emitter<'a> {
         Ok(())
     }
 
-    fn emit_expr(&mut self, expr: Expr) -> Result<(), EmitErr> {
+    fn emit_expr(&mut self, expr: &Expr<'a>) -> Result<(), EmitErr> {
         let line = expr.line;
-        match expr.expr {
+        match &expr.expr {
             ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
                 Literal::Str(str) => {
@@ -226,7 +226,7 @@ impl<'a> Emitter<'a> {
                     let stack_value = StackValue::Obj(object);
                     self.comps.emit_constant(stack_value, line)?;
                 }
-                Literal::Num(num) => self.comps.emit_constant(StackValue::F64(num), line)?,
+                Literal::Num(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
                 Literal::True => self.comps.emit_byte(OpCode::True as u8, line),
                 Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),
@@ -240,7 +240,7 @@ impl<'a> Emitter<'a> {
             }
             ExprType::Assign { name, value } => {
                 if let Some((arg, _kind)) = self.comps.resolve_local(name) {
-                    self.emit_expr(*value)?;
+                    self.emit_expr(&(*value))?;
                     self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
                 } else {
                     unreachable!()
@@ -250,7 +250,7 @@ impl<'a> Emitter<'a> {
                 prefix,
                 value: right,
             } => {
-                self.emit_expr(*right)?;
+                self.emit_expr(&(*right))?;
                 match prefix {
                     TokenType::Minus => self.comps.emit_byte(OpCode::Negate as u8, line),
                     TokenType::Bang => self.comps.emit_byte(OpCode::Not as u8, line),
@@ -258,8 +258,8 @@ impl<'a> Emitter<'a> {
                 }
             }
             ExprType::Binary { left, op, right } => {
-                self.emit_expr(*left)?;
-                self.emit_expr(*right)?;
+                self.emit_expr(&(*left))?;
+                self.emit_expr(&(*right))?;
                 let op_code = op.to_op_code();
                 self.comps.emit_byte(op_code as u8, line);
             }
@@ -268,14 +268,14 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_constant(fn_ptr, line)?;
 
                 for var in args.clone() {
-                    self.emit_expr(var)?;
+                    self.emit_expr(&var)?;
                 }
                 self.comps
                     .emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
             }
             ExprType::Array(arr) => {
                 let arr_len = arr.len() as f64;
-                for value in arr {
+                for value in arr.iter().rev() {
                     self.emit_expr(value)?;
                 }
                 self.comps.emit_constant(StackValue::F64(arr_len), line)?;
@@ -284,7 +284,8 @@ impl<'a> Emitter<'a> {
             ExprType::Index { name, index } => {
                 if let Some((arg, _kind)) = self.comps.resolve_local(name) {
                     self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
-                    self.emit_expr(*index)?;
+                    self.emit_expr(&index)?;
+                    self.comps.emit_byte(OpCode::IndexArr as u8, line);
                 } else {
                     unreachable!()
                 }

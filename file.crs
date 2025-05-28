@@ -1,6 +1,7 @@
-int x = [1, 2, 3];
-pr x;
-pr x[0];
+int x = [5, 2, 8];
+for i in 0 to 3 {
+    pr x[i];
+}
 
 /*
 int[3] x = [1, 2, 3];
