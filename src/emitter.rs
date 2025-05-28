@@ -199,6 +199,9 @@ impl<'a> Emitter<'a> {
                 self.emit_expr(value)?;
                 self.comps.emit_byte(OpCode::Return as u8, line);
             }
+            StmtType::Break => {
+                self.comps.add_break(line)?;
+            }
         }
         Ok(())
     }

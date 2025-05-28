@@ -29,7 +29,7 @@ impl<'source> Scanner<'source> {
             "if",If "else",Else "while",While "for",For
             "true",True "false",False "null",Null "this",This "parent",Super
             "struct",Struct "fn",Fn "return",Return "pr",Print
-            "int",F64 "bool",Bool "str",Str "in",In "to",To
+            "int",F64 "bool",Bool "str",Str "in",In "to",To "break",Break
         );
 
         let source_len = source_file.len();

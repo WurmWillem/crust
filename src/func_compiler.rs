@@ -144,6 +144,22 @@ impl<'a> FuncCompilerStack<'a> {
         self.current = self.comps.len() - 1;
     }
 
+    pub fn add_break(&mut self, line: u32) -> Result<(), EmitErr> {
+        if self.current().break_stack.is_empty() {
+            // TODO: better error msg
+            return Err(EmitErr::new(line, "'break' can only be used inside loops."));
+        }
+
+        let jump = self.emit_jump(OpCode::Jump, line);
+        self.comps[self.current]
+            .break_stack
+            .last_mut()
+            .unwrap()
+            .push(jump);
+
+        Ok(())
+    }
+
     pub fn push_new_break_stack(&mut self) {
         self.comps[self.current].break_stack.push(vec![]);
     }

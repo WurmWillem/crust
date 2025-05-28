@@ -118,6 +118,7 @@ impl<'a> Analyser<'a> {
                 self.symbols.end_scope();
                 self.current_return_ty = prev_return_ty;
             }
+            StmtType::Break => (),
         };
         Ok(())
     }

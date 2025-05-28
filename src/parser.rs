@@ -1,13 +1,15 @@
-use colored::Colorize;
-
 use crate::{
-    error::{print_error, ParseErr, EXPECTED_SEMICOLON_MSG},
+    error::{print_error, ParseErr},
     expression::{Expr, ExprType},
     parse_types::{BinaryOp, FnType, ParseRule, Precedence, PARSE_RULES},
     statement::{Stmt, StmtType},
     token::{Literal, Token, TokenType},
     value::ValueType,
 };
+
+use colored::Colorize;
+
+const EXPECTED_SEMICOLON_MSG: &str = "Expected ';' at end of statement.";
 
 pub struct Parser<'token> {
     tokens: Vec<Token<'token>>,
@@ -235,11 +237,19 @@ impl<'a> Parser<'a> {
             self.while_stmt()
         } else if self.matches(TokenType::For) {
             self.for_stmt()
+        } else if self.matches(TokenType::Break) {
+            self.break_stmt()
         } else if self.matches(TokenType::Return) {
             self.return_stmt()
         } else {
             self.expr_stmt()
         }
+    }
+
+    fn break_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+        let stmt = Stmt::new(StmtType::Break, self.previous().line);
+        Ok(stmt)
     }
 
     fn return_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {

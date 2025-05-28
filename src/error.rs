@@ -5,8 +5,6 @@ use crate::{analysis_types::Operator, value::ValueType};
 pub const PRINT_SCAN_TOKENS: bool = false;
 pub const DEBUG_TRACE_EXECUTION: bool = false;
 
-pub const EXPECTED_SEMICOLON_MSG: &str = "Expected ';' at end of statement.";
-
 pub fn print_error(line: u32, message: &str) {
     let l = "[line ".blue();
     let i = "] Error: ".blue();
