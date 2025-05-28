@@ -26,7 +26,12 @@ impl<'a> Analyser<'a> {
             symbols: SemanticScope::new(),
         }
     }
-    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<HashMap<&'a str, FuncData<'a>>> {
+    pub fn analyse_stmts(
+        stmts: &Vec<Stmt<'a>>,
+    ) -> Option<(
+        HashMap<&'a str, FuncData<'a>>,
+        HashMap<&'a str, NatFuncData>,
+    )> {
         let (func_data, nat_func_data) = get_func_data(stmts);
         let mut analyser = Analyser::new(func_data, nat_func_data);
 
@@ -36,7 +41,7 @@ impl<'a> Analyser<'a> {
                 return None;
             }
         }
-        Some(analyser.func_data)
+        Some((analyser.func_data, analyser.nat_func_data))
     }
 
     fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticErr> {
@@ -124,7 +129,7 @@ impl<'a> Analyser<'a> {
         if let Some(data) = self.nat_func_data.remove(name) {
             let parameters = data.parameters.clone();
             let return_ty = data.return_ty;
-            
+
             self.nat_func_data.insert(name, data);
 
             return Ok((return_ty, parameters));

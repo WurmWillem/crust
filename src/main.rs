@@ -61,13 +61,13 @@ fn main() {
         }
     };
 
-    let func_data = match Analyser::analyse_stmts(&statements) {
+    let (func_data, nat_func_data) = match Analyser::analyse_stmts(&statements) {
         Some(func_data) => func_data,
         None => return,
     };
 
     // dbg!(&statements);
-    if let Some((func, heap)) = Emitter::compile(statements, func_data) {
+    if let Some((func, heap)) = Emitter::compile(statements, func_data, nat_func_data) {
         vm::VM::interpret(func, heap);
     } else {
         return;

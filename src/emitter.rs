@@ -1,11 +1,10 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis_types::FuncData,
+    analysis_types::{FuncData, NatFuncData},
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
-    native_funcs,
     object::{Heap, ObjFunc, ObjNative, Object},
     op_code::OpCode,
     statement::{Stmt, StmtType},
@@ -29,9 +28,10 @@ impl<'a> Emitter<'a> {
     pub fn compile(
         stmts: Vec<Stmt>,
         func_data: HashMap<&'a str, FuncData<'a>>,
+        nat_func_data: HashMap<&'a str, NatFuncData>,
     ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        if let Err(err) = comp.collect_type_data(func_data) {
+        if let Err(err) = comp.init_funcs(func_data, nat_func_data) {
             print_error(err.line, &err.msg);
 
             return None;
@@ -49,29 +49,17 @@ impl<'a> Emitter<'a> {
         Some((func, comp.heap))
     }
 
-    fn collect_type_data(
+    fn init_funcs(
         &mut self,
         mut func_data: HashMap<&'a str, FuncData<'a>>,
+        mut nat_func_data: HashMap<&'a str, NatFuncData>,
     ) -> Result<(), EmitErr> {
-        macro_rules! add_func {
-            ($name: expr, $func: ident) => {
-                let func = ObjNative::new($name.to_string(), native_funcs::$func);
-                let (func, _) = self.heap.alloc(func, Object::Native);
-                let value = StackValue::Obj(func);
-                self.funcs.insert($name, value);
-            };
+        for (name, data) in nat_func_data.drain() {
+            let func = ObjNative::new(name.to_string(), data.func);
+            let (func, _) = self.heap.alloc(func, Object::Native);
+            let value = StackValue::Obj(func);
+            self.funcs.insert(name, value);
         }
-        add_func!("clock", clock);
-        add_func!("print", print);
-        add_func!("println", println);
-        add_func!("sin", sin);
-        add_func!("cos", cos);
-        add_func!("tan", tan);
-        add_func!("min", min);
-        add_func!("max", max);
-        add_func!("abs", abs);
-        add_func!("sqrt", sqrt);
-        add_func!("pow", pow);
 
         for (name, data) in func_data.drain() {
             let line = data.line;
