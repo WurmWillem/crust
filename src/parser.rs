@@ -221,7 +221,7 @@ impl<'a> Parser<'a> {
 
         let kind = StmtType::Var { name, value, ty };
         let var = Stmt::new(kind, line);
-        return Ok(var);
+        Ok(var)
     }
 
     fn statement(&mut self) -> Result<Stmt<'a>, ParseErr> {

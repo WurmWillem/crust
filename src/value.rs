@@ -122,13 +122,13 @@ impl Not for StackValue {
     }
 }
 impl StackValue {
-    pub fn to_string(&self) -> String {
+    pub fn as_string(&self) -> String {
         match self {
             StackValue::Null => "null".to_string(),
             StackValue::Bool(b) => b.to_string(),
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(o) => match o {
-                Object::Str(s) => format!("{}", s.data),
+                Object::Str(s) => s.data.to_string(),
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
             },

@@ -105,7 +105,7 @@ impl<'source> Scanner<'source> {
             '&' => {
                 if !self.matches('&') {
                     let msg = "Expected another '&' after '&'.";
-                    print_error(self.line, &msg);
+                    print_error(self.line, msg);
                     self.had_error = true;
                 } else {
                     self.add_token(TokenType::And);
@@ -115,7 +115,7 @@ impl<'source> Scanner<'source> {
             '|' => {
                 if !self.matches('|') {
                     let msg = "Expected another '|' after '|'.";
-                    print_error(self.line, &msg);
+                    print_error(self.line, msg);
                     self.had_error = true;
                 } else {
                     self.add_token(TokenType::Or);

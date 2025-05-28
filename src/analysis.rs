@@ -1,6 +1,6 @@
 use crate::{
     analysis_types::{get_func_data, FuncHash, NatFuncHash, Operator, SemanticScope, Symbol},
-    error::{ErrType, SemanticErr},
+    error::{print_error, ErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
@@ -22,7 +22,13 @@ impl<'a> Analyser<'a> {
         }
     }
     pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
-        let (func_data, nat_func_data) = get_func_data(stmts);
+        let (func_data, nat_func_data) = match get_func_data(stmts) {
+            Some(data) => data,
+            None => {
+                print_error(0, "Function with the same name has already been defined.");
+                return None;
+            }
+        };
         let mut analyser = Analyser::new(func_data, nat_func_data);
 
         for stmt in stmts {
@@ -125,7 +131,7 @@ impl<'a> Analyser<'a> {
             return Ok((return_ty, parameters));
         };
         let ty = ErrType::UndefinedFunc(name.to_string());
-        return Err(SemanticErr::new(line, ty));
+        Err(SemanticErr::new(line, ty))
     }
     fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticErr> {
         let line = expr.line;

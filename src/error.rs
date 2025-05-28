@@ -63,8 +63,8 @@ pub enum ErrType {
 impl SemanticErr {
     pub fn print(&self) {
         let msg = match &self.ty {
-            ErrType::InvalidPrefix => format!("invalid prefix."),
-            ErrType::InvalidInfix => format!("invalid infix."),
+            ErrType::InvalidPrefix => "invalid prefix.".to_string(),
+            ErrType::InvalidInfix => "invalid infix.".to_string(),
 
             ErrType::IncorrectArity(name, expected, found) => {
                 format!(

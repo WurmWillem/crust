@@ -69,7 +69,5 @@ fn main() {
     // dbg!(&statements);
     if let Some((func, heap)) = Emitter::compile(statements, func_data, nat_func_data) {
         vm::VM::interpret(func, heap);
-    } else {
-        return;
     }
 }

@@ -64,7 +64,7 @@ pub struct NatFuncData {
 pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
 pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
 
-pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> (FuncHash<'a>, NatFuncHash<'a>) {
+pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
     let nat_funcs = get_nat_func_hash();
 
     let mut funcs = HashMap::new();
@@ -82,11 +82,13 @@ pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> (FuncHash<'a>, NatFuncHash<'a
                 return_ty: *return_ty,
                 line: stmt.line,
             };
-            // WARN: add error handling
-            funcs.insert(*name, func_data);
+
+            if funcs.insert(*name, func_data).is_some() {
+                return None;
+            }
         }
     }
-    (funcs, nat_funcs)
+    Some((funcs, nat_funcs))
 }
 
 fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {

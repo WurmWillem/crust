@@ -110,7 +110,6 @@ pub enum Object {
     Native(Gc<ObjNative>),
 }
 
-// TODO: maybe look into this being stack allocated
 #[derive(Debug, Clone)]
 pub struct ObjFunc {
     pub chunk: Chunk,

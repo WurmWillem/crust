@@ -180,7 +180,7 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
                 OpCode::Print => {
-                    let string = self.stack_pop().to_string().green();
+                    let string = self.stack_pop().as_string().green();
                     println!("{}", string);
                 }
             }
