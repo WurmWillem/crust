@@ -89,6 +89,7 @@ pub enum TokenType {
     False,
     For,
     Break,
+    Continue,
     In,
     To,
     Fn,

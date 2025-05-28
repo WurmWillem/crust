@@ -226,7 +226,7 @@ impl<'a> Analyser<'a> {
                 let x = match op {
                     BO::Add => left_ty == ValueType::Num || left_ty == ValueType::Str,
                     BO::Sub | BO::Mul | BO::Div => left_ty == ValueType::Num,
-                    BO::Equal | BO::NotEqual => true,
+                    BO::Equal | BO::NotEqual => return Ok(ValueType::Bool),
                     BO::Less | BO::LessEqual | BO::Greater | BO::GreaterEqual => {
                         if left_ty == ValueType::Num {
                             return Ok(ValueType::Bool);

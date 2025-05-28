@@ -144,9 +144,35 @@ impl<'a> FuncCompilerStack<'a> {
         self.current = self.comps.len() - 1;
     }
 
+    pub fn add_continue(&mut self, line: u32) -> Result<(), EmitErr> {
+        if self.current().continue_stack.is_empty() {
+            return Err(EmitErr::new(line, "'continue' can only be used inside loops."));
+        }
+
+        let jump = self.emit_jump(OpCode::Jump, line);
+        self.comps[self.current]
+            .continue_stack
+            .last_mut()
+            .unwrap()
+            .push(jump);
+
+        Ok(())
+    }
+
+    pub fn push_new_continue_stack(&mut self) -> usize {
+        self.comps[self.current].continue_stack.push(vec![]);
+        self.get_code_len()
+    }
+
+    pub fn patch_continues(&mut self, line: u32) -> Result<(), EmitErr> {
+        let continues = self.comps[self.current].continue_stack.pop().unwrap();
+        for jump in continues {
+            self.emit_loop(jump, line)?;
+        }
+        Ok(())
+    }
     pub fn add_break(&mut self, line: u32) -> Result<(), EmitErr> {
         if self.current().break_stack.is_empty() {
-            // TODO: better error msg
             return Err(EmitErr::new(line, "'break' can only be used inside loops."));
         }
 
@@ -212,6 +238,7 @@ pub struct FuncCompiler<'a> {
     scope_depth: usize,
     func: ObjFunc,
     break_stack: Vec<Vec<usize>>,
+    continue_stack: Vec<Vec<usize>>,
 }
 impl<'a> FuncCompiler<'a> {
     pub fn new(func_name: String) -> Self {
@@ -222,6 +249,7 @@ impl<'a> FuncCompiler<'a> {
             scope_depth: 0,
             func: ObjFunc::new(func_name),
             break_stack: vec![],
+            continue_stack: vec![],
         }
     }
 
