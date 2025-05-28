@@ -51,13 +51,11 @@ fn battle(str name, int player_hp, int player_atk, int player_def, int enemy_hp,
 }
 
 fn main() {
-    int x = 3;
-    while true {
-        if x > 3 {
+    for i in 0 to 10 {
+        if i > 3 {
             break;
         }
-        x = x + 1;
-        pr x;
+        pr i;
     }
 }
 

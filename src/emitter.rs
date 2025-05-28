@@ -171,6 +171,8 @@ impl<'a> Emitter<'a> {
 
                 let exit_jump = self.comps.emit_jump(OpCode::JumpIfFalse, line);
                 self.comps.emit_byte(OpCode::Pop as u8, line);
+
+                self.comps.push_new_break_stack();
                 self.emit_stmt(*body)?;
 
                 self.comps.emit_bytes(OpCode::GetLocal as u8, var_arg, line);
@@ -184,6 +186,8 @@ impl<'a> Emitter<'a> {
 
                 self.comps.patch_jump(exit_jump)?;
                 self.comps.emit_byte(OpCode::Pop as u8, line);
+
+                self.comps.patch_breaks()?;
 
                 // necessary so the variable goes out of scope again
                 self.comps.emit_byte(OpCode::Pop as u8, line);
