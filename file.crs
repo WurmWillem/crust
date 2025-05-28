@@ -1,31 +1,85 @@
-fn factorial(int n): int {
-    if n <= 1 return 1;
-    return n * factorial(n - 1);
+fn greet(): str {
+    str welcome = "Welcome to the Kingdom of Crust!";
+    return welcome;
 }
 
-fn greet_user(): str {
-    str greeting = "Welcome to Crust!";
-    return greeting;
+fn random_int(int min, int max): int {
+    return (min + max) / 2; // fake random for demo purposes
 }
 
-fn fib(int n): int {
-  if n < 2 return n;
-  return fib(n - 1) + fib(n - 2);
+fn print_separator() {
+    println("------------------------------");
+}
+
+fn is_alive(int hp): bool {
+    return hp > 0;
+}
+
+fn player_attack(int atk, int enemy_hp): int {
+    return enemy_hp - atk;
+}
+
+fn enemy_attack(int def, int enemy_atk, int hp): int {
+    int damage = enemy_atk - def;
+    if damage < 0 return hp;
+    return hp - damage;
+}
+
+fn battle(str name, int player_hp, int player_atk, int player_def, int enemy_hp, int enemy_atk): bool {
+    println("A wild " + name + " appears!");
+    while is_alive(player_hp) && is_alive(enemy_hp) {
+        println("You strike the enemy!");
+        enemy_hp = player_attack(player_atk, enemy_hp);
+        println("Enemy HP: ");
+        println(enemy_hp);
+
+        if !is_alive(enemy_hp) break;
+
+        println("The enemy strikes you!");
+        player_hp = enemy_attack(player_def, enemy_atk, player_hp);
+        println("Your HP: ");
+        println(player_hp);
+    }
+
+    if is_alive(player_hp) {
+        println("You defeated the " + name + "!");
+        return true;
+    }
+
+    println("You were defeated by the " + name + "...");
+    return false;
 }
 
 fn main() {
-    int num = 5;
-    int fact = factorial(num);
+    println(greet());
+    print_separator();
 
-    str msg = greet_user();
+    str player_name = "Hero";
+    int player_hp = 30;
+    int player_atk = 8;
+    int player_def = 3;
 
-    println(msg);
+    println("Name: " + player_name);
+    println("Starting HP: ");
+    println(player_hp);
 
-    print("Number: ");
-    println(num);
+    print_separator();
+    bool won_battle = battle("Slime", player_hp, player_atk, player_def, 20, 4);
 
-    print("Factorial: ");
-    println(fact);
+    if won_battle {
+        println("You venture deeper into the dungeon...");
+        print_separator();
+
+        bool won_boss = battle("Dragon", player_hp, player_atk + 2, player_def + 1, 50, 10);
+        if won_boss {
+            println("You have conquered the dungeon!");
+        } else {
+            println("The dragon proved too mighty.");
+        }
+    } else {
+        println("Your journey ends here.");
+    }
 }
 
 main();
+

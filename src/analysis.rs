@@ -226,7 +226,10 @@ impl<'a> Analyser<'a> {
                     BO::Sub | BO::Mul | BO::Div => left_ty == ValueType::Num,
                     BO::Equal | BO::NotEqual => true,
                     BO::Less | BO::LessEqual | BO::Greater | BO::GreaterEqual => {
-                        left_ty == ValueType::Num
+                        if left_ty == ValueType::Num {
+                            return Ok(ValueType::Bool);
+                        }
+                        false
                     }
                     BO::And | BO::Or => left_ty == ValueType::Bool,
                 };
