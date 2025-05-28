@@ -119,6 +119,7 @@ impl<'a> Analyser<'a> {
                 self.current_return_ty = prev_return_ty;
             }
             StmtType::Break => (),
+            StmtType::Continue => (),
         };
         Ok(())
     }

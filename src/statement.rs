@@ -22,6 +22,7 @@ pub enum StmtType<'a> {
     Println(Expr<'a>),
     Return(Expr<'a>),
     Break,
+    Continue,
     Block(Vec<Stmt<'a>>),
     If {
         condition: Expr<'a>,

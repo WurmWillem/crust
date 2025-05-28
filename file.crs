@@ -1,101 +1,11 @@
-fn render_board(str c00, str c01, str c02, str c10, str c11, str c12, str c20, str c21, str c22) {
-    println("   0   1   2");
-    println("0  " + c00 + " | " + c01 + " | " + c02);
-    println("  ---+---+---");
-    println("1  " + c10 + " | " + c11 + " | " + c12);
-    println("  ---+---+---");
-    println("2  " + c20 + " | " + c21 + " | " + c22);
-}
-
-fn winner(str a, str b, str c): bool {
-    return a == b && b == c && a != " ";
-}
-
-fn check_win(str c00, str c01, str c02, str c10, str c11, str c12, str c20, str c21, str c22): bool {
-    if winner(c00, c01, c02) return true;
-    if winner(c10, c11, c12) return true;
-    if winner(c20, c21, c22) return true;
-    if winner(c00, c10, c20) return true;
-    if winner(c01, c11, c21) return true;
-    if winner(c02, c12, c22) return true;
-    if winner(c00, c11, c22) return true;
-    if winner(c02, c11, c20) return true;
-    return false;
-}
-
-fn get_cell_ref(int row, int col): str {
-    if row == 0 && col == 0 return "c00";
-    if row == 0 && col == 1 return "c01";
-    if row == 0 && col == 2 return "c02";
-    if row == 1 && col == 0 return "c10";
-    if row == 1 && col == 1 return "c11";
-    if row == 1 && col == 2 return "c12";
-    if row == 2 && col == 0 return "c20";
-    if row == 2 && col == 1 return "c21";
-    if row == 2 && col == 2 return "c22";
-    return "";
-}
-
 fn main() {
-    str c00 = " ";
-    str c01 = " ";
-    str c02 = " ";
-    str c10 = " ";
-    str c11 = " ";
-    str c12 = " ";
-    str c20 = " ";
-    str c21 = " ";
-    str c22 = " ";
-
-    str current = "X";
-    int moves = 0;
-
-    while true {
-        render_board(c00, c01, c02, c10, c11, c12, c20, c21, c22);
-        print("Player ");
-        print(current);
-        println(", enter row (0-2): ");
-        int row = input_int();
-        println("Enter column (0-2): ");
-        int col = input_int();
-
-        str cell = get_cell_ref(row, col);
-        if cell == "" {
-            println("Invalid move.");
+    int i = 0;
+    while i < 10 {
+        if i > 5 {
             continue;
         }
-
-        if cell == "c00" && c00 == " " c00 = current;
-        else if cell == "c01" && c01 == " " c01 = current;
-        else if cell == "c02" && c02 == " " c02 = current;
-        else if cell == "c10" && c10 == " " c10 = current;
-        else if cell == "c11" && c11 == " " c11 = current;
-        else if cell == "c12" && c12 == " " c12 = current;
-        else if cell == "c20" && c20 == " " c20 = current;
-        else if cell == "c21" && c21 == " " c21 = current;
-        else if cell == "c22" && c22 == " " c22 = current;
-        else {
-            println("Cell already taken!");
-            continue;
-        }
-
-        moves = moves + 1;
-
-        if check_win(c00, c01, c02, c10, c11, c12, c20, c21, c22) {
-            render_board(c00, c01, c02, c10, c11, c12, c20, c21, c22);
-            println("Player " + current + " wins!");
-            return;
-        }
-
-        if moves == 9 {
-            render_board(c00, c01, c02, c10, c11, c12, c20, c21, c22);
-            println("It's a draw!");
-            return;
-        }
-
-        if current == "X" current = "O";
-        else current = "X";
+        i = i + 1;
+        println(i);
     }
 }
-
 main();

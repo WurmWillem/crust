@@ -138,6 +138,17 @@ impl<'a> FuncCompilerStack<'a> {
         Ok(())
     }
 
+    pub fn patch_jump_to(&mut self, from: usize, jump: usize, line: u32) -> Result<(), EmitErr> {
+        if jump > u16::MAX as usize {
+            let msg = "Too much code to jump over.";
+            return Err(EmitErr::new(line, msg));
+        }
+
+        self.comps[self.current].func.chunk.code[from] = ((jump >> 8) & 0xFF) as u8;
+        self.comps[self.current].func.chunk.code[from + 1] = (jump & 0xFF) as u8;
+        Ok(())
+    }
+
     pub fn push(&mut self, func_name: String) {
         let new_compiler = FuncCompiler::new(func_name);
         self.comps.push(new_compiler);
@@ -146,7 +157,8 @@ impl<'a> FuncCompilerStack<'a> {
 
     pub fn add_continue(&mut self, line: u32) -> Result<(), EmitErr> {
         if self.current().continue_stack.is_empty() {
-            return Err(EmitErr::new(line, "'continue' can only be used inside loops."));
+            let msg = "'continue' can only be used inside loops.";
+            return Err(EmitErr::new(line, msg));
         }
 
         let jump = self.emit_jump(OpCode::Jump, line);
@@ -159,18 +171,18 @@ impl<'a> FuncCompilerStack<'a> {
         Ok(())
     }
 
-    pub fn push_new_continue_stack(&mut self) -> usize {
+    pub fn push_new_continue_stack(&mut self) {
         self.comps[self.current].continue_stack.push(vec![]);
-        self.get_code_len()
     }
 
-    pub fn patch_continues(&mut self, line: u32) -> Result<(), EmitErr> {
+    pub fn patch_continues(&mut self, loop_start: usize, line: u32) -> Result<(), EmitErr> {
         let continues = self.comps[self.current].continue_stack.pop().unwrap();
-        for jump in continues {
-            self.emit_loop(jump, line)?;
+        for from in continues {
+            self.patch_jump_to(from, loop_start, line)?;
         }
         Ok(())
     }
+
     pub fn add_break(&mut self, line: u32) -> Result<(), EmitErr> {
         if self.current().break_stack.is_empty() {
             return Err(EmitErr::new(line, "'break' can only be used inside loops."));

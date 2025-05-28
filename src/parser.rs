@@ -239,11 +239,19 @@ impl<'a> Parser<'a> {
             self.for_stmt()
         } else if self.matches(TokenType::Break) {
             self.break_stmt()
+        } else if self.matches(TokenType::Continue) {
+            self.continue_stmt()
         } else if self.matches(TokenType::Return) {
             self.return_stmt()
         } else {
             self.expr_stmt()
         }
+    }
+
+    fn continue_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {
+        self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+        let stmt = Stmt::new(StmtType::Continue, self.previous().line);
+        Ok(stmt)
     }
 
     fn break_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {

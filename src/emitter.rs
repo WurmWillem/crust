@@ -150,8 +150,11 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(OpCode::Pop as u8, line);
 
                 self.comps.push_new_break_stack();
+                self.comps.push_new_continue_stack();
+
                 self.emit_stmt(*body)?;
 
+                self.comps.patch_continues(loop_start, line)?;
                 self.comps.emit_loop(loop_start, line)?;
 
                 self.comps.patch_jump(exit_jump)?;
@@ -205,6 +208,9 @@ impl<'a> Emitter<'a> {
             }
             StmtType::Break => {
                 self.comps.add_break(line)?;
+            }
+            StmtType::Continue => {
+                self.comps.add_continue(line)?;
             }
         }
         Ok(())
