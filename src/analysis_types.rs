@@ -61,50 +61,11 @@ pub struct NatFuncData {
     pub func: NativeFunc,
     pub return_ty: ValueType,
 }
+pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
+pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
 
-pub fn get_func_data<'a>(
-    stmts: &Vec<Stmt<'a>>,
-) -> (
-    HashMap<&'a str, FuncData<'a>>,
-    HashMap<&'a str, NatFuncData>,
-) {
-    let mut nat_funcs = HashMap::new();
-    macro_rules! add_func {
-        ($name: expr, $func: ident, $parameters: expr, $return_ty: expr) => {
-            let nat_func = NatFuncData {
-                parameters: $parameters,
-                func: crate::native_funcs::$func,
-                return_ty: $return_ty,
-            };
-            nat_funcs.insert($name, nat_func);
-        };
-    }
-    add_func!("clock", clock, vec![], ValueType::Num);
-    add_func!("print", print, vec![ValueType::Any], ValueType::Null);
-    add_func!("println", println, vec![ValueType::Any], ValueType::Null);
-    add_func!("sin", sin, vec![ValueType::Num], ValueType::Num);
-    add_func!("cos", cos, vec![ValueType::Num], ValueType::Num);
-    add_func!("tan", tan, vec![ValueType::Num], ValueType::Num);
-    add_func!(
-        "min",
-        min,
-        vec![ValueType::Num, ValueType::Num],
-        ValueType::Num
-    );
-    add_func!(
-        "max",
-        max,
-        vec![ValueType::Num, ValueType::Num],
-        ValueType::Num
-    );
-    add_func!("abs", abs, vec![ValueType::Num], ValueType::Num);
-    add_func!("sqrt", sqrt, vec![ValueType::Num], ValueType::Num);
-    add_func!(
-        "pow",
-        pow,
-        vec![ValueType::Num, ValueType::Num],
-        ValueType::Num
-    );
+pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> (FuncHash<'a>, NatFuncHash<'a>) {
+    let nat_funcs = get_nat_func_hash();
 
     let mut funcs = HashMap::new();
     for stmt in stmts {
@@ -126,6 +87,35 @@ pub fn get_func_data<'a>(
         }
     }
     (funcs, nat_funcs)
+}
+
+fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
+    let mut nat_funcs = HashMap::new();
+    macro_rules! add_func {
+        ($name: expr, $func: ident, $parameters: expr, $return_ty: expr) => {
+            let nat_func = NatFuncData {
+                parameters: $parameters,
+                func: crate::native_funcs::$func,
+                return_ty: $return_ty,
+            };
+            nat_funcs.insert($name, nat_func);
+        };
+    }
+
+    use ValueType as VT;
+    add_func!("clock", clock, vec![], VT::Num);
+    add_func!("print", print, vec![VT::Any], VT::Null);
+    add_func!("println", println, vec![VT::Any], VT::Null);
+    add_func!("sin", sin, vec![VT::Num], VT::Num);
+    add_func!("cos", cos, vec![VT::Num], VT::Num);
+    add_func!("tan", tan, vec![VT::Num], VT::Num);
+    add_func!("min", min, vec![VT::Num, VT::Num], VT::Num);
+    add_func!("max", max, vec![VT::Num, VT::Num], VT::Num);
+    add_func!("abs", abs, vec![VT::Num], VT::Num);
+    add_func!("sqrt", sqrt, vec![VT::Num], VT::Num);
+    add_func!("pow", pow, vec![VT::Num, VT::Num], VT::Num);
+
+    nat_funcs
 }
 
 #[derive(Debug, Clone, Copy)]

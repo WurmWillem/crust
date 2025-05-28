@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use crate::{
-    analysis_types::{get_func_data, FuncData, NatFuncData, Operator, SemanticScope, Symbol},
+    analysis_types::{get_func_data, FuncHash, NatFuncHash, Operator, SemanticScope, Symbol},
     error::{ErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
@@ -11,27 +9,19 @@ use crate::{
 };
 
 pub struct Analyser<'a> {
-    func_data: HashMap<&'a str, FuncData<'a>>,
-    nat_func_data: HashMap<&'a str, NatFuncData>,
+    func_data: FuncHash<'a>,
+    nat_func_data: NatFuncHash<'a>,
     symbols: SemanticScope<'a>,
 }
 impl<'a> Analyser<'a> {
-    fn new(
-        func_data: HashMap<&'a str, FuncData<'a>>,
-        nat_func_data: HashMap<&'a str, NatFuncData>,
-    ) -> Self {
+    fn new(func_data: FuncHash<'a>, nat_func_data: NatFuncHash<'a>) -> Self {
         Self {
             func_data,
             nat_func_data,
             symbols: SemanticScope::new(),
         }
     }
-    pub fn analyse_stmts(
-        stmts: &Vec<Stmt<'a>>,
-    ) -> Option<(
-        HashMap<&'a str, FuncData<'a>>,
-        HashMap<&'a str, NatFuncData>,
-    )> {
+    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
         let (func_data, nat_func_data) = get_func_data(stmts);
         let mut analyser = Analyser::new(func_data, nat_func_data);
 
