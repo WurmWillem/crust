@@ -415,7 +415,6 @@ impl<'a> Parser<'a> {
     }
 
     fn execute_prefix(&mut self, fn_type: FnType, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
-        // dbg!(fn_type);
         match fn_type {
             FnType::Grouping => self.grouping(),
             FnType::Unary => self.unary(),

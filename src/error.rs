@@ -50,6 +50,7 @@ impl SemanticErr {
         Self { ty, line }
     }
 }
+#[derive(Debug)]
 pub enum ErrType {
     InvalidPrefix,
     InvalidInfix,

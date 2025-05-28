@@ -50,12 +50,14 @@ impl core::fmt::Display for Operator {
     }
 }
 
+#[derive(Debug)]
 pub struct FuncData<'a> {
     pub parameters: Vec<(ValueType, &'a str)>,
     pub body: Vec<Stmt<'a>>,
     pub return_ty: ValueType,
     pub line: u32,
 }
+#[derive(Debug)]
 pub struct NatFuncData {
     pub parameters: Vec<ValueType>,
     pub func: NativeFunc,

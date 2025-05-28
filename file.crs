@@ -1,6 +1,12 @@
-pr add(3, 2);
-pr pow(2, 3);
-
-fn add(int a, int b): int {
-    return a + b;
+fn factorial(int n): int {
+    if n <= 1 return 1;
+    return n * factorial(n - 1);
 }
+
+fn main() {
+    //int fact = factorial(5);
+    //print("Factorial: ");
+    //println(fact);
+}
+
+main();

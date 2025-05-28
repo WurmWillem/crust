@@ -87,6 +87,7 @@ impl<'a> Emitter<'a> {
                 unreachable!()
             }
         }
+        dbg!(&self.funcs);
 
         Ok(())
     }

@@ -189,8 +189,6 @@ impl VM {
 
     unsafe fn call(&mut self, frame: *mut CallFrame) {
         let arg_count = self.read_byte(frame) as usize;
-        //dbg!(self.stack_top);
-        //dbg!(arg_count);
         let slots = self.stack_top - arg_count;
         let value = self.stack[slots];
 
