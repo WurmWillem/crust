@@ -23,6 +23,10 @@ pub enum ExprType<'a> {
         name: &'a str,
         args: Vec<Expr<'a>>,
     },
+    Index {
+        name: &'a str,
+        index: Box<Expr<'a>>,
+    },
     Assign {
         name: &'a str,
         value: Box<Expr<'a>>,

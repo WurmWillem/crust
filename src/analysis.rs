@@ -244,6 +244,7 @@ impl<'a> Analyser<'a> {
                 }
             }
             ExprType::Array(_) => ValueType::Arr,
+            ExprType::Index { name, index } => todo!(),
         };
         Ok(result)
     }

@@ -281,6 +281,14 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_constant(StackValue::F64(arr_len), line)?;
                 self.comps.emit_byte(OpCode::AllocArr as u8, line);
             }
+            ExprType::Index { name, index } => {
+                if let Some((arg, _kind)) = self.comps.resolve_local(name) {
+                    self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
+                    self.emit_expr(*index)?;
+                } else {
+                    unreachable!()
+                }
+            }
         };
         Ok(())
     }

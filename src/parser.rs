@@ -460,6 +460,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn index(&mut self, arr: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+        let index = Box::new(self.expression()?);
+        self.consume(TokenType::RightBracket, "Expected ']' after index.")?;
+
+        if let ExprType::Var(name) = arr.expr {
+            let ty = ExprType::Index { name, index };
+            let expr = Expr::new(ty, self.previous().line);
+            Ok(expr)
+        } else {
+            unreachable!()
+        }
+    }
+
     fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         let mut args = Vec::new();
         while !self.check(TokenType::RightParen) {
@@ -489,6 +502,7 @@ impl<'a> Parser<'a> {
         match fn_type {
             FnType::Binary => self.binary(left),
             FnType::Call => self.call(left),
+            FnType::Index => self.index(left),
             _ => unreachable!(),
         }
     }

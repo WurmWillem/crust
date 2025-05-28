@@ -46,6 +46,7 @@ pub enum FnType {
     Literal,
     Var,
     Call,
+    Index,
 }
 
 #[derive(Clone, Copy)]
@@ -72,7 +73,7 @@ pub const PARSE_RULES: [ParseRule; 49] = {
         none!(), // right paren
         none!(), // left brace
         none!(), // right brace
-        ParseRule { prefix: Array, infix: Empty, precedence: P::Call, }, // left bracket
+        ParseRule { prefix: Array, infix: Index, precedence: P::Call, }, // left bracket
         none!(), // right bracket
         none!(), // comma
         none!(), // dot
