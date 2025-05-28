@@ -61,12 +61,18 @@ impl<'a> Emitter<'a> {
             self.funcs.insert(name, value);
         }
 
-        for (name, data) in func_data.drain() {
-            let line = data.line;
-
+        // insert dummy function objects for recursion
+        let mut func_objs = Vec::new();
+        for (name, _) in &func_data {
             let dummy = ObjFunc::new(name.to_string());
-            let (mut func_obj, _) = self.heap.alloc(dummy, Object::Func);
+            let (func_obj, _) = self.heap.alloc(dummy, Object::Func);
+
             self.funcs.insert(name, StackValue::Obj(func_obj));
+            func_objs.push(func_obj);
+        }
+
+        for (i, (name, data)) in func_data.drain().enumerate() {
+            let line = data.line;
 
             self.comps.push(name.to_string());
             self.comps.begin_scope();
@@ -81,13 +87,12 @@ impl<'a> Emitter<'a> {
             self.comps.emit_return(line);
 
             let compiled_func = self.comps.end_compiler(line);
-            if let Object::Func(ref mut func) = func_obj.borrow_mut() {
+            if let Object::Func(ref mut func) = func_objs[i].borrow_mut() {
                 func.data = compiled_func;
             } else {
                 unreachable!()
             }
         }
-        dbg!(&self.funcs);
 
         Ok(())
     }
