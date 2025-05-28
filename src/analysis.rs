@@ -156,7 +156,7 @@ impl<'a> Analyser<'a> {
                 }
                 for (i, arg) in args.iter().enumerate() {
                     let arg_ty = self.analyse_expr(arg)?;
-                    if arg_ty != parameters[i] {
+                    if arg_ty != parameters[i] && parameters[i] != ValueType::Any {
                         let err_ty = ErrType::TypeMismatch(parameters[i], arg_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
@@ -167,7 +167,7 @@ impl<'a> Analyser<'a> {
             ExprType::Assign { name, value } => match self.symbols.resolve(name) {
                 Some(symbol) => {
                     let value_ty = self.analyse_expr(value)?;
-                    if symbol.ty != value_ty {
+                    if symbol.ty != value_ty && symbol.ty != ValueType::Any {
                         let err_ty = ErrType::TypeMismatch(symbol.ty, value_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
