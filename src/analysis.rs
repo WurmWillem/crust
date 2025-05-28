@@ -108,6 +108,30 @@ impl<'a> Analyser<'a> {
         };
         Ok(())
     }
+    fn get_called_func_data(
+        &mut self,
+        name: &'a str,
+        line: u32,
+    ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
+        if let Some(data) = self.func_data.remove(name) {
+            let parameters = data.parameters.iter().map(|p| p.0).collect();
+            let return_ty = data.return_ty;
+
+            self.func_data.insert(name, data);
+
+            return Ok((return_ty, parameters));
+        };
+        if let Some(data) = self.nat_func_data.remove(name) {
+            let parameters = data.parameters.clone();
+            let return_ty = data.return_ty;
+            
+            self.nat_func_data.insert(name, data);
+
+            return Ok((return_ty, parameters));
+        };
+        let ty = ErrType::UndefinedFunc(name.to_string());
+        return Err(SemanticErr::new(line, ty));
+    }
     fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticErr> {
         let line = expr.line;
         let result = match &expr.expr {
@@ -120,31 +144,23 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::Call { name, args } => {
-                let data = match self.func_data.remove(name) {
-                    Some(data) => data,
-                    None => {
-                        let ty = ErrType::UndefinedFunc(name.to_string());
-                        return Err(SemanticErr::new(line, ty));
-                    }
-                };
-                if args.len() != data.parameters.len() {
+                let (return_ty, parameters) = self.get_called_func_data(name, line)?;
+                if args.len() != parameters.len() {
                     let err_ty = ErrType::IncorrectArity(
                         name.to_string(),
                         args.len() as u8,
-                        data.parameters.len() as u8,
+                        parameters.len() as u8,
                     );
                     return Err(SemanticErr::new(line, err_ty));
                 }
                 for (i, arg) in args.iter().enumerate() {
                     let arg_ty = self.analyse_expr(arg)?;
-                    if arg_ty != data.parameters[i].0 {
-                        let err_ty = ErrType::TypeMismatch(data.parameters[i].0, arg_ty);
+                    if arg_ty != parameters[i] {
+                        let err_ty = ErrType::TypeMismatch(parameters[i], arg_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                 }
 
-                let return_ty = data.return_ty;
-                self.func_data.insert(name, data);
                 return_ty
             }
             ExprType::Assign { name, value } => match self.symbols.resolve(name) {
