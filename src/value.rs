@@ -41,7 +41,7 @@ macro_rules! add_num_operation {
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
-                _ => unreachable!("$fun_name is only available for numbers"),
+                _ => unreachable!("operation is only available for numbers"),
             }
         }
     };
@@ -70,11 +70,26 @@ impl StackValue {
     add_num_comparison!(is_less_than, <);
     add_num_comparison!(is_less_equal_than, <=);
 
+    #[inline(always)]
     pub fn equals(self, rhs: StackValue) -> bool {
         match (self, rhs) {
             (StackValue::F64(lhs), StackValue::F64(rhs)) => lhs == rhs,
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs == rhs,
             (StackValue::Null, StackValue::Null) => true,
+            _ => unreachable!(),
+        }
+    }
+    #[inline(always)]
+    pub fn and(self, rhs: StackValue) -> bool {
+        match (self, rhs) {
+            (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs && rhs,
+            _ => unreachable!(),
+        }
+    }
+    #[inline(always)]
+    pub fn or(self, rhs: StackValue) -> bool {
+        match (self, rhs) {
+            (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs || rhs,
             _ => unreachable!(),
         }
     }
@@ -107,6 +122,18 @@ impl Not for StackValue {
     }
 }
 impl StackValue {
+    pub fn as_string(&self) -> String {
+        match self {
+            StackValue::Null => "null".to_string(),
+            StackValue::Bool(b) => b.to_string(),
+            StackValue::F64(f) => f.to_string(),
+            StackValue::Obj(o) => match o {
+                Object::Str(s) => s.data.to_string(),
+                Object::Func(_) => unreachable!(),
+                Object::Native(_) => unreachable!(),
+            },
+        }
+    }
     pub fn display(&self) -> String {
         match self {
             StackValue::Null => "null".to_string(),
@@ -114,8 +141,8 @@ impl StackValue {
             StackValue::F64(f) => f.to_string(),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => format!("{:?}", s.data),
-                Object::Func(f) => format!("fn {:?}", f.data.get_name()),
-                Object::Native(f) => format!("nat {:?}", f.data.get_name()),
+                Object::Func(f) => format!("fn {}", f.data.get_name()),
+                Object::Native(f) => format!("nat {}", f.data.get_name()),
             },
         }
     }

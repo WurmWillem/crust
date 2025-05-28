@@ -39,9 +39,6 @@ impl Chunk {
     // }
 
     pub fn disassemble_instruction(&self, offset: usize) -> usize {
-        // dbg!(offset);
-        // dbg!(self.lines[offset]);
-
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
             print!("   | ");
         } else {
@@ -66,8 +63,6 @@ impl Chunk {
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),
 
-            OpCode::GetFunc => self.constant_instruction("OP_GET_LOCAL", offset),
-
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),
             OpCode::False => Self::simple_instruction("OP_FALSE", offset),
@@ -80,8 +75,11 @@ impl Chunk {
             OpCode::Mul => Self::simple_instruction("OP_MUL", offset),
             OpCode::Div => Self::simple_instruction("OP_DIV", offset),
 
+            OpCode::And => Self::simple_instruction("OP_AND", offset),
+            OpCode::Or => Self::simple_instruction("OP_OR", offset),
+
             OpCode::Equal => Self::simple_instruction("OP_EQUAL", offset),
-            OpCode::BangEqual => Self::simple_instruction("OP_BANG_EQUAL", offset),
+            OpCode::NotEqual => Self::simple_instruction("OP_BANG_EQUAL", offset),
             OpCode::Greater => Self::simple_instruction("OP_GREATER", offset),
             OpCode::GreaterEqual => Self::simple_instruction("OP_GREATER_EQUAL", offset),
             OpCode::Less => Self::simple_instruction("OP_LESS", offset),

@@ -2,7 +2,7 @@ use std::ops;
 use std::ptr::NonNull;
 
 use crate::chunk::Chunk;
-use crate::value::{StackValue, ValueType};
+use crate::value::StackValue;
 
 pub struct Heap {
     // TODO: maybe add support for Table so you won't have to reallocate every time
@@ -90,11 +90,11 @@ impl<T> ops::Deref for Gc<T> {
         unsafe { self.ptr.as_ref() }
     }
 }
-// impl<T> ops::DerefMut for Gc<T> {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         unsafe { self.ptr.as_mut() }
-//     }
-// }
+impl<T> ops::DerefMut for Gc<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.ptr.as_mut() }
+    }
+}
 
 #[derive(Debug)]
 pub struct GcData<T> {
@@ -110,19 +110,16 @@ pub enum Object {
     Native(Gc<ObjNative>),
 }
 
-// TODO: maybe look into this being stack allocated
 #[derive(Debug, Clone)]
 pub struct ObjFunc {
     pub chunk: Chunk,
     name: String,
-    pub return_type: ValueType,
 }
 impl ObjFunc {
     pub fn new(name: String) -> Self {
         Self {
             chunk: Chunk::new(),
             name,
-            return_type: ValueType::Null, // gets patched later
         }
     }
     pub fn get_name(&self) -> &String {
@@ -130,20 +127,16 @@ impl ObjFunc {
     }
 }
 
-type NativeFn = fn(&[StackValue]) -> StackValue;
-
+pub type NativeFunc = fn(&[StackValue]) -> StackValue;
 #[derive(Debug, Clone)]
 pub struct ObjNative {
     // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
     name: String,
-    pub func: NativeFn,
+    pub func: NativeFunc,
 }
 impl ObjNative {
-    pub fn new(name: String, func: NativeFn) -> Self {
-        Self {
-            name,
-            func,
-        }
+    pub fn new(name: String, func: NativeFunc) -> Self {
+        Self { name, func }
     }
     pub fn get_name(&self) -> &String {
         &self.name

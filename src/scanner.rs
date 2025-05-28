@@ -26,10 +26,10 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "and",And "or",Or "if",If "else",Else "while",While "for",For
+            "if",If "else",Else "while",While "for",For
             "true",True "false",False "null",Null "this",This "parent",Super
-            "class",Class "fn",Fun "return",Return "pr",Print
-            "int",F64 "bool",Bool "str",Str
+            "struct",Struct "fn",Fn "return",Return "pr",Print
+            "int",F64 "bool",Bool "str",Str "in",In "to",To "break",Break "continue",Continue
         );
 
         let source_len = source_file.len();
@@ -101,6 +101,27 @@ impl<'source> Scanner<'source> {
             '+' => ternary!(PlusEqual, Plus),
             '-' => ternary!(MinEqual, Minus),
             '*' => ternary!(MulEqual, Star),
+
+            '&' => {
+                if !self.matches('&') {
+                    let msg = "Expected another '&' after '&'.";
+                    print_error(self.line, msg);
+                    self.had_error = true;
+                } else {
+                    self.add_token(TokenType::And);
+                    self.current += 1;
+                }
+            }
+            '|' => {
+                if !self.matches('|') {
+                    let msg = "Expected another '|' after '|'.";
+                    print_error(self.line, msg);
+                    self.had_error = true;
+                } else {
+                    self.add_token(TokenType::Or);
+                    self.current += 1;
+                }
+            }
 
             // comments, '/', or '/='
             '/' => {

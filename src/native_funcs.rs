@@ -11,7 +11,7 @@ pub fn clock(_args: &[StackValue]) -> StackValue {
 pub fn print(args: &[StackValue]) -> StackValue {
     use colored::Colorize;
 
-    let string = args[0].display().green();
+    let string = args[0].as_string().green();
     print!("{}", string);
 
     StackValue::Null
@@ -19,7 +19,7 @@ pub fn print(args: &[StackValue]) -> StackValue {
 pub fn println(args: &[StackValue]) -> StackValue {
     use colored::Colorize;
 
-    let string = args[0].display().green();
+    let string = args[0].as_string().green();
     println!("{}", string);
 
     StackValue::Null

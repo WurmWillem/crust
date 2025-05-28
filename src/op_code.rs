@@ -16,8 +16,6 @@ pub enum OpCode {
     GetLocal,
     SetLocal,
 
-    GetFunc,
-
     // literals
     True,
     False,
@@ -27,14 +25,18 @@ pub enum OpCode {
     Negate,
     Not,
 
-    // binary
+    // binary arithmetic
     Add,
     Sub,
     Mul,
     Div,
 
+    // binary logic
+    And,
+    Or,
+
     Equal,
-    BangEqual,
+    NotEqual,
     Greater,
     GreaterEqual,
     Less,
@@ -53,22 +55,23 @@ impl std::convert::From<u8> for OpCode {
             7 => OpCode::Call,
             8 => OpCode::GetLocal,
             9 => OpCode::SetLocal,
-            10 => OpCode::GetFunc,
-            11 => OpCode::True,
-            12 => OpCode::False,
-            13 => OpCode::Null,
-            14 => OpCode::Negate,
-            15 => OpCode::Not,
-            16 => OpCode::Add,
-            17 => OpCode::Sub,
-            18 => OpCode::Mul,
-            19 => OpCode::Div,
-            20 => OpCode::Equal,
-            21 => OpCode::BangEqual,
-            22 => OpCode::Greater,
-            23 => OpCode::GreaterEqual,
-            24 => OpCode::Less,
-            25 => OpCode::LessEqual,
+            10 => OpCode::True,
+            11 => OpCode::False,
+            12 => OpCode::Null,
+            13 => OpCode::Negate,
+            14 => OpCode::Not,
+            15 => OpCode::Add,
+            16 => OpCode::Sub,
+            17 => OpCode::Mul,
+            18 => OpCode::Div,
+            19 => OpCode::And,
+            20 => OpCode::Or,
+            21 => OpCode::Equal,
+            22 => OpCode::NotEqual,
+            23 => OpCode::Greater,
+            24 => OpCode::GreaterEqual,
+            25 => OpCode::Less,
+            26 => OpCode::LessEqual,
             _ => panic!("Not a valid opcode."),
         }
     }

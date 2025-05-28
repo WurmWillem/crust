@@ -1,3 +1,5 @@
+use crate::{analysis_types::Operator, token::TokenType, OpCode};
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Precedence {
@@ -41,7 +43,7 @@ pub enum FnType {
     Number,
     String,
     Literal,
-    Variable,
+    Var,
     Call,
 }
 
@@ -53,7 +55,7 @@ pub struct ParseRule {
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 43] = {
+pub const PARSE_RULES: [ParseRule; 47] = {
     use FnType::*;
     use Precedence as P;
 
@@ -91,18 +93,22 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         none!(), //Mul Equal
         none!(), //Div Equal
 
-        ParseRule { prefix: Variable, infix: Empty, precedence: P::None, }, // identifier
+        ParseRule { prefix: Var, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
-        none!(), // and
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::And, }, // and
         none!(), // class
         none!(), // else
         ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // false
         none!(), // for
+        none!(), // break
+        none!(), // continue
+        none!(), // in
+        none!(), // to
         none!(), // fun
         none!(), // if
         ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // nil
-        none!(), // or
+        ParseRule { prefix: Empty, infix: Binary, precedence: P::Or, }, // or
         none!(), // print
         none!(), // return
         none!(), // super
@@ -112,3 +118,86 @@ pub const PARSE_RULES: [ParseRule; 43] = {
         none!(), // EOF
     ]
 };
+
+#[derive(Debug, Clone, Copy)]
+pub enum BinaryOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+
+    Equal,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+
+    And,
+    Or,
+}
+impl BinaryOp {
+    pub fn get_precedency(self) -> Precedence {
+        match self {
+            BinaryOp::Add | BinaryOp::Sub => Precedence::Term,
+            BinaryOp::Mul | BinaryOp::Div => Precedence::Factor,
+            BinaryOp::Equal | BinaryOp::NotEqual => Precedence::Equality,
+            BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
+                Precedence::Comparison
+            }
+            BinaryOp::And => Precedence::And,
+            BinaryOp::Or => Precedence::Or,
+        }
+    }
+
+    pub fn from_token_type(ty: TokenType) -> Self {
+        match ty {
+            TokenType::Plus => BinaryOp::Add,
+            TokenType::Minus => BinaryOp::Sub,
+            TokenType::Star => BinaryOp::Mul,
+            TokenType::Slash => BinaryOp::Div,
+            TokenType::EqualEqual => BinaryOp::Equal,
+            TokenType::BangEqual => BinaryOp::NotEqual,
+            TokenType::Less => BinaryOp::Less,
+            TokenType::LessEqual => BinaryOp::LessEqual,
+            TokenType::Greater => BinaryOp::Greater,
+            TokenType::GreaterEqual => BinaryOp::GreaterEqual,
+            TokenType::And => BinaryOp::And,
+            TokenType::Or => BinaryOp::Or,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn to_operator(self) -> Operator {
+        match self {
+            BinaryOp::Add => Operator::Add,
+            BinaryOp::Sub => Operator::Sub,
+            BinaryOp::Mul => Operator::Mul,
+            BinaryOp::Div => Operator::Div,
+            BinaryOp::Equal => Operator::Equal,
+            BinaryOp::NotEqual => Operator::NotEqual,
+            BinaryOp::Less => Operator::Less,
+            BinaryOp::LessEqual => Operator::LessEqual,
+            BinaryOp::Greater => Operator::Greater,
+            BinaryOp::GreaterEqual => Operator::GreaterEqual,
+            BinaryOp::And => Operator::And,
+            BinaryOp::Or => Operator::Or,
+        }
+    }
+    pub fn to_op_code(self) -> OpCode {
+        match self {
+            BinaryOp::Add => OpCode::Add,
+            BinaryOp::Sub => OpCode::Sub,
+            BinaryOp::Mul => OpCode::Mul,
+            BinaryOp::Div => OpCode::Div,
+            BinaryOp::Equal => OpCode::Equal,
+            BinaryOp::NotEqual => OpCode::NotEqual,
+            BinaryOp::Less => OpCode::Less,
+            BinaryOp::LessEqual => OpCode::LessEqual,
+            BinaryOp::Greater => OpCode::Greater,
+            BinaryOp::GreaterEqual => OpCode::GreaterEqual,
+            BinaryOp::And => OpCode::And,
+            BinaryOp::Or => OpCode::Or,
+        }
+    }
+}

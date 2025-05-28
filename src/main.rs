@@ -1,22 +1,26 @@
-use compiler::Parser;
+use analysis::Analyser;
+use emitter::Emitter;
 use error::PRINT_SCAN_TOKENS;
-use opcode::OpCode;
+use op_code::OpCode;
 use scanner::Scanner;
 use value::StackValue;
-use vm::VM;
 
 use colored::Colorize;
 
+mod analysis;
+mod analysis_types;
 mod chunk;
-mod compiler;
-mod compiler_types;
-mod declared_func;
+mod emitter;
 mod error;
+mod expression;
 mod func_compiler;
 mod native_funcs;
 mod object;
-mod opcode;
+mod op_code;
+mod parse_types;
+mod parser;
 mod scanner;
+mod statement;
 mod token;
 mod value;
 mod vm;
@@ -25,7 +29,7 @@ fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
 
     let msg = "Could not find file.crust. The file should be in the same directory as either the executable file or Cargo.toml.";
-    let source = std::fs::read_to_string("file.crust").expect(msg);
+    let source = std::fs::read_to_string("file.crs").expect(msg);
 
     let scanner = Scanner::new(&source);
     let tokens = match scanner.scan_tokens() {
@@ -46,12 +50,24 @@ fn main() {
         println!();
     }
 
-    let (func, heap, funcs) = match Parser::compile(tokens) {
+    let statements = match parser::Parser::compile(tokens) {
+        Some(statements) => statements,
         None => {
+            println!(
+                "{}",
+                "Compile error(s) detected, terminating program.".purple()
+            );
             return;
         }
-        Some((func, heap, funcs)) => (func, heap, funcs),
     };
 
-    VM::interpret(func, heap, funcs);
+    let (func_data, nat_func_data) = match Analyser::analyse_stmts(&statements) {
+        Some(func_data) => func_data,
+        None => return,
+    };
+
+    // dbg!(&statements);
+    if let Some((func, heap)) = Emitter::compile(statements, func_data, nat_func_data) {
+        vm::VM::interpret(func, heap);
+    }
 }
