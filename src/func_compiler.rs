@@ -79,7 +79,7 @@ impl<'a> FuncCompilerStack<'a> {
         self.emit_byte(OpCode::Loop as u8, line);
 
         let offset = self.get_code_len() - loop_start + 2;
-        if offset > u8::MAX as usize {
+        if offset > u16::MAX as usize {
             let msg = "Loop body too large.";
             return Err(EmitErr::new(line, msg));
         }

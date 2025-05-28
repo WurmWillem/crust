@@ -78,6 +78,9 @@ impl StackValue {
             (StackValue::F64(lhs), StackValue::F64(rhs)) => lhs == rhs,
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs == rhs,
             (StackValue::Null, StackValue::Null) => true,
+            (StackValue::Obj(Object::Str(str1)), StackValue::Obj(Object::Str(str2))) => {
+                str1.data == str2.data
+            }
             _ => unreachable!(),
         }
     }
