@@ -273,6 +273,12 @@ impl<'a> Emitter<'a> {
                 self.comps
                     .emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
             }
+            ExprType::Array(arr) => {
+                //self.emit_expr(*left)?;
+                let (object, _) = self.heap.alloc(str.to_string(), Object::Arr);
+                let stack_value = StackValue::Obj(object);
+                self.comps.emit_constant(stack_value, line)?;
+            }
         };
         Ok(())
     }

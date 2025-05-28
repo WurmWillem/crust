@@ -90,6 +90,21 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    fn array(&mut self) -> Result<Expr<'a>, ParseErr> {
+        let mut values = Vec::new();
+        while !self.check(TokenType::RightBracket) {
+            values.push(self.expression()?);
+
+            if !self.matches(TokenType::Comma) {
+                break;
+            }
+        }
+        self.consume(TokenType::RightBracket, "Expected ']' at end of array.")?;
+
+        let ty = ExprType::Array(values);
+        Ok(Expr::new(ty, self.previous().line))
+    }
+
     fn number(&mut self) -> Result<Expr<'a>, ParseErr> {
         let Literal::Num(value) = self.previous().literal else {
             unreachable!();
@@ -435,6 +450,7 @@ impl<'a> Parser<'a> {
     fn execute_prefix(&mut self, fn_type: FnType, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         match fn_type {
             FnType::Grouping => self.grouping(),
+            FnType::Array => self.array(),
             FnType::Unary => self.unary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),

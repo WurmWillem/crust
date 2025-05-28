@@ -49,6 +49,10 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
+            Object::Arr(ptr) => {
+                let raw = ptr.ptr.as_ptr();
+                drop(Box::from_raw(raw));
+            }
         }
     }
 }
@@ -62,6 +66,7 @@ impl Drop for Heap {
                 Object::Str(ref ptr) => ptr.next,
                 Object::Func(ref ptr) => ptr.next,
                 Object::Native(ref ptr) => ptr.next,
+                Object::Arr(ref ptr) => ptr.next,
             };
 
             unsafe {
@@ -108,6 +113,17 @@ pub enum Object {
     Str(Gc<String>),
     Func(Gc<ObjFunc>),
     Native(Gc<ObjNative>),
+    Arr(Gc<ObjArr>),
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjArr {
+    values: Vec<StackValue>,
+}
+impl ObjArr {
+    pub fn new(values: Vec<StackValue>) -> Self {
+        Self { values }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -128,6 +144,7 @@ impl ObjFunc {
 }
 
 pub type NativeFunc = fn(&[StackValue]) -> StackValue;
+
 #[derive(Debug, Clone)]
 pub struct ObjNative {
     // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too

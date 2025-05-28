@@ -33,12 +33,12 @@ impl<'a> Analyser<'a> {
         };
         let mut analyser = Analyser::new(func_data, nat_func_data);
 
-        for stmt in stmts {
-            if let Err(err) = analyser.analyse_stmt(stmt) {
-                err.print();
-                return None;
-            }
-        }
+        //for stmt in stmts {
+        //    if let Err(err) = analyser.analyse_stmt(stmt) {
+        //        err.print();
+        //        return None;
+        //    }
+        //}
 
         Some((analyser.func_data, analyser.nat_func_data))
     }
@@ -243,6 +243,7 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticErr::new(line, ErrType::InvalidInfix));
                 }
             }
+            ExprType::Array(_) => ValueType::Arr,
         };
         Ok(result)
     }

@@ -13,11 +13,13 @@ pub enum ValueType {
     Bool,
     Num,
     Str,
+    Arr,
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
+            ValueType::Arr => todo!(),
             ValueType::Any => unreachable!(),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
@@ -131,6 +133,7 @@ impl StackValue {
                 Object::Str(s) => s.data.to_string(),
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
+                Object::Arr(_) => todo!(),
             },
         }
     }
@@ -143,6 +146,7 @@ impl StackValue {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
+                Object::Arr(_) => todo!(),
             },
         }
     }

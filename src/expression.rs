@@ -17,6 +17,7 @@ impl<'a> Expr<'a> {
 #[derive(Debug, Clone)]
 pub enum ExprType<'a> {
     Lit(Literal<'a>),
+    Array(Vec<Expr<'a>>),
     Var(&'a str),
     Call {
         name: &'a str,
