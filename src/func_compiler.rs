@@ -138,12 +138,18 @@ impl<'a> FuncCompilerStack<'a> {
         Ok(())
     }
 
-    pub fn patch_jump_to(&mut self, from: usize, jump: usize, line: u32) -> Result<(), EmitErr> {
+    pub fn patch_jump_to(&mut self, from: usize, to: usize, line: u32) -> Result<(), EmitErr> {
+        let jump = from
+            .checked_sub(to - 2)
+            .ok_or_else(|| EmitErr::new(line, "Invalid jump target."))?;
+        
         if jump > u16::MAX as usize {
             let msg = "Too much code to jump over.";
             return Err(EmitErr::new(line, msg));
         }
 
+        dbg!(((jump >> 8) & 0xFF) as u8);
+        dbg!((jump & 0xFF) as u8);
         self.comps[self.current].func.chunk.code[from] = ((jump >> 8) & 0xFF) as u8;
         self.comps[self.current].func.chunk.code[from + 1] = (jump & 0xFF) as u8;
         Ok(())
@@ -161,13 +167,12 @@ impl<'a> FuncCompilerStack<'a> {
             return Err(EmitErr::new(line, msg));
         }
 
-        let jump = self.emit_jump(OpCode::Jump, line);
+        let jump = self.emit_jump(OpCode::Loop, line);
         self.comps[self.current]
             .continue_stack
             .last_mut()
             .unwrap()
             .push(jump);
-
         Ok(())
     }
 
@@ -179,6 +184,7 @@ impl<'a> FuncCompilerStack<'a> {
         let continues = self.comps[self.current].continue_stack.pop().unwrap();
         for from in continues {
             self.patch_jump_to(from, loop_start, line)?;
+            //self.patch_jump_to(from, loop_start, line)?;
         }
         Ok(())
     }
