@@ -238,8 +238,8 @@ impl<'a> Analyser<'a> {
             ExprType::Array(values) => {
                 let el_ty = self.analyse_expr(&values[0])?;
 
-                for i in 1..values.len() {
-                    let next_el_ty = self.analyse_expr(&values[i])?;
+                for el in values.iter().skip(1) {
+                    let next_el_ty = self.analyse_expr(el)?;
 
                     if next_el_ty != el_ty {
                         let err_ty = SemErrType::ArrElTypeMismatch(el_ty, next_el_ty);

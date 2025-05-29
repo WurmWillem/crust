@@ -63,7 +63,7 @@ impl<'a> Emitter<'a> {
 
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
-        for (name, _) in &func_data {
+        for name in func_data.keys() {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc(dummy, Object::Func);
 
@@ -242,14 +242,14 @@ impl<'a> Emitter<'a> {
                 let Some(arg) = self.comps.resolve_local(name) else {
                     unreachable!()
                 };
-                self.emit_expr(&(*value))?;
+                self.emit_expr(value)?;
                 self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
             }
             ExprType::Unary {
                 prefix,
                 value: right,
             } => {
-                self.emit_expr(&(*right))?;
+                self.emit_expr(right)?;
                 match prefix {
                     TokenType::Minus => self.comps.emit_byte(OpCode::Negate as u8, line),
                     TokenType::Bang => self.comps.emit_byte(OpCode::Not as u8, line),
@@ -257,8 +257,8 @@ impl<'a> Emitter<'a> {
                 }
             }
             ExprType::Binary { left, op, right } => {
-                self.emit_expr(&(*left))?;
-                self.emit_expr(&(*right))?;
+                self.emit_expr(left)?;
+                self.emit_expr(right)?;
                 let op_code = op.to_op_code();
                 self.comps.emit_byte(op_code as u8, line);
             }
@@ -285,7 +285,7 @@ impl<'a> Emitter<'a> {
                     unreachable!()
                 };
                 self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
-                self.emit_expr(&index)?;
+                self.emit_expr(index)?;
                 self.comps.emit_byte(OpCode::IndexArr as u8, line);
             }
             ExprType::AssignIndex { name, index, value } => {
@@ -293,8 +293,8 @@ impl<'a> Emitter<'a> {
                     unreachable!()
                 };
                 self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
-                self.emit_expr(&index)?;
-                self.emit_expr(&value)?;
+                self.emit_expr(index)?;
+                self.emit_expr(value)?;
                 self.comps.emit_byte(OpCode::AssignIndex as u8, line);
             }
         };

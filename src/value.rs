@@ -133,7 +133,7 @@ impl Display for StackValue {
             StackValue::Bool(b) => write!(f, "{}", b),
             StackValue::F64(num) => write!(f, "{}", num),
             StackValue::Obj(o) => match o {
-                Object::Str(s) => write!(f, "{}", s.data.to_string()),
+                Object::Str(s) => write!(f, "{}", s.data),
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
                 Object::Arr(a) => write!(f, "{:?}", a.data.values),
