@@ -125,7 +125,7 @@ impl VM {
                         unreachable!()
                     };
 
-                    let arr = self.stack_pop();
+                    let arr = self.stack_peek();
                     if let StackValue::Obj(Object::Arr(mut arr)) = arr {
                         arr.data.values[index as usize] = new_value;
                         //self.stack_push(value);
