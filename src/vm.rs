@@ -45,7 +45,7 @@ impl VM {
             heap,
             frames,
             frame_count: 1,
-            stack: [const { StackValue::Null }; STACK_SIZE],
+            stack: [StackValue::Null; STACK_SIZE],
             stack_top: 0,
         };
 
@@ -114,7 +114,7 @@ impl VM {
                     } else {
                         unreachable!()
                     };
-                    
+
                     let arr = self.stack_pop();
                     if let StackValue::Obj(Object::Arr(arr)) = arr {
                         let value = arr.data.values[index];

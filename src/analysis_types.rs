@@ -81,7 +81,7 @@ pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFunc
             let func_data = FuncData {
                 parameters: parameters.clone(),
                 body: body.clone(),
-                return_ty: *return_ty,
+                return_ty: return_ty.clone(),
                 line: stmt.line,
             };
 
@@ -122,7 +122,7 @@ fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
     nat_funcs
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Symbol<'a> {
     name: &'a str,
     pub ty: ValueType,
@@ -166,7 +166,7 @@ impl<'a> SemanticScope<'a> {
     pub fn resolve(&self, name: &str) -> Option<Symbol<'a>> {
         for scope in self.stack.iter().rev() {
             if let Some(sym) = scope.get(name) {
-                return Some(*sym);
+                return Some(sym.clone());
             }
         }
         None

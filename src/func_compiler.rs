@@ -142,7 +142,7 @@ impl<'a> FuncCompilerStack<'a> {
         let jump = from
             .checked_sub(to - 2)
             .ok_or_else(|| EmitErr::new(line, "Invalid jump target."))?;
-        
+
         if jump > u16::MAX as usize {
             let msg = "Too much code to jump over.";
             return Err(EmitErr::new(line, msg));
@@ -217,7 +217,7 @@ impl<'a> FuncCompilerStack<'a> {
     pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
         for i in (0..self.current().local_count).rev() {
             if self.current().locals[i].name == name {
-                return Some((i as u8, self.current().locals[i].ty));
+                return Some((i as u8, self.current().locals[i].ty.clone()));
             }
         }
         None
@@ -233,7 +233,7 @@ impl<'a> FuncCompilerStack<'a> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 struct Local<'a> {
     name: &'a str,
     ty: ValueType,
@@ -260,7 +260,7 @@ impl<'a> FuncCompiler<'a> {
     pub fn new(func_name: String) -> Self {
         let local = Local::new("", 0, ValueType::None);
         Self {
-            locals: [local; MAX_LOCAL_AMT],
+            locals: std::array::from_fn(|_| local.clone()),
             local_count: 1,
             scope_depth: 0,
             func: ObjFunc::new(func_name),

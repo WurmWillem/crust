@@ -52,10 +52,10 @@ impl<'a> Analyser<'a> {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    let err_ty = ErrType::TypeMismatch(*ty, value_ty);
+                    let err_ty = ErrType::TypeMismatch(ty.clone(), value_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
-                self.symbols.declare(Symbol::new(name, *ty), line)?;
+                self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
             }
             StmtType::Println(expr) => {
                 self.analyse_expr(expr)?;
@@ -64,7 +64,7 @@ impl<'a> Analyser<'a> {
                 let return_ty = self.analyse_expr(expr)?;
 
                 if return_ty != self.current_return_ty && return_ty != ValueType::Null {
-                    let err_ty = ErrType::IncorrectReturnTy(self.current_return_ty, return_ty);
+                    let err_ty = ErrType::IncorrectReturnTy(self.current_return_ty.clone(), return_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
             }
@@ -105,12 +105,12 @@ impl<'a> Analyser<'a> {
                 body,
                 return_ty,
             } => {
-                let prev_return_ty = self.current_return_ty;
-                self.current_return_ty = *return_ty;
+                let prev_return_ty = self.current_return_ty.clone();
+                self.current_return_ty = return_ty.clone();
 
                 self.symbols.begin_scope();
                 for (ty, name) in parameters {
-                    self.symbols.declare(Symbol::new(name, *ty), line)?;
+                    self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
                 }
                 for stmt in body {
                     self.analyse_stmt(stmt)?;
@@ -123,30 +123,7 @@ impl<'a> Analyser<'a> {
         };
         Ok(())
     }
-    fn get_called_func_data(
-        &mut self,
-        name: &'a str,
-        line: u32,
-    ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
-        if let Some(data) = self.func_data.remove(name) {
-            let parameters = data.parameters.iter().map(|p| p.0).collect();
-            let return_ty = data.return_ty;
 
-            self.func_data.insert(name, data);
-
-            return Ok((return_ty, parameters));
-        };
-        if let Some(data) = self.nat_func_data.remove(name) {
-            let parameters = data.parameters.clone();
-            let return_ty = data.return_ty;
-
-            self.nat_func_data.insert(name, data);
-
-            return Ok((return_ty, parameters));
-        };
-        let ty = ErrType::UndefinedFunc(name.to_string());
-        Err(SemanticErr::new(line, ty))
-    }
     fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticErr> {
         let line = expr.line;
         let result = match &expr.expr {
@@ -171,7 +148,7 @@ impl<'a> Analyser<'a> {
                 for (i, arg) in args.iter().enumerate() {
                     let arg_ty = self.analyse_expr(arg)?;
                     if arg_ty != parameters[i] && parameters[i] != ValueType::Any {
-                        let err_ty = ErrType::TypeMismatch(parameters[i], arg_ty);
+                        let err_ty = ErrType::TypeMismatch(parameters[i].clone(), arg_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                 }
@@ -243,9 +220,34 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticErr::new(line, ErrType::InvalidInfix));
                 }
             }
-            ExprType::Array(_) => ValueType::Arr,
+            ExprType::Array(values) => ValueType::Num,
             ExprType::Index { name, index } => todo!(),
         };
         Ok(result)
+    }
+
+    fn get_called_func_data(
+        &mut self,
+        name: &'a str,
+        line: u32,
+    ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
+        if let Some(data) = self.func_data.remove(name) {
+            let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
+            let return_ty = data.return_ty.clone();
+
+            self.func_data.insert(name, data);
+
+            return Ok((return_ty, parameters));
+        };
+        if let Some(data) = self.nat_func_data.remove(name) {
+            let parameters = data.parameters.clone();
+            let return_ty = data.return_ty.clone();
+
+            self.nat_func_data.insert(name, data);
+
+            return Ok((return_ty, parameters));
+        };
+        let ty = ErrType::UndefinedFunc(name.to_string());
+        Err(SemanticErr::new(line, ty))
     }
 }
