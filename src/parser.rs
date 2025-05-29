@@ -206,8 +206,14 @@ impl<'a> Parser<'a> {
         Ok(func)
     }
     fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseErr> {
-        let var_type = match self.advance().kind.as_value_type() {
-            Some(var_type) => var_type,
+        let var_ty = match self.advance().kind.as_value_type() {
+            Some(mut var_type) => {
+                if self.matches(TokenType::LeftBracket) {
+                    self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
+                    var_type = ValueType::Arr(Box::new(var_type));
+                }
+                var_type
+            }
             _ => {
                 return Err(ParseErr::new(
                     self.previous().line,
@@ -219,7 +225,7 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::Identifier, "Expected parameter name.")?;
         let name = self.previous().lexeme;
 
-        Ok((var_type, name))
+        Ok((var_ty, name))
     }
 
     fn var_decl(&mut self, mut ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
