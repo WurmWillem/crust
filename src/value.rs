@@ -19,7 +19,7 @@ impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
-            ValueType::Arr(_) => todo!(),
+            ValueType::Arr(ty) => write!(f, "[{}]", ty),
             ValueType::Any => unreachable!(),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),

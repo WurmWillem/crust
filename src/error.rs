@@ -39,6 +39,7 @@ impl EmitErr {
         }
     }
 }
+#[derive(Debug)]
 pub struct SemanticErr {
     ty: ErrType,
     line: u32,
@@ -59,6 +60,7 @@ pub enum ErrType {
     AlreadyDefinedVar(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
     TypeMismatch(ValueType, ValueType),
+    ArrElTypeMismatch(ValueType, ValueType),
 }
 impl SemanticErr {
     pub fn print(&self) {
@@ -99,6 +101,12 @@ impl SemanticErr {
             ErrType::TypeMismatch(expected, found) => {
                 format!(
                     "Variable was given type '{}' but found type '{}'.",
+                    expected, found
+                )
+            }
+            ErrType::ArrElTypeMismatch(expected, found) => {
+                format!(
+                    "Not all elements in the array are of the same type. Array expected type '{}', but found type '{}'.",
                     expected, found
                 )
             }
