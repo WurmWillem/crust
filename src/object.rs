@@ -12,6 +12,28 @@ impl Heap {
     pub fn new() -> Self {
         Self { head: None }
     }
+    pub fn print(&self) {
+        println!("start");
+        let mut current = self.head;
+        while let Some(object) = current {
+            if let Object::Arr(arr) = object {
+                print!("HEAP: [");
+                for el in &arr.data.values {
+                    print!("{}, ", el);
+                }
+                println!("]");
+            }
+            // WARN: I did not check if this actually works
+            let next = match object {
+                Object::Str(ref ptr) => ptr.next,
+                Object::Func(ref ptr) => ptr.next,
+                Object::Native(ref ptr) => ptr.next,
+                Object::Arr(ref ptr) => ptr.next,
+            };
+
+            current = next;
+        }
+    }
 
     pub fn alloc<T, F>(&mut self, data: T, map: F) -> (Object, Gc<T>)
     where
@@ -58,9 +80,11 @@ impl Heap {
 }
 impl Drop for Heap {
     fn drop(&mut self) {
+        let mut i = 0;
         let mut current = self.head.take();
 
         while let Some(object) = current {
+            i += 1;
             // WARN: I did not check if this actually works
             let next = match object {
                 Object::Str(ref ptr) => ptr.next,
@@ -70,6 +94,7 @@ impl Drop for Heap {
             };
 
             unsafe {
+                dbg!(i);
                 self.dealloc(object);
             }
 

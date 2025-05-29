@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::{
-    error::DEBUG_TRACE_EXECUTION,
+    error::{DEBUG_TRACE_EXECUTION, PRINT_HEAP},
     object::{Gc, Heap, ObjArr, ObjFunc, Object},
     op_code::OpCode,
     value::StackValue,
@@ -133,6 +133,9 @@ impl VM {
                 }
 
                 OpCode::Call => {
+                    if PRINT_HEAP {
+                        self.heap.print();
+                    }
                     self.call(frame);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                 }

@@ -1,6 +1,6 @@
 use analysis::Analyser;
 use emitter::Emitter;
-use error::PRINT_SCAN_TOKENS;
+use error::PRINT_TOKENS;
 use op_code::OpCode;
 use scanner::Scanner;
 use value::StackValue;
@@ -49,7 +49,7 @@ fn main() {
         }
     };
 
-    if PRINT_SCAN_TOKENS {
+    if PRINT_TOKENS {
         for token in &tokens {
             println!("{:?} type: {:?}", token, token.kind as u8);
         }

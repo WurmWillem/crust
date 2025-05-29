@@ -1,4 +1,15 @@
-bool[] x = [false, true];
-int le = len(x);
-pr le;
-//print_arr(x);
+{
+    int[] x = [1, 2, 3, 4];
+    x = [3, 2];
+    x = [3, 2];
+    x = [3, 2];
+}
+
+fn main() {
+
+}
+fn print_arr(int[] arr) {
+    for i in 0 to len(arr) {
+        pr arr[i];
+    }
+}
