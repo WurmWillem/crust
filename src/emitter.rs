@@ -290,6 +290,7 @@ impl<'a> Emitter<'a> {
                     unreachable!()
                 }
             }
+            ExprType::AssignIndex { name, index, value } => todo!(),
         };
         Ok(())
     }

@@ -27,6 +27,11 @@ pub enum ExprType<'a> {
         name: &'a str,
         index: Box<Expr<'a>>,
     },
+    AssignIndex {
+        name: &'a str,
+        index: Box<Expr<'a>>,
+        value: Box<Expr<'a>>,
+    },
     Assign {
         name: &'a str,
         value: Box<Expr<'a>>,

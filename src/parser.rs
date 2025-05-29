@@ -418,18 +418,19 @@ impl<'a> Parser<'a> {
     }
 
     fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
-        let name = self.previous();
-        let var = if can_assign && self.matches(TokenType::Equal) {
+        let name = self.previous().lexeme;
+        let line = self.previous().line;
+
+        let ty = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
-            let ty = ExprType::Assign {
-                name: name.lexeme,
+            ExprType::Assign {
+                name,
                 value,
-            };
-            Expr::new(ty, name.line)
+            }
         } else {
-            let ty = ExprType::Var(name.lexeme);
-            Expr::new(ty, name.line)
+            ExprType::Var(name)
         };
+        let var = Expr::new(ty, line);
         Ok(var)
     }
 
@@ -460,12 +461,17 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn index(&mut self, arr: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+    fn index(&mut self, arr: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         let index = Box::new(self.expression()?);
         self.consume(TokenType::RightBracket, "Expected ']' after index.")?;
 
         if let ExprType::Var(name) = arr.expr {
-            let ty = ExprType::Index { name, index };
+            let ty = if can_assign && self.matches(TokenType::Equal) {
+                let value = Box::new(self.expression()?);
+                ExprType::AssignIndex { name, index, value }
+            } else {
+                ExprType::Index { name, index }
+            };
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
         } else {
@@ -497,12 +503,12 @@ impl<'a> Parser<'a> {
         &mut self,
         left: Expr<'a>,
         fn_type: FnType,
-        _can_assign: bool,
+        can_assign: bool,
     ) -> Result<Expr<'a>, ParseErr> {
         match fn_type {
             FnType::Binary => self.binary(left),
             FnType::Call => self.call(left),
-            FnType::Index => self.index(left),
+            FnType::Index => self.index(left, can_assign),
             _ => unreachable!(),
         }
     }

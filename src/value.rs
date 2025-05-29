@@ -13,13 +13,13 @@ pub enum ValueType {
     Bool,
     Num,
     Str,
-    Arr(Box<ValueType>, usize),
+    Arr(Box<(ValueType, usize)>),
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
-            ValueType::Arr(_, _) => todo!(),
+            ValueType::Arr(_) => todo!(),
             ValueType::Any => unreachable!(),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
