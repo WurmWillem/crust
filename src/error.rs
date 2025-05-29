@@ -41,16 +41,16 @@ impl EmitErr {
 }
 #[derive(Debug)]
 pub struct SemanticErr {
-    ty: ErrType,
+    ty: SemErrType,
     line: u32,
 }
 impl SemanticErr {
-    pub fn new(line: u32, ty: ErrType) -> Self {
+    pub fn new(line: u32, ty: SemErrType) -> Self {
         Self { ty, line }
     }
 }
 #[derive(Debug)]
-pub enum ErrType {
+pub enum SemErrType {
     InvalidPrefix,
     InvalidInfix,
     IndexNonArr(ValueType),
@@ -67,53 +67,53 @@ pub enum ErrType {
 impl SemanticErr {
     pub fn print(&self) {
         let msg = match &self.ty {
-            ErrType::InvalidPrefix => "invalid prefix.".to_string(),
-            ErrType::InvalidInfix => "invalid infix.".to_string(),
-            ErrType::IndexNonArr(ty) => format!("You can only index arrays, but you tried to index the type {}", ty),
+            SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
+            SemErrType::InvalidInfix => "invalid infix.".to_string(),
+            SemErrType::IndexNonArr(ty) => format!("You can only index arrays, but you tried to index the type {}", ty),
 
-            ErrType::AssignArrTypeMismatch(expected, found) => {
+            SemErrType::AssignArrTypeMismatch(expected, found) => {
                 format!(
                     "Array is of type '[{}]', but you tried to assign a value of type '{}' to one of its elements.",
                     expected, found
                 )
             }
-            ErrType::IncorrectReturnTy(expected, found) => {
+            SemErrType::IncorrectReturnTy(expected, found) => {
                 format!(
                     "Function expected return type {}, but found type {}.",
                     expected, found
                 )
             }
-            ErrType::IncorrectArity(name, expected, found) => {
+            SemErrType::IncorrectArity(name, expected, found) => {
                 format!(
                     "Function '{}' expected {} arguments, but found {}.",
                     name, expected, found
                 )
             }
 
-            ErrType::UndefinedFunc(name) => format!("Function '{}' has not been defined.", name),
-            ErrType::UndefinedVar(name) => {
+            SemErrType::UndefinedFunc(name) => format!("Function '{}' has not been defined.", name),
+            SemErrType::UndefinedVar(name) => {
                 format!("Variable '{}' has not been defined in this scope.", name)
             }
-            ErrType::AlreadyDefinedVar(name) => {
+            SemErrType::AlreadyDefinedVar(name) => {
                 format!(
                     "Variable '{}' has already been defined in this scope.",
                     name
                 )
             }
 
-            ErrType::OpTypeMismatch(expected, op, found) => {
+            SemErrType::OpTypeMismatch(expected, op, found) => {
                 format!(
                     "Operator '{}' Expects type '{}', but found type '{}'.",
                     op, expected, found
                 )
             }
-            ErrType::TypeMismatch(expected, found) => {
+            SemErrType::TypeMismatch(expected, found) => {
                 format!(
                     "Variable was given type '{}' but found type '{}'.",
                     expected, found
                 )
             }
-            ErrType::ArrElTypeMismatch(expected, found) => {
+            SemErrType::ArrElTypeMismatch(expected, found) => {
                 format!(
                     "Not all elements in the array are of the same type. Array expected type '{}', but found type '{}'.",
                     expected, found

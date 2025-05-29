@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    error::{ErrType, SemanticErr},
+    error::{SemErrType, SemanticErr},
     object::NativeFunc,
     statement::{Stmt, StmtType},
     value::ValueType,
@@ -52,6 +52,7 @@ impl core::fmt::Display for Operator {
 
 #[derive(Debug)]
 pub struct FuncData<'a> {
+    // TODO: check if ty is necessary
     pub parameters: Vec<(ValueType, &'a str)>,
     pub body: Vec<Stmt<'a>>,
     pub return_ty: ValueType,
@@ -156,7 +157,7 @@ impl<'a> SemanticScope<'a> {
         if current.contains_key(symbol.name) {
             return Err(SemanticErr::new(
                 line,
-                ErrType::AlreadyDefinedVar(symbol.name.to_string()),
+                SemErrType::AlreadyDefinedVar(symbol.name.to_string()),
             ));
         }
         current.insert(symbol.name, symbol);
