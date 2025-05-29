@@ -27,9 +27,15 @@ mod vm;
 
 fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
+    let args: Vec<String> = std::env::args().collect();
 
-    let msg = "Could not find file.crust. The file should be in the same directory as either the executable file or Cargo.toml.";
-    let source = std::fs::read_to_string("file.crs").expect(msg);
+    let source = if args.len() <= 1 {
+        let msg = "Could not find file.crs. The file should be in the same directory as either the executable file or Cargo.toml.";
+        std::fs::read_to_string("file.crs").expect(msg)
+    } else {
+        let msg = format!("Could not find file '{}'.", args[1]) ;
+        std::fs::read_to_string(&args[1]).expect(&msg)
+    };
 
     let scanner = Scanner::new(&source);
     let tokens = match scanner.scan_tokens() {
