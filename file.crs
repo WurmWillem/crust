@@ -1,2 +1,7 @@
 int[] x = [1, 2, 3];
-//int x = [1, 2, 3];
+
+//fn print_arr(int[] arr) {
+    for i in 0 to 3 {
+        pr arr[i];
+    }
+}

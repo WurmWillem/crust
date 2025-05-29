@@ -35,7 +35,6 @@ impl<'a> Analyser<'a> {
 
         for stmt in stmts {
             if let Err(err) = analyser.analyse_stmt(stmt) {
-                dbg!(&err);
                 err.print();
                 return None;
             }
@@ -224,8 +223,10 @@ impl<'a> Analyser<'a> {
             }
             ExprType::Array(values) => {
                 let el_ty = self.analyse_expr(&values[0])?;
+
                 for i in 1..values.len() {
                     let next_el_ty = self.analyse_expr(&values[i])?;
+
                     if next_el_ty != el_ty {
                         let err_ty = ErrType::ArrElTypeMismatch(el_ty, next_el_ty);
                         return Err(SemanticErr::new(line, err_ty));
@@ -233,7 +234,20 @@ impl<'a> Analyser<'a> {
                 }
                 ValueType::Arr(Box::new(el_ty))
             }
-            ExprType::Index { name, index } => todo!(),
+            ExprType::Index { name, index: _ } => match self.symbols.resolve(name) {
+                Some(symbol) => match symbol.ty {
+                    ValueType::Arr(ty) => *ty,
+                    _ => {
+                        let ty = ErrType::IndexNonArr(symbol.ty);
+                        return Err(SemanticErr::new(line, ty));
+                    }
+                },
+                None => {
+                    let ty = ErrType::UndefinedVar(name.to_string());
+                    return Err(SemanticErr::new(line, ty));
+                }
+            },
+
             ExprType::AssignIndex { name, index, value } => todo!(),
         };
         Ok(result)

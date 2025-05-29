@@ -53,6 +53,7 @@ impl SemanticErr {
 pub enum ErrType {
     InvalidPrefix,
     InvalidInfix,
+    IndexNonArr(ValueType),
     UndefinedFunc(String),
     IncorrectArity(String, u8, u8),
     IncorrectReturnTy(ValueType, ValueType),
@@ -67,6 +68,7 @@ impl SemanticErr {
         let msg = match &self.ty {
             ErrType::InvalidPrefix => "invalid prefix.".to_string(),
             ErrType::InvalidInfix => "invalid infix.".to_string(),
+            ErrType::IndexNonArr(ty) => format!("You can only index arrays, but you tried to index the type {}", ty),
 
             ErrType::IncorrectReturnTy(expected, found) => {
                 format!(
