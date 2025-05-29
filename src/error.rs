@@ -66,10 +66,14 @@ pub enum SemErrType {
 }
 impl SemanticErr {
     pub fn print(&self) {
+        //dbg!(&self.ty);
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
-            SemErrType::IndexNonArr(ty) => format!("You can only index arrays, but you tried to index the type {}", ty),
+            SemErrType::IndexNonArr(ty) => format!(
+                "You can only index arrays, but you tried to index the type {}",
+                ty
+            ),
 
             SemErrType::AssignArrTypeMismatch(expected, found) => {
                 format!(

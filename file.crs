@@ -1,2 +1,4 @@
-println(3);
-
+bool[] x = [false, true];
+int le = len(x);
+pr le;
+//print_arr(x);

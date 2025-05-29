@@ -119,6 +119,7 @@ fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
     add_func!("abs", abs, vec![VT::Num], VT::Num);
     add_func!("sqrt", sqrt, vec![VT::Num], VT::Num);
     add_func!("pow", pow, vec![VT::Num, VT::Num], VT::Num);
+    add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::Num);
 
     nat_funcs
 }

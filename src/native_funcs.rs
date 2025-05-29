@@ -1,4 +1,4 @@
-use crate::value::StackValue;
+use crate::{object::Object, value::StackValue};
 
 pub fn clock(_args: &[StackValue]) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -93,6 +93,14 @@ pub fn pow(args: &[StackValue]) -> StackValue {
     let val2 = args[1];
     match (val1, val2) {
         (StackValue::F64(val1), StackValue::F64(val2)) => StackValue::F64(val1.powf(val2)),
+        _ => unreachable!(),
+    }
+}
+
+pub fn len(args: &[StackValue]) -> StackValue {
+    let arr = args[0];
+    match arr {
+        StackValue::Obj(Object::Arr(arr)) => StackValue::F64(arr.data.values.len() as f64),
         _ => unreachable!(),
     }
 }

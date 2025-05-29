@@ -33,7 +33,7 @@ fn main() {
         let msg = "Could not find file.crs. The file should be in the same directory as either the executable file or Cargo.toml.";
         std::fs::read_to_string("file.crs").expect(msg)
     } else {
-        let msg = format!("Could not find file '{}'.", args[1]) ;
+        let msg = format!("Could not find file '{}'.", args[1]);
         std::fs::read_to_string(&args[1]).expect(&msg)
     };
 

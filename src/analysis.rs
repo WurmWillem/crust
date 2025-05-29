@@ -148,8 +148,16 @@ impl<'a> Analyser<'a> {
                 }
                 for (i, arg) in args.iter().enumerate() {
                     let arg_ty = self.analyse_expr(arg)?;
-                    if arg_ty != parameters[i] && parameters[i] != ValueType::Any {
-                        let err_ty = SemErrType::TypeMismatch(parameters[i].clone(), arg_ty);
+
+                    let param_ty = &parameters[i];
+
+                    let is_exact_match = arg_ty == *param_ty;
+                    let is_any = *param_ty == ValueType::Any;
+                    let is_array_match = matches!(param_ty, ValueType::Arr(inner) if **inner == ValueType::Any)
+                        && matches!(arg_ty, ValueType::Arr(_));
+
+                    if !is_exact_match && !is_any && !is_array_match {
+                        let err_ty = SemErrType::TypeMismatch(param_ty.clone(), arg_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                 }
@@ -175,16 +183,22 @@ impl<'a> Analyser<'a> {
                 match prefix {
                     TokenType::Minus => {
                         if value_ty != ValueType::Num {
-                            let err_ty =
-                                SemErrType::OpTypeMismatch(ValueType::Num, Operator::Minus, value_ty);
+                            let err_ty = SemErrType::OpTypeMismatch(
+                                ValueType::Num,
+                                Operator::Minus,
+                                value_ty,
+                            );
                             return Err(SemanticErr::new(line, err_ty));
                         }
                         value_ty
                     }
                     TokenType::Bang => {
                         if value_ty != ValueType::Bool {
-                            let err_ty =
-                                SemErrType::OpTypeMismatch(ValueType::Bool, Operator::Bang, value_ty);
+                            let err_ty = SemErrType::OpTypeMismatch(
+                                ValueType::Bool,
+                                Operator::Bang,
+                                value_ty,
+                            );
                             return Err(SemanticErr::new(line, err_ty));
                         }
                         value_ty
@@ -248,7 +262,11 @@ impl<'a> Analyser<'a> {
                 }
             },
 
-            ExprType::AssignIndex { name, index: _, value } => match self.symbols.resolve(name) {
+            ExprType::AssignIndex {
+                name,
+                index: _,
+                value,
+            } => match self.symbols.resolve(name) {
                 Some(symbol) => match symbol.ty {
                     ValueType::Arr(ty) => {
                         let value_ty = self.analyse_expr(value)?;
