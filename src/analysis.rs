@@ -248,7 +248,26 @@ impl<'a> Analyser<'a> {
                 }
             },
 
-            ExprType::AssignIndex { name, index, value } => todo!(),
+            ExprType::AssignIndex { name, index: _, value } => match self.symbols.resolve(name) {
+                Some(symbol) => match symbol.ty {
+                    ValueType::Arr(ty) => {
+                        let value_ty = self.analyse_expr(value)?;
+                        if value_ty != *ty {
+                            let ty = ErrType::AssignArrTypeMismatch(*ty, value_ty);
+                            return Err(SemanticErr::new(line, ty));
+                        }
+                        *ty
+                    }
+                    _ => {
+                        let ty = ErrType::IndexNonArr(symbol.ty);
+                        return Err(SemanticErr::new(line, ty));
+                    }
+                },
+                None => {
+                    let ty = ErrType::UndefinedVar(name.to_string());
+                    return Err(SemanticErr::new(line, ty));
+                }
+            },
         };
         Ok(result)
     }

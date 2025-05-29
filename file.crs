@@ -1,4 +1,5 @@
 int[] x = [1, 2, 3];
+x[0] = false;
 print_arr(x);
 
 fn print_arr(int[] arr) {

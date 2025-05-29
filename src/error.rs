@@ -54,6 +54,7 @@ pub enum ErrType {
     InvalidPrefix,
     InvalidInfix,
     IndexNonArr(ValueType),
+    AssignArrTypeMismatch(ValueType, ValueType),
     UndefinedFunc(String),
     IncorrectArity(String, u8, u8),
     IncorrectReturnTy(ValueType, ValueType),
@@ -70,6 +71,12 @@ impl SemanticErr {
             ErrType::InvalidInfix => "invalid infix.".to_string(),
             ErrType::IndexNonArr(ty) => format!("You can only index arrays, but you tried to index the type {}", ty),
 
+            ErrType::AssignArrTypeMismatch(expected, found) => {
+                format!(
+                    "Array is of type '[{}]', but you tried to assign a value of type '{}' to one of its elements.",
+                    expected, found
+                )
+            }
             ErrType::IncorrectReturnTy(expected, found) => {
                 format!(
                     "Function expected return type {}, but found type {}.",
