@@ -76,8 +76,8 @@ impl<'a> Emitter<'a> {
 
             self.comps.push(name.to_string());
             self.comps.begin_scope();
-            for (ty, name) in data.parameters {
-                self.comps.add_local(name, ty, line)?;
+            for (_, name) in data.parameters {
+                self.comps.add_local(name, line)?;
             }
 
             for stmt in data.body {
@@ -108,8 +108,8 @@ impl<'a> Emitter<'a> {
                 self.emit_expr(&expr)?;
                 self.comps.emit_byte(OpCode::Print as u8, line);
             }
-            StmtType::Var { name, value, ty } => {
-                self.comps.add_local(name, ty, line)?;
+            StmtType::Var { name, value, ty: _ } => {
+                self.comps.add_local(name, line)?;
                 self.emit_expr(&value)?;
             }
             StmtType::Block(stmts) => {
@@ -232,14 +232,14 @@ impl<'a> Emitter<'a> {
                 Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),
             },
             ExprType::Var(name) => {
-                if let Some((arg, _kind)) = self.comps.resolve_local(name) {
+                if let Some(arg) = self.comps.resolve_local(name) {
                     self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
                 } else {
                     unreachable!()
                 }
             }
             ExprType::Assign { name, value } => {
-                let Some((arg, _kind)) = self.comps.resolve_local(name) else {
+                let Some(arg) = self.comps.resolve_local(name) else {
                     unreachable!()
                 };
                 self.emit_expr(&(*value))?;
@@ -281,7 +281,7 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(OpCode::AllocArr as u8, line);
             }
             ExprType::Index { name, index } => {
-                let Some((arg, _kind)) = self.comps.resolve_local(name) else {
+                let Some(arg) = self.comps.resolve_local(name) else {
                     unreachable!()
                 };
                 self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
@@ -289,7 +289,7 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(OpCode::IndexArr as u8, line);
             }
             ExprType::AssignIndex { name, index, value } => {
-                let Some((arg, _ )) = self.comps.resolve_local(name) else {
+                let Some(arg) = self.comps.resolve_local(name) else {
                     unreachable!()
                 };
                 self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
