@@ -222,7 +222,12 @@ impl<'a> Parser<'a> {
         Ok((var_type, name))
     }
 
-    fn var_decl(&mut self, ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
+    fn var_decl(&mut self, mut ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
+        if self.matches(TokenType::LeftBracket) {
+            self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
+            ty = ValueType::Arr(Box::new(ty));
+        }
+
         self.consume(TokenType::Identifier, "Expected variable name.")?;
         let name = self.previous().lexeme;
         let line = self.previous().line;
@@ -423,10 +428,7 @@ impl<'a> Parser<'a> {
 
         let ty = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
-            ExprType::Assign {
-                name,
-                value,
-            }
+            ExprType::Assign { name, value }
         } else {
             ExprType::Var(name)
         };

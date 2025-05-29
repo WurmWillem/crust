@@ -13,7 +13,7 @@ pub enum ValueType {
     Bool,
     Num,
     Str,
-    Arr(Box<(ValueType, usize)>),
+    Arr(Box<ValueType>),
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

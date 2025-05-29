@@ -220,7 +220,15 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticErr::new(line, ErrType::InvalidInfix));
                 }
             }
-            ExprType::Array(values) => ValueType::Num,
+            ExprType::Array(values) => {
+                let el_ty = self.analyse_expr(&values[0])?;
+                for i in 1..values.len() {
+                    if self.analyse_expr(&values[i])? != el_ty {
+                        todo!();
+                    }
+                }
+                todo!()
+            }
             ExprType::Index { name, index } => todo!(),
             ExprType::AssignIndex { name, index, value } => todo!(),
         };
