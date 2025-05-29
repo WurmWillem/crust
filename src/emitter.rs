@@ -239,12 +239,11 @@ impl<'a> Emitter<'a> {
                 }
             }
             ExprType::Assign { name, value } => {
-                if let Some((arg, _kind)) = self.comps.resolve_local(name) {
-                    self.emit_expr(&(*value))?;
-                    self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
-                } else {
+                let Some((arg, _kind)) = self.comps.resolve_local(name) else {
                     unreachable!()
-                }
+                };
+                self.emit_expr(&(*value))?;
+                self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
             }
             ExprType::Unary {
                 prefix,
@@ -282,15 +281,22 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(OpCode::AllocArr as u8, line);
             }
             ExprType::Index { name, index } => {
-                if let Some((arg, _kind)) = self.comps.resolve_local(name) {
-                    self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
-                    self.emit_expr(&index)?;
-                    self.comps.emit_byte(OpCode::IndexArr as u8, line);
-                } else {
+                let Some((arg, _kind)) = self.comps.resolve_local(name) else {
                     unreachable!()
-                }
+                };
+                self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
+                self.emit_expr(&index)?;
+                self.comps.emit_byte(OpCode::IndexArr as u8, line);
             }
-            ExprType::AssignIndex { name, index, value } => todo!(),
+            ExprType::AssignIndex { name, index, value } => {
+                let Some((arg, _ )) = self.comps.resolve_local(name) else {
+                    unreachable!()
+                };
+                self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
+                self.emit_expr(&index)?;
+                self.emit_expr(&value)?;
+                self.comps.emit_byte(OpCode::AssignIndex as u8, line);
+            }
         };
         Ok(())
     }

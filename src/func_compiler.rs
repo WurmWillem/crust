@@ -236,7 +236,7 @@ impl<'a> FuncCompilerStack<'a> {
 #[derive(Debug, Clone)]
 struct Local<'a> {
     name: &'a str,
-    ty: ValueType,
+    ty: ValueType, // TODO: not sure if ty is still necessary
     depth: usize,
 }
 impl<'a> Local<'a> {

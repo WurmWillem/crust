@@ -109,16 +109,26 @@ impl VM {
                     self.stack_push(arr);
                 }
                 OpCode::IndexArr => {
-                    let index = if let StackValue::F64(index) = self.stack_pop() {
-                        index as usize
-                    } else {
+                    let StackValue::F64(index) = self.stack_pop() else {
                         unreachable!()
                     };
 
                     let arr = self.stack_pop();
                     if let StackValue::Obj(Object::Arr(arr)) = arr {
-                        let value = arr.data.values[index];
+                        let value = arr.data.values[index as usize];
                         self.stack_push(value);
+                    }
+                }
+                OpCode::AssignIndex => {
+                    let new_value = self.stack_pop();
+                    let StackValue::F64(index) = self.stack_pop() else {
+                        unreachable!()
+                    };
+
+                    let arr = self.stack_pop();
+                    if let StackValue::Obj(Object::Arr(mut arr)) = arr {
+                        arr.data.values[index as usize] = new_value;
+                        //self.stack_push(value);
                     }
                 }
 

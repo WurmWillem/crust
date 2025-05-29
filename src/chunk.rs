@@ -58,6 +58,7 @@ impl Chunk {
 
             OpCode::AllocArr => Self::simple_instruction("OP_ALLOC_ARRAY", offset),
             OpCode::IndexArr => Self::simple_instruction("OP_INDEX_ARRAY", offset),
+            OpCode::AssignIndex => Self::simple_instruction("OP_ASSIGN_INDEX", offset),
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 

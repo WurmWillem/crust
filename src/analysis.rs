@@ -222,6 +222,7 @@ impl<'a> Analyser<'a> {
             }
             ExprType::Array(values) => ValueType::Num,
             ExprType::Index { name, index } => todo!(),
+            ExprType::AssignIndex { name, index, value } => todo!(),
         };
         Ok(result)
     }
