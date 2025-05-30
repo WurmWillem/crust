@@ -1,13 +1,8 @@
-{
-    int[] x = [1, 2, 3, 4];
-    x = [3, 2];
-    x = [3, 2];
-    x = [3, 2];
+int[] x = [1, 2, 3, 4];
+for i in 0 to 5 {
+    x = [12];
 }
 
-fn main() {
-
-}
 fn print_arr(int[] arr) {
     for i in 0 to len(arr) {
         pr arr[i];

@@ -9,6 +9,7 @@ use crate::{
 };
 
 pub struct Analyser<'a> {
+    // TODO: make it illegal to define a function inside a different function
     func_data: FuncHash<'a>,
     nat_func_data: NatFuncHash<'a>,
     symbols: SemanticScope<'a>,

@@ -3,8 +3,8 @@ use colored::Colorize;
 use crate::{analysis_types::Operator, value::ValueType};
 
 pub const PRINT_TOKENS: bool = false;
-pub const DEBUG_TRACE_EXECUTION: bool = false;
-pub const PRINT_HEAP: bool = false;
+pub const DEBUG_TRACE_EXECUTION: bool = true;
+pub const PRINT_HEAP: bool = true;
 
 pub fn print_error(line: u32, message: &str) {
     let l = "[line ".blue();

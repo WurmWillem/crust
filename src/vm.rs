@@ -2,7 +2,8 @@ use colored::Colorize;
 
 use crate::{
     error::{DEBUG_TRACE_EXECUTION, PRINT_HEAP},
-    object::{Gc, Heap, ObjArr, ObjFunc, Object},
+    heap::Heap,
+    object::{Gc, ObjArr, ObjFunc, Object},
     op_code::OpCode,
     value::StackValue,
 };
@@ -12,7 +13,7 @@ pub enum InterpretResult {
     // RuntimeError,
 }
 
-const STACK_SIZE: usize = 256;
+pub const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 64;
 
 #[derive(Debug, Clone, Copy)]
@@ -92,6 +93,8 @@ impl VM {
                 }
 
                 OpCode::AllocArr => {
+                    self.heap.collect_garbage(&mut self.stack, self.stack_top);
+
                     let len = self.stack_pop();
                     let len = if let StackValue::F64(len) = len {
                         len as usize

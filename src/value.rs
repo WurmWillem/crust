@@ -36,6 +36,18 @@ pub enum StackValue {
     F64(f64),
     Obj(Object),
 }
+impl StackValue {
+    pub fn mark(&mut self) {
+        if let StackValue::Obj(obj) = self {
+            match obj {
+                Object::Str(obj) => obj.marked = true,
+                Object::Func(obj) => obj.marked = true,
+                Object::Native(obj) => obj.marked = true,
+                Object::Arr(obj) => obj.marked = true,
+            }
+        }
+    }
+}
 
 macro_rules! add_num_operation {
     ($fun_name: ident, $op: tt) => {

@@ -4,108 +4,9 @@ use std::ptr::NonNull;
 use crate::chunk::Chunk;
 use crate::value::StackValue;
 
-pub struct Heap {
-    // TODO: maybe add support for Table so you won't have to reallocate every time
-    head: Option<Object>,
-}
-impl Heap {
-    pub fn new() -> Self {
-        Self { head: None }
-    }
-    pub fn print(&self) {
-        println!("start");
-        let mut current = self.head;
-        while let Some(object) = current {
-            if let Object::Arr(arr) = object {
-                print!("HEAP: [");
-                for el in &arr.data.values {
-                    print!("{}, ", el);
-                }
-                println!("]");
-            }
-            // WARN: I did not check if this actually works
-            let next = match object {
-                Object::Str(ref ptr) => ptr.next,
-                Object::Func(ref ptr) => ptr.next,
-                Object::Native(ref ptr) => ptr.next,
-                Object::Arr(ref ptr) => ptr.next,
-            };
-
-            current = next;
-        }
-    }
-
-    pub fn alloc<T, F>(&mut self, data: T, map: F) -> (Object, Gc<T>)
-    where
-        F: Fn(Gc<T>) -> Object,
-    {
-        let gc_data = Box::new(GcData {
-            // marked: false,
-            next: self.head,
-            data,
-        });
-
-        let gc = Gc {
-            ptr: NonNull::new(Box::into_raw(gc_data)).unwrap(),
-        };
-
-        let object = map(gc);
-
-        self.head = Some(object);
-
-        (object, gc)
-    }
-
-    unsafe fn dealloc(&mut self, object: Object) {
-        match object {
-            Object::Str(ptr) => {
-                let raw = ptr.ptr.as_ptr();
-                drop(Box::from_raw(raw));
-            }
-            Object::Func(ptr) => {
-                let raw = ptr.ptr.as_ptr();
-                drop(Box::from_raw(raw));
-            }
-            // WARN: I did not check if this actually works
-            Object::Native(ptr) => {
-                let raw = ptr.ptr.as_ptr();
-                drop(Box::from_raw(raw));
-            }
-            Object::Arr(ptr) => {
-                let raw = ptr.ptr.as_ptr();
-                drop(Box::from_raw(raw));
-            }
-        }
-    }
-}
-impl Drop for Heap {
-    fn drop(&mut self) {
-        let mut i = 0;
-        let mut current = self.head.take();
-
-        while let Some(object) = current {
-            i += 1;
-            // WARN: I did not check if this actually works
-            let next = match object {
-                Object::Str(ref ptr) => ptr.next,
-                Object::Func(ref ptr) => ptr.next,
-                Object::Native(ref ptr) => ptr.next,
-                Object::Arr(ref ptr) => ptr.next,
-            };
-
-            unsafe {
-                dbg!(i);
-                self.dealloc(object);
-            }
-
-            current = next;
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct Gc<T> {
-    ptr: NonNull<GcData<T>>,
+    pub ptr: NonNull<GcData<T>>,
 }
 impl<T> Copy for Gc<T> {}
 impl<T> Clone for Gc<T> {
@@ -128,8 +29,8 @@ impl<T> ops::DerefMut for Gc<T> {
 
 #[derive(Debug)]
 pub struct GcData<T> {
-    // pub marked: bool,
-    next: Option<Object>,
+    pub marked: bool,
+    pub next: Option<Object>,
     pub data: T,
 }
 
@@ -139,6 +40,24 @@ pub enum Object {
     Func(Gc<ObjFunc>),
     Native(Gc<ObjNative>),
     Arr(Gc<ObjArr>),
+}
+impl Object {
+    pub fn is_marked(&self) -> bool {
+        match self {
+            Object::Str(obj) => obj.marked,
+            Object::Func(obj) => obj.marked,
+            Object::Native(obj) => obj.marked,
+            Object::Arr(obj) => obj.marked,
+        }
+    }
+    pub fn unmark(&mut self) {
+        match self {
+            Object::Str(obj) => obj.marked = false,
+            Object::Func(obj) => obj.marked = false,
+            Object::Native(obj) => obj.marked = false,
+            Object::Arr(obj) => obj.marked = false,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -156,7 +75,7 @@ impl std::fmt::Display for ObjArr {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ObjFunc {
     pub chunk: Chunk,
     name: String,

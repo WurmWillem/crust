@@ -14,6 +14,7 @@ mod emitter;
 mod error;
 mod expression;
 mod func_compiler;
+mod heap;
 mod native_funcs;
 mod object;
 mod op_code;
