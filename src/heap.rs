@@ -64,28 +64,6 @@ impl Heap {
         }
 
         self.head = new_head;
-        // let mut new_head = None;
-        // let mut tail = &mut new_head;
-        // let mut current = self.head.take();
-        //
-        // while let Some(mut obj) = current {
-        //     current = obj.take_next();
-        //
-        //     if obj.is_marked() {
-        //         obj.unmark();
-        //         *tail = Some(obj);
-        //         tail = match tail.as_mut().unwrap() {
-        //             Object::Str(gc) => &mut gc.next,
-        //             Object::Func(gc) => &mut gc.next,
-        //             Object::Native(gc) => &mut gc.next,
-        //             Object::Arr(gc) => &mut gc.next,
-        //         };
-        //     } else {
-        //         unsafe { self.dealloc(obj) };
-        //     }
-        // }
-        //
-        // self.head = new_head;
     }
 
     pub fn collect_garbage(&mut self, stack: &mut [StackValue; STACK_SIZE], stack_top: usize) {
@@ -149,11 +127,9 @@ impl Heap {
 }
 impl Drop for Heap {
     fn drop(&mut self) {
-        let mut i = 0;
         let mut current = self.head.take();
 
         while let Some(object) = current {
-            i += 1;
             let next = match object {
                 Object::Str(ref ptr) => ptr.header.next,
                 Object::Func(ref ptr) => ptr.header.next,
