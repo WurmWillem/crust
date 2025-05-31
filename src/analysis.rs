@@ -1,6 +1,6 @@
 use crate::{
     analysis_types::{get_func_data, FuncHash, NatFuncHash, Operator, SemanticScope, Symbol},
-    error::{print_error, ErrType, SemanticErr},
+    error::{print_error, SemErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
@@ -9,6 +9,7 @@ use crate::{
 };
 
 pub struct Analyser<'a> {
+    // TODO: make it illegal to define a function inside a different function
     func_data: FuncHash<'a>,
     nat_func_data: NatFuncHash<'a>,
     symbols: SemanticScope<'a>,
@@ -52,10 +53,10 @@ impl<'a> Analyser<'a> {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    let err_ty = ErrType::TypeMismatch(*ty, value_ty);
+                    let err_ty = SemErrType::TypeMismatch(ty.clone(), value_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
-                self.symbols.declare(Symbol::new(name, *ty), line)?;
+                self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
             }
             StmtType::Println(expr) => {
                 self.analyse_expr(expr)?;
@@ -64,7 +65,8 @@ impl<'a> Analyser<'a> {
                 let return_ty = self.analyse_expr(expr)?;
 
                 if return_ty != self.current_return_ty && return_ty != ValueType::Null {
-                    let err_ty = ErrType::IncorrectReturnTy(self.current_return_ty, return_ty);
+                    let err_ty =
+                        SemErrType::IncorrectReturnTy(self.current_return_ty.clone(), return_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
             }
@@ -95,9 +97,11 @@ impl<'a> Analyser<'a> {
                 condition,
                 body,
             } => {
+                self.symbols.begin_scope();
                 self.analyse_stmt(var)?;
                 self.analyse_expr(condition)?;
                 self.analyse_stmt(body)?;
+                self.symbols.end_scope();
             }
             StmtType::Func {
                 name: _,
@@ -105,12 +109,12 @@ impl<'a> Analyser<'a> {
                 body,
                 return_ty,
             } => {
-                let prev_return_ty = self.current_return_ty;
-                self.current_return_ty = *return_ty;
+                let prev_return_ty = self.current_return_ty.clone();
+                self.current_return_ty = return_ty.clone();
 
                 self.symbols.begin_scope();
                 for (ty, name) in parameters {
-                    self.symbols.declare(Symbol::new(name, *ty), line)?;
+                    self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
                 }
                 for stmt in body {
                     self.analyse_stmt(stmt)?;
@@ -123,30 +127,7 @@ impl<'a> Analyser<'a> {
         };
         Ok(())
     }
-    fn get_called_func_data(
-        &mut self,
-        name: &'a str,
-        line: u32,
-    ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
-        if let Some(data) = self.func_data.remove(name) {
-            let parameters = data.parameters.iter().map(|p| p.0).collect();
-            let return_ty = data.return_ty;
 
-            self.func_data.insert(name, data);
-
-            return Ok((return_ty, parameters));
-        };
-        if let Some(data) = self.nat_func_data.remove(name) {
-            let parameters = data.parameters.clone();
-            let return_ty = data.return_ty;
-
-            self.nat_func_data.insert(name, data);
-
-            return Ok((return_ty, parameters));
-        };
-        let ty = ErrType::UndefinedFunc(name.to_string());
-        Err(SemanticErr::new(line, ty))
-    }
     fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticErr> {
         let line = expr.line;
         let result = match &expr.expr {
@@ -154,14 +135,14 @@ impl<'a> Analyser<'a> {
             ExprType::Var(name) => match self.symbols.resolve(name) {
                 Some(symbol) => symbol.ty,
                 None => {
-                    let ty = ErrType::UndefinedVar(name.to_string());
+                    let ty = SemErrType::UndefinedVar(name.to_string());
                     return Err(SemanticErr::new(line, ty));
                 }
             },
             ExprType::Call { name, args } => {
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
                 if args.len() != parameters.len() {
-                    let err_ty = ErrType::IncorrectArity(
+                    let err_ty = SemErrType::IncorrectArity(
                         name.to_string(),
                         args.len() as u8,
                         parameters.len() as u8,
@@ -170,8 +151,16 @@ impl<'a> Analyser<'a> {
                 }
                 for (i, arg) in args.iter().enumerate() {
                     let arg_ty = self.analyse_expr(arg)?;
-                    if arg_ty != parameters[i] && parameters[i] != ValueType::Any {
-                        let err_ty = ErrType::TypeMismatch(parameters[i], arg_ty);
+
+                    let param_ty = &parameters[i];
+
+                    let is_exact_match = arg_ty == *param_ty;
+                    let is_any = *param_ty == ValueType::Any;
+                    let is_array_match = matches!(param_ty, ValueType::Arr(inner) if **inner == ValueType::Any)
+                        && matches!(arg_ty, ValueType::Arr(_));
+
+                    if !is_exact_match && !is_any && !is_array_match {
+                        let err_ty = SemErrType::TypeMismatch(param_ty.clone(), arg_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                 }
@@ -182,13 +171,13 @@ impl<'a> Analyser<'a> {
                 Some(symbol) => {
                     let value_ty = self.analyse_expr(value)?;
                     if symbol.ty != value_ty && symbol.ty != ValueType::Any {
-                        let err_ty = ErrType::TypeMismatch(symbol.ty, value_ty);
+                        let err_ty = SemErrType::TypeMismatch(symbol.ty, value_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                     symbol.ty
                 }
                 None => {
-                    let ty = ErrType::UndefinedVar(name.to_string());
+                    let ty = SemErrType::UndefinedVar(name.to_string());
                     return Err(SemanticErr::new(line, ty));
                 }
             },
@@ -197,21 +186,27 @@ impl<'a> Analyser<'a> {
                 match prefix {
                     TokenType::Minus => {
                         if value_ty != ValueType::Num {
-                            let err_ty =
-                                ErrType::OpTypeMismatch(ValueType::Num, Operator::Minus, value_ty);
+                            let err_ty = SemErrType::OpTypeMismatch(
+                                ValueType::Num,
+                                Operator::Minus,
+                                value_ty,
+                            );
                             return Err(SemanticErr::new(line, err_ty));
                         }
                         value_ty
                     }
                     TokenType::Bang => {
                         if value_ty != ValueType::Bool {
-                            let err_ty =
-                                ErrType::OpTypeMismatch(ValueType::Bool, Operator::Bang, value_ty);
+                            let err_ty = SemErrType::OpTypeMismatch(
+                                ValueType::Bool,
+                                Operator::Bang,
+                                value_ty,
+                            );
                             return Err(SemanticErr::new(line, err_ty));
                         }
                         value_ty
                     }
-                    _ => return Err(SemanticErr::new(line, ErrType::InvalidPrefix)),
+                    _ => return Err(SemanticErr::new(line, SemErrType::InvalidPrefix)),
                 }
             }
             ExprType::Binary { left, op, right } => {
@@ -219,7 +214,7 @@ impl<'a> Analyser<'a> {
                 let right_ty = self.analyse_expr(right)?;
                 if left_ty != right_ty {
                     let op = op.to_operator();
-                    let err_ty = ErrType::OpTypeMismatch(left_ty, op, right_ty);
+                    let err_ty = SemErrType::OpTypeMismatch(left_ty, op, right_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
 
@@ -240,10 +235,79 @@ impl<'a> Analyser<'a> {
                 if x {
                     left_ty
                 } else {
-                    return Err(SemanticErr::new(line, ErrType::InvalidInfix));
+                    return Err(SemanticErr::new(line, SemErrType::InvalidInfix));
+                }
+            }
+            ExprType::Array(values) => {
+                let el_ty = self.analyse_expr(&values[0])?;
+
+                for el in values.iter().skip(1) {
+                    let next_el_ty = self.analyse_expr(el)?;
+
+                    if next_el_ty != el_ty {
+                        let err_ty = SemErrType::ArrElTypeMismatch(el_ty, next_el_ty);
+                        return Err(SemanticErr::new(line, err_ty));
+                    }
+                }
+                ValueType::Arr(Box::new(el_ty))
+            }
+            ExprType::Index { arr, index: _ } => {
+                let arr = self.analyse_expr(arr)?;
+                match arr {
+                    ValueType::Arr(ty) => *ty,
+                    _ => {
+                        let ty = SemErrType::IndexNonArr(arr);
+                        return Err(SemanticErr::new(line, ty));
+                    }
+                }
+            }
+            ExprType::AssignIndex {
+                arr,
+                index: _,
+                value,
+            } => {
+                let arr = self.analyse_expr(arr)?;
+                match arr {
+                    ValueType::Arr(ty) => {
+                        let value_ty = self.analyse_expr(value)?;
+                        if value_ty != *ty {
+                            let ty = SemErrType::AssignArrTypeMismatch(*ty, value_ty);
+                            return Err(SemanticErr::new(line, ty));
+                        }
+                        *ty
+                    }
+                    _ => {
+                        let ty = SemErrType::IndexNonArr(arr);
+                        return Err(SemanticErr::new(line, ty));
+                    }
                 }
             }
         };
         Ok(result)
+    }
+
+    fn get_called_func_data(
+        &mut self,
+        name: &'a str,
+        line: u32,
+    ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
+        if let Some(data) = self.func_data.remove(name) {
+            let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
+            let return_ty = data.return_ty.clone();
+
+            self.func_data.insert(name, data);
+
+            return Ok((return_ty, parameters));
+        };
+        if let Some(data) = self.nat_func_data.remove(name) {
+            let parameters = data.parameters.clone();
+            let return_ty = data.return_ty.clone();
+
+            self.nat_func_data.insert(name, data);
+
+            return Ok((return_ty, parameters));
+        };
+        let ty = SemErrType::UndefinedFunc(name.to_string());
+        Err(SemanticErr::new(line, ty))
     }
 }

@@ -1,9 +1,4 @@
-use crate::{
-    error::EmitErr,
-    object::ObjFunc,
-    op_code::OpCode,
-    value::{StackValue, ValueType},
-};
+use crate::{error::EmitErr, object::ObjFunc, op_code::OpCode, value::StackValue};
 
 #[derive(Debug)]
 pub struct FuncCompilerStack<'a> {
@@ -52,7 +47,7 @@ impl<'a> FuncCompilerStack<'a> {
 
     fn make_constant(&mut self, value: StackValue, line: u32) -> Result<u8, EmitErr> {
         let const_index = self.add_constant(value);
-        if const_index > u16::MAX.into() {
+        if const_index > u8::MAX.into() {
             let msg = "Too many constants in one chunk.";
             return Err(EmitErr::new(line, msg));
         }
@@ -79,7 +74,7 @@ impl<'a> FuncCompilerStack<'a> {
         self.emit_byte(OpCode::Loop as u8, line);
 
         let offset = self.get_code_len() - loop_start + 2;
-        if offset > u8::MAX as usize {
+        if offset > u16::MAX as usize {
             let msg = "Loop body too large.";
             return Err(EmitErr::new(line, msg));
         }
@@ -112,12 +107,12 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].local_count
     }
 
-    pub fn add_local(&mut self, name: &'a str, ty: ValueType, line: u32) -> Result<(), EmitErr> {
+    pub fn add_local(&mut self, name: &'a str, line: u32) -> Result<(), EmitErr> {
         if self.current().local_count == MAX_LOCAL_AMT {
             return Err(EmitErr::new(line, "Too many locals."));
         }
 
-        let local = Local::new(name, self.current().scope_depth, ty);
+        let local = Local::new(name, self.current().scope_depth);
 
         let local_count = self.current().local_count;
         self.comps[self.current].locals[local_count] = local;
@@ -142,7 +137,7 @@ impl<'a> FuncCompilerStack<'a> {
         let jump = from
             .checked_sub(to - 2)
             .ok_or_else(|| EmitErr::new(line, "Invalid jump target."))?;
-        
+
         if jump > u16::MAX as usize {
             let msg = "Too much code to jump over.";
             return Err(EmitErr::new(line, msg));
@@ -214,10 +209,10 @@ impl<'a> FuncCompilerStack<'a> {
         Ok(())
     }
 
-    pub fn resolve_local(&mut self, name: &str) -> Option<(u8, ValueType)> {
+    pub fn resolve_local(&mut self, name: &str) -> Option<u8> {
         for i in (0..self.current().local_count).rev() {
             if self.current().locals[i].name == name {
-                return Some((i as u8, self.current().locals[i].ty));
+                return Some(i as u8);
             }
         }
         None
@@ -236,12 +231,11 @@ impl<'a> FuncCompilerStack<'a> {
 #[derive(Debug, Clone, Copy)]
 struct Local<'a> {
     name: &'a str,
-    ty: ValueType,
     depth: usize,
 }
 impl<'a> Local<'a> {
-    fn new(name: &'a str, depth: usize, ty: ValueType) -> Self {
-        Self { name, depth, ty }
+    fn new(name: &'a str, depth: usize) -> Self {
+        Self { name, depth }
     }
 }
 
@@ -258,7 +252,7 @@ pub struct FuncCompiler<'a> {
 }
 impl<'a> FuncCompiler<'a> {
     pub fn new(func_name: String) -> Self {
-        let local = Local::new("", 0, ValueType::None);
+        let local = Local::new("", 0);
         Self {
             locals: [local; MAX_LOCAL_AMT],
             local_count: 1,

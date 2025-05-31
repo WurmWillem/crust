@@ -17,10 +17,20 @@ impl<'a> Expr<'a> {
 #[derive(Debug, Clone)]
 pub enum ExprType<'a> {
     Lit(Literal<'a>),
+    Array(Vec<Expr<'a>>),
     Var(&'a str),
     Call {
         name: &'a str,
         args: Vec<Expr<'a>>,
+    },
+    Index {
+        arr: Box<Expr<'a>>,
+        index: Box<Expr<'a>>,
+    },
+    AssignIndex {
+        arr: Box<Expr<'a>>,
+        index: Box<Expr<'a>>,
+        value: Box<Expr<'a>>,
     },
     Assign {
         name: &'a str,

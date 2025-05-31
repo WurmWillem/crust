@@ -1,11 +1,13 @@
-fn main() {
-    int i = 0;
-    while i < 10 {
-        i = i + 1;
-        if i > 5 && i < 8 {
-            continue;
+int[][] x = [[1, 2], [3, 4]];
+//for i in 0 to 5 {
+//}
+
+print_arr(x);
+
+fn print_arr(int[][] arr) {
+    for j in 0 to len(arr) {
+        for i in 0 to len(arr[j]) {
+            pr arr[j][i];
         }
-        println(i);
     }
 }
-main();

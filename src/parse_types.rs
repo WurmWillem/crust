@@ -38,6 +38,7 @@ impl std::convert::From<u8> for Precedence {
 pub enum FnType {
     Empty,
     Grouping,
+    Array,
     Unary,
     Binary,
     Number,
@@ -45,6 +46,7 @@ pub enum FnType {
     Literal,
     Var,
     Call,
+    Index,
 }
 
 #[derive(Clone, Copy)]
@@ -55,7 +57,7 @@ pub struct ParseRule {
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 47] = {
+pub const PARSE_RULES: [ParseRule; 49] = {
     use FnType::*;
     use Precedence as P;
 
@@ -71,6 +73,8 @@ pub const PARSE_RULES: [ParseRule; 47] = {
         none!(), // right paren
         none!(), // left brace
         none!(), // right brace
+        ParseRule { prefix: Array, infix: Index, precedence: P::Call, }, // left bracket
+        none!(), // right bracket
         none!(), // comma
         none!(), // dot
         none!(), // colon

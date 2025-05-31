@@ -90,6 +90,21 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    fn array(&mut self) -> Result<Expr<'a>, ParseErr> {
+        let mut values = Vec::new();
+        while !self.check(TokenType::RightBracket) {
+            values.push(self.expression()?);
+
+            if !self.matches(TokenType::Comma) {
+                break;
+            }
+        }
+        self.consume(TokenType::RightBracket, "Expected ']' at end of array.")?;
+
+        let ty = ExprType::Array(values);
+        Ok(Expr::new(ty, self.previous().line))
+    }
+
     fn number(&mut self) -> Result<Expr<'a>, ParseErr> {
         let Literal::Num(value) = self.previous().literal else {
             unreachable!();
@@ -135,7 +150,10 @@ impl<'a> Parser<'a> {
     }
 
     fn func_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
-        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        self.consume(
+            TokenType::Identifier,
+            "Expected function name after 'fn' keyword.",
+        )?;
         let name = self.previous().lexeme;
         let line = self.previous().line;
 
@@ -191,8 +209,14 @@ impl<'a> Parser<'a> {
         Ok(func)
     }
     fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseErr> {
-        let var_type = match self.advance().kind.as_value_type() {
-            Some(var_type) => var_type,
+        let var_ty = match self.advance().kind.as_value_type() {
+            Some(mut var_type) => {
+                while self.matches(TokenType::LeftBracket) {
+                    self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
+                    var_type = ValueType::Arr(Box::new(var_type));
+                }
+                var_type
+            }
             _ => {
                 return Err(ParseErr::new(
                     self.previous().line,
@@ -204,11 +228,16 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::Identifier, "Expected parameter name.")?;
         let name = self.previous().lexeme;
 
-        Ok((var_type, name))
+        Ok((var_ty, name))
     }
 
-    fn var_decl(&mut self, ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
-        self.consume(TokenType::Identifier, "Expected variable name.")?;
+    fn var_decl(&mut self, mut ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
+        while self.matches(TokenType::LeftBracket) {
+            self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
+            ty = ValueType::Arr(Box::new(ty));
+        }
+
+        self.consume(TokenType::Identifier, "Expected variable name after type.")?;
         let name = self.previous().lexeme;
         let line = self.previous().line;
 
@@ -403,18 +432,16 @@ impl<'a> Parser<'a> {
     }
 
     fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
-        let name = self.previous();
-        let var = if can_assign && self.matches(TokenType::Equal) {
+        let name = self.previous().lexeme;
+        let line = self.previous().line;
+
+        let ty = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
-            let ty = ExprType::Assign {
-                name: name.lexeme,
-                value,
-            };
-            Expr::new(ty, name.line)
+            ExprType::Assign { name, value }
         } else {
-            let ty = ExprType::Var(name.lexeme);
-            Expr::new(ty, name.line)
+            ExprType::Var(name)
         };
+        let var = Expr::new(ty, line);
         Ok(var)
     }
 
@@ -435,6 +462,7 @@ impl<'a> Parser<'a> {
     fn execute_prefix(&mut self, fn_type: FnType, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         match fn_type {
             FnType::Grouping => self.grouping(),
+            FnType::Array => self.array(),
             FnType::Unary => self.unary(),
             FnType::Number => self.number(),
             FnType::String => self.string(),
@@ -442,6 +470,21 @@ impl<'a> Parser<'a> {
             FnType::Var => self.var(can_assign),
             _ => unreachable!(),
         }
+    }
+
+    fn index(&mut self, arr: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
+        let index = Box::new(self.expression()?);
+        self.consume(TokenType::RightBracket, "Expected ']' after index.")?;
+
+        let arr = Box::new(arr);
+        let ty = if can_assign && self.matches(TokenType::Equal) {
+            let value = Box::new(self.expression()?);
+            ExprType::AssignIndex { arr, index, value }
+        } else {
+            ExprType::Index { arr, index }
+        };
+        let expr = Expr::new(ty, self.previous().line);
+        Ok(expr)
     }
 
     fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
@@ -468,11 +511,12 @@ impl<'a> Parser<'a> {
         &mut self,
         left: Expr<'a>,
         fn_type: FnType,
-        _can_assign: bool,
+        can_assign: bool,
     ) -> Result<Expr<'a>, ParseErr> {
         match fn_type {
             FnType::Binary => self.binary(left),
             FnType::Call => self.call(left),
+            FnType::Index => self.index(left, can_assign),
             _ => unreachable!(),
         }
     }

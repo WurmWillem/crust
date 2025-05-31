@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    error::{ErrType, SemanticErr},
+    error::{SemErrType, SemanticErr},
     object::NativeFunc,
     statement::{Stmt, StmtType},
     value::ValueType,
@@ -52,6 +52,7 @@ impl core::fmt::Display for Operator {
 
 #[derive(Debug)]
 pub struct FuncData<'a> {
+    // TODO: check if ty is necessary
     pub parameters: Vec<(ValueType, &'a str)>,
     pub body: Vec<Stmt<'a>>,
     pub return_ty: ValueType,
@@ -81,7 +82,7 @@ pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFunc
             let func_data = FuncData {
                 parameters: parameters.clone(),
                 body: body.clone(),
-                return_ty: *return_ty,
+                return_ty: return_ty.clone(),
                 line: stmt.line,
             };
 
@@ -118,11 +119,13 @@ fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
     add_func!("abs", abs, vec![VT::Num], VT::Num);
     add_func!("sqrt", sqrt, vec![VT::Num], VT::Num);
     add_func!("pow", pow, vec![VT::Num, VT::Num], VT::Num);
+    add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::Num);
+    add_func!("print_heap", print_heap, vec![], VT::Null);
 
     nat_funcs
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Symbol<'a> {
     name: &'a str,
     pub ty: ValueType,
@@ -156,7 +159,7 @@ impl<'a> SemanticScope<'a> {
         if current.contains_key(symbol.name) {
             return Err(SemanticErr::new(
                 line,
-                ErrType::AlreadyDefinedVar(symbol.name.to_string()),
+                SemErrType::AlreadyDefinedVar(symbol.name.to_string()),
             ));
         }
         current.insert(symbol.name, symbol);
@@ -166,7 +169,7 @@ impl<'a> SemanticScope<'a> {
     pub fn resolve(&self, name: &str) -> Option<Symbol<'a>> {
         for scope in self.stack.iter().rev() {
             if let Some(sym) = scope.get(name) {
-                return Some(*sym);
+                return Some(sym.clone());
             }
         }
         None

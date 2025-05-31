@@ -1,11 +1,11 @@
 use std::{
-    fmt,
+    fmt::{self, Display},
     ops::{Neg, Not},
 };
 
 use crate::object::Object;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ValueType {
     None, // default value for locals
     Any,  // useful as generic type for functions like println()
@@ -13,11 +13,13 @@ pub enum ValueType {
     Bool,
     Num,
     Str,
+    Arr(Box<ValueType>),
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
+            ValueType::Arr(ty) => write!(f, "[{}]", ty),
             ValueType::Any => unreachable!(),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
@@ -76,6 +78,9 @@ impl StackValue {
             (StackValue::F64(lhs), StackValue::F64(rhs)) => lhs == rhs,
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs == rhs,
             (StackValue::Null, StackValue::Null) => true,
+            (StackValue::Obj(Object::Str(str1)), StackValue::Obj(Object::Str(str2))) => {
+                str1.data == str2.data
+            }
             _ => unreachable!(),
         }
     }
@@ -121,19 +126,22 @@ impl Not for StackValue {
         }
     }
 }
-impl StackValue {
-    pub fn as_string(&self) -> String {
+impl Display for StackValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            StackValue::Null => "null".to_string(),
-            StackValue::Bool(b) => b.to_string(),
-            StackValue::F64(f) => f.to_string(),
+            StackValue::Null => write!(f, "null"),
+            StackValue::Bool(b) => write!(f, "{}", b),
+            StackValue::F64(num) => write!(f, "{}", num),
             StackValue::Obj(o) => match o {
-                Object::Str(s) => s.data.to_string(),
+                Object::Str(s) => write!(f, "{}", s.data),
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
+                Object::Arr(a) => write!(f, "{:?}", a.data.values),
             },
         }
     }
+}
+impl StackValue {
     pub fn display(&self) -> String {
         match self {
             StackValue::Null => "null".to_string(),
@@ -143,6 +151,7 @@ impl StackValue {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
+                Object::Arr(a) => format!("{:?}", a.data.values),
             },
         }
     }

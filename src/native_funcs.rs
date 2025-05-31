@@ -1,6 +1,6 @@
-use crate::value::StackValue;
+use crate::{heap::Heap, object::Object, value::StackValue};
 
-pub fn clock(_args: &[StackValue]) -> StackValue {
+pub fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
@@ -8,24 +8,24 @@ pub fn clock(_args: &[StackValue]) -> StackValue {
     StackValue::F64(time.as_secs_f64())
 }
 
-pub fn print(args: &[StackValue]) -> StackValue {
+pub fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
-    let string = args[0].as_string().green();
+    let string = args[0].display().green();
     print!("{}", string);
 
     StackValue::Null
 }
-pub fn println(args: &[StackValue]) -> StackValue {
+pub fn println(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
-    let string = args[0].as_string().green();
+    let string = args[0].display().green();
     println!("{}", string);
 
     StackValue::Null
 }
 
-pub fn sin(args: &[StackValue]) -> StackValue {
+pub fn sin(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.sin())
@@ -34,7 +34,7 @@ pub fn sin(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn cos(args: &[StackValue]) -> StackValue {
+pub fn cos(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.cos())
@@ -43,7 +43,7 @@ pub fn cos(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn tan(args: &[StackValue]) -> StackValue {
+pub fn tan(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.tan())
@@ -52,7 +52,7 @@ pub fn tan(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn min(args: &[StackValue]) -> StackValue {
+pub fn min(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -61,7 +61,7 @@ pub fn min(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn max(args: &[StackValue]) -> StackValue {
+pub fn max(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -70,7 +70,7 @@ pub fn max(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn abs(args: &[StackValue]) -> StackValue {
+pub fn abs(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.abs())
@@ -79,7 +79,7 @@ pub fn abs(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn sqrt(args: &[StackValue]) -> StackValue {
+pub fn sqrt(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.sqrt())
@@ -88,11 +88,24 @@ pub fn sqrt(args: &[StackValue]) -> StackValue {
     }
 }
 
-pub fn pow(args: &[StackValue]) -> StackValue {
+pub fn pow(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
         (StackValue::F64(val1), StackValue::F64(val2)) => StackValue::F64(val1.powf(val2)),
         _ => unreachable!(),
     }
+}
+
+pub fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let arr = args[0];
+    match arr {
+        StackValue::Obj(Object::Arr(arr)) => StackValue::F64(arr.data.values.len() as f64),
+        _ => unreachable!(),
+    }
+}
+
+pub fn print_heap(_args: &[StackValue], heap: &mut Heap) -> StackValue {
+    heap.print();
+    StackValue::Null
 }

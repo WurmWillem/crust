@@ -2,7 +2,8 @@ use colored::Colorize;
 
 use crate::{
     error::DEBUG_TRACE_EXECUTION,
-    object::{Gc, Heap, ObjFunc, Object},
+    heap::Heap,
+    object::{Gc, ObjArr, ObjFunc, Object},
     op_code::OpCode,
     value::StackValue,
 };
@@ -12,7 +13,7 @@ pub enum InterpretResult {
     // RuntimeError,
 }
 
-const STACK_SIZE: usize = 256;
+pub const STACK_SIZE: usize = 256;
 const FRAMES_SIZE: usize = 64;
 
 #[derive(Debug, Clone, Copy)]
@@ -32,7 +33,7 @@ pub struct VM {
 }
 impl VM {
     pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
-        let (func_object, gc_obj) = heap.alloc(func, Object::Func);
+        let (func_object, gc_obj) = heap.alloc_permanent(func, Object::Func);
 
         let frame = CallFrame {
             ip: gc_obj.data.chunk.get_ptr(),
@@ -45,7 +46,7 @@ impl VM {
             heap,
             frames,
             frame_count: 1,
-            stack: [const { StackValue::Null }; STACK_SIZE],
+            stack: [StackValue::Null; STACK_SIZE],
             stack_top: 0,
         };
 
@@ -89,6 +90,49 @@ impl VM {
                 OpCode::SetLocal => {
                     let slot = self.read_byte(frame) as usize;
                     self.stack[(*frame).slots + slot] = self.stack_peek();
+                }
+
+                OpCode::AllocArr => {
+                    let len = self.stack_pop();
+                    let len = if let StackValue::F64(len) = len {
+                        len as usize
+                    } else {
+                        unreachable!()
+                    };
+                    let mut values = Vec::new();
+                    for _ in 0..len {
+                        values.push(self.stack_pop());
+                    }
+
+                    let obj = ObjArr::new(values);
+                    let (object, _) =
+                        self.heap
+                            .alloc(obj, Object::Arr, &mut self.stack, self.stack_top);
+                    let arr = StackValue::Obj(object);
+                    self.stack_push(arr);
+                }
+                OpCode::IndexArr => {
+                    let StackValue::F64(index) = self.stack_pop() else {
+                        unreachable!()
+                    };
+
+                    let arr = self.stack_pop();
+                    if let StackValue::Obj(Object::Arr(arr)) = arr {
+                        let value = arr.data.values[index as usize];
+                        self.stack_push(value);
+                    }
+                }
+                OpCode::AssignIndex => {
+                    let new_value = self.stack_pop();
+                    let StackValue::F64(index) = self.stack_pop() else {
+                        unreachable!()
+                    };
+
+                    let arr = self.stack_peek();
+                    if let StackValue::Obj(Object::Arr(mut arr)) = arr {
+                        arr.data.values[index as usize] = new_value;
+                        //self.stack_push(value);
+                    }
                 }
 
                 OpCode::Call => {
@@ -180,7 +224,7 @@ impl VM {
                 OpCode::Less => binary_op!(is_less_than),
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
                 OpCode::Print => {
-                    let string = self.stack_pop().as_string().green();
+                    let string = self.stack_pop().display().green();
                     println!("{}", string);
                 }
             }
@@ -209,7 +253,7 @@ impl VM {
                     let args_ptr = self.stack.as_ptr().add(slots + 1);
                     let args = std::slice::from_raw_parts(args_ptr, arg_count);
 
-                    let value = (func.data.func)(args);
+                    let value = (func.data.func)(args, &mut self.heap);
 
                     self.stack_top = slots;
                     self.stack_push(value);
@@ -295,7 +339,9 @@ impl VM {
         let mut new_str = lhs.data.clone();
         new_str.push_str(&rhs.data);
 
-        let (object, _) = self.heap.alloc(new_str, Object::Str);
+        let (object, _) = self
+            .heap
+            .alloc(new_str, Object::Str, &mut self.stack, self.stack_top);
 
         StackValue::Obj(object)
     }
