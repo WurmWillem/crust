@@ -6,13 +6,14 @@ use crate::{
 };
 use std::ptr::NonNull;
 
-const GC_THRESHOLD: usize = 1024 * 1024 * 100;
+const INITIAL_GC_THRESHOLD: usize = 1024 * 1024 * 10;
 
 pub struct Heap {
     // TODO: maybe add support for Table so we won't have to reallocate every time
     head: Option<Object>,
     permanent_head: Option<Object>,
     bytes_allocated: usize,
+    gc_threshold: f64,
 }
 impl Heap {
     pub fn new() -> Self {
@@ -20,6 +21,7 @@ impl Heap {
             head: None,
             permanent_head: None,
             bytes_allocated: 0,
+            gc_threshold: INITIAL_GC_THRESHOLD as f64,
         }
     }
     pub fn print(&self) {
@@ -61,8 +63,8 @@ impl Heap {
 
     fn blacken_obj(&mut self, obj: Object, gray_list: &mut Vec<Object>) {
         match obj {
-            Object::Str(_) => todo!(),
-            Object::Func(obj) => (),
+            Object::Str(_) => (),
+            Object::Func(_) => (),
             Object::Native(_) => (),
             Object::Arr(arr) => {
                 for el in &arr.data.values {
@@ -100,8 +102,10 @@ impl Heap {
                 self.mark_object(obj, &mut gray_objects);
             }
         }
+
         self.trace_objects(&mut gray_objects);
         self.sweep();
+
         if PRINT_HEAP {
             self.print();
         }
@@ -121,8 +125,11 @@ impl Heap {
         //self.collect_garbage();
         let size = data.size_of() + std::mem::size_of::<GcData<T>>();
         self.bytes_allocated += size;
-        if self.bytes_allocated > GC_THRESHOLD {
-            self.collect_garbage(stack, stack_top)
+
+        if self.bytes_allocated > self.gc_threshold as usize {
+            self.collect_garbage(stack, stack_top);
+            self.bytes_allocated = 0;
+            self.gc_threshold *= 1.8;
         }
 
         let gc_data = Box::new(GcData {
