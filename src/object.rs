@@ -2,6 +2,7 @@ use std::ops;
 use std::ptr::NonNull;
 
 use crate::chunk::Chunk;
+use crate::heap::Heap;
 use crate::value::StackValue;
 
 #[derive(Debug)]
@@ -118,7 +119,7 @@ impl ObjFunc {
     }
 }
 
-pub type NativeFunc = fn(&[StackValue]) -> StackValue;
+pub type NativeFunc = fn(&[StackValue], &mut Heap) -> StackValue;
 
 #[derive(Debug, Clone)]
 pub struct ObjNative {

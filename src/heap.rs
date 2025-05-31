@@ -6,8 +6,6 @@ use crate::{
 };
 use std::ptr::NonNull;
 
-const DEBUG_GC: bool = true;
-
 pub struct Heap {
     // TODO: maybe add support for Table so you won't have to reallocate every time
     head: Option<Object>,
@@ -30,6 +28,9 @@ impl Heap {
             // if let Object::Func(func) = object {
             //     println!("fn {}", func.data.get_name());
             // }
+            if let Object::Str(str) = object {
+                println!("str {}", str.data);
+            }
 
             let next = object.header().next;
 
@@ -58,7 +59,6 @@ impl Heap {
                 *tail = Some(obj);
                 tail = &mut tail.as_mut().unwrap().header_mut().next;
             } else {
-                dbg!("wow");
                 unsafe { self.dealloc(obj) };
             }
         }
@@ -83,6 +83,7 @@ impl Heap {
     where
         F: Fn(Gc<T>) -> Object,
     {
+        // TODO: add realloc()
         //self.collect_garbage();
 
         let gc_data = Box::new(GcData {

@@ -47,7 +47,7 @@ impl<'a> FuncCompilerStack<'a> {
 
     fn make_constant(&mut self, value: StackValue, line: u32) -> Result<u8, EmitErr> {
         let const_index = self.add_constant(value);
-        if const_index > u16::MAX.into() {
+        if const_index > u8::MAX.into() {
             let msg = "Too many constants in one chunk.";
             return Err(EmitErr::new(line, msg));
         }
