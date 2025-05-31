@@ -75,3 +75,22 @@ fn break_loop() {
 
     assert_eq!(stdout.trim(), "0123");
 }
+
+#[test]
+fn arr_print_2d() {
+    let crust_file = "tests/2d_arr_print.crs";
+
+    let output = Command::new("target/debug/crust")
+        .arg(crust_file)
+        .output()
+        .expect("Failed to run Crust interpreter");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    if !stderr.is_empty() {
+        eprintln!("Crust stderr:\n{}", stderr);
+    }
+
+    assert_eq!(stdout.trim(), "1234");
+}
