@@ -7,7 +7,7 @@ use crate::{
 use std::ptr::NonNull;
 
 pub struct Heap {
-    // TODO: maybe add support for Table so you won't have to reallocate every time
+    // TODO: maybe add support for Table so we won't have to reallocate every time
     head: Option<Object>,
     permanent_head: Option<Object>,
 }
@@ -25,7 +25,7 @@ impl Heap {
             if let Object::Arr(arr) = object {
                 print!("HEAP: [");
                 for el in &arr.data.values {
-                    print!("{}, ", el);
+                    print!("{}, ", el.display());
                 }
                 println!("]");
             }
@@ -42,14 +42,33 @@ impl Heap {
         }
     }
 
-    // fn blacken_obj(&mut self, obj: &Object) {
-    //     match obj {
-    //         Object::Str(_) => todo!(),
-    //         Object::Func(obj) => (),
-    //         Object::Native(_) => (),
-    //         Object::Arr(arr) => {}
-    //     }
-    // }
+    fn trace_objects(&mut self, gray_list: &mut Vec<Object>) {
+        while let Some(obj) = gray_list.pop() {
+            self.blacken_obj(obj, gray_list);
+        }
+    }
+
+    fn mark_object(&mut self, mut obj: Object, gray_list: &mut Vec<Object>) {
+        if !obj.is_marked() {
+            obj.mark();
+            gray_list.push(obj);
+        }
+    }
+
+    fn blacken_obj(&mut self, obj: Object, gray_list: &mut Vec<Object>) {
+        match obj {
+            Object::Str(_) => todo!(),
+            Object::Func(obj) => (),
+            Object::Native(_) => (),
+            Object::Arr(arr) => {
+                for el in &arr.data.values {
+                    if let StackValue::Obj(obj) = el {
+                        self.mark_object(*obj, gray_list);
+                    }
+                }
+            }
+        }
+    }
     fn sweep(&mut self) {
         let mut new_head = None;
         let mut tail = &mut new_head;
@@ -63,7 +82,6 @@ impl Heap {
                 *tail = Some(obj);
                 tail = &mut tail.as_mut().unwrap().header_mut().next;
             } else {
-                // dbg!(obj);
                 unsafe { self.dealloc(obj) };
             }
         }
@@ -73,11 +91,13 @@ impl Heap {
 
     pub fn collect_garbage(&mut self, stack: &mut [StackValue; STACK_SIZE], stack_top: usize) {
         // return;
+        let mut gray_objects = vec![];
         for i in 0..stack_top {
-            if let StackValue::Obj(mut obj) = stack[i] {
-                obj.mark();
+            if let StackValue::Obj(obj) = stack[i] {
+                self.mark_object(obj, &mut gray_objects);
             }
         }
+        self.trace_objects(&mut gray_objects);
         self.sweep();
         if PRINT_HEAP {
             self.print();
