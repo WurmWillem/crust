@@ -1,6 +1,6 @@
 use crate::{
     error::PRINT_HEAP,
-    object::{Gc, GcData, Object},
+    object::{Gc, GcData, GcHeader, Object},
     value::StackValue,
     vm::STACK_SIZE,
 };
@@ -27,59 +27,73 @@ impl Heap {
                 }
                 println!("]");
             }
-            // WARN: I did not check if this actually works
-            let next = match object {
-                Object::Str(ref ptr) => ptr.next,
-                Object::Func(ref ptr) => ptr.next,
-                Object::Native(ref ptr) => ptr.next,
-                Object::Arr(ref ptr) => ptr.next,
-            };
+            // if let Object::Func(func) = object {
+            //     println!("fn {}", func.data.get_name());
+            // }
+
+            let next = object.header().next;
 
             current = next;
         }
     }
 
-    fn blacken_obj(&mut self, obj: &Object) {
-        match obj {
-            Object::Str(_) => todo!(),
-            Object::Func(_) => (),
-            Object::Native(_) => (),
-            Object::Arr(arr) => {}
-        }
-    }
-
+    // fn blacken_obj(&mut self, obj: &Object) {
+    //     match obj {
+    //         Object::Str(_) => todo!(),
+    //         Object::Func(obj) => (),
+    //         Object::Native(_) => (),
+    //         Object::Arr(arr) => {}
+    //     }
+    // }
     fn sweep(&mut self) {
-        let mut current = self.head;
+        let mut new_head = None;
+        let mut tail = &mut new_head;
+        let mut current = self.head.take();
 
-        while let Some(mut object) = current {
-            let next = match object {
-                Object::Str(ptr) => ptr.next,
-                Object::Func(ptr) => ptr.next,
-                Object::Native(ptr) => ptr.next,
-                Object::Arr(ptr) => ptr.next,
-            };
+        while let Some(mut obj) = current {
+            current = obj.take_next();
 
-            if !object.is_marked() {
-                if let Object::Arr(arr) = object {
-                    //dbg!("mark");
-                    //dbg!(&arr.data);
-                    dbg!("YOOO");
-                    dbg!(&arr.data);
-                    unsafe {
-                        self.dealloc(object);
-                    }
-                }
+            if obj.is_marked() || matches!(obj, Object::Func(_)) || matches!(obj, Object::Native(_)) {
+                obj.unmark();
+                *tail = Some(obj);
+                tail = &mut tail.as_mut().unwrap().header_mut().next;
             } else {
-                object.unmark();
+                dbg!("wow");
+                unsafe { self.dealloc(obj) };
             }
-
-            current = next;
         }
+
+        self.head = new_head;
+        // let mut new_head = None;
+        // let mut tail = &mut new_head;
+        // let mut current = self.head.take();
+        //
+        // while let Some(mut obj) = current {
+        //     current = obj.take_next();
+        //
+        //     if obj.is_marked() {
+        //         obj.unmark();
+        //         *tail = Some(obj);
+        //         tail = match tail.as_mut().unwrap() {
+        //             Object::Str(gc) => &mut gc.next,
+        //             Object::Func(gc) => &mut gc.next,
+        //             Object::Native(gc) => &mut gc.next,
+        //             Object::Arr(gc) => &mut gc.next,
+        //         };
+        //     } else {
+        //         unsafe { self.dealloc(obj) };
+        //     }
+        // }
+        //
+        // self.head = new_head;
     }
 
     pub fn collect_garbage(&mut self, stack: &mut [StackValue; STACK_SIZE], stack_top: usize) {
+        // return;
         for i in 0..stack_top {
-            stack[i].mark();
+            if let StackValue::Obj(mut obj) = stack[i] {
+                obj.mark();
+            }
         }
         self.sweep();
         if PRINT_HEAP {
@@ -94,8 +108,10 @@ impl Heap {
         //self.collect_garbage();
 
         let gc_data = Box::new(GcData {
-            marked: false,
-            next: self.head,
+            header: GcHeader {
+                marked: false,
+                next: self.head.take(),
+            },
             data,
         });
 
@@ -105,7 +121,7 @@ impl Heap {
 
         let object = map(gc);
 
-        self.head = Some(object);
+        self.head = Some(object.clone());
 
         (object, gc)
     }
@@ -139,10 +155,10 @@ impl Drop for Heap {
         while let Some(object) = current {
             i += 1;
             let next = match object {
-                Object::Str(ref ptr) => ptr.next,
-                Object::Func(ref ptr) => ptr.next,
-                Object::Native(ref ptr) => ptr.next,
-                Object::Arr(ref ptr) => ptr.next,
+                Object::Str(ref ptr) => ptr.header.next,
+                Object::Func(ref ptr) => ptr.header.next,
+                Object::Native(ref ptr) => ptr.header.next,
+                Object::Arr(ref ptr) => ptr.header.next,
             };
 
             unsafe {

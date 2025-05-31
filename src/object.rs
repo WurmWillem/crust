@@ -26,11 +26,25 @@ impl<T> ops::DerefMut for Gc<T> {
         unsafe { self.ptr.as_mut() }
     }
 }
+impl<T> Gc<T> {
+    fn header(&self) -> &GcHeader {
+        unsafe { &self.ptr.as_ref().header }
+    }
+
+    fn header_mut(&mut self) -> &mut GcHeader {
+        unsafe { &mut self.ptr.as_mut().header }
+    }
+}
+
+#[derive(Debug)]
+pub struct GcHeader {
+    pub marked: bool,
+    pub next: Option<Object>,
+}
 
 #[derive(Debug)]
 pub struct GcData<T> {
-    pub marked: bool,
-    pub next: Option<Object>,
+    pub header: GcHeader,
     pub data: T,
 }
 
@@ -42,21 +56,33 @@ pub enum Object {
     Arr(Gc<ObjArr>),
 }
 impl Object {
-    pub fn is_marked(&self) -> bool {
+    pub fn header(&self) -> &GcHeader {
         match self {
-            Object::Str(obj) => obj.marked,
-            Object::Func(obj) => obj.marked,
-            Object::Native(obj) => obj.marked,
-            Object::Arr(obj) => obj.marked,
+            Object::Str(obj) => obj.header(),
+            Object::Func(obj) => obj.header(),
+            Object::Native(obj) => obj.header(),
+            Object::Arr(obj) => obj.header(),
         }
     }
-    pub fn unmark(&mut self) {
+    pub fn header_mut(&mut self) -> &mut GcHeader {
         match self {
-            Object::Str(obj) => obj.marked = false,
-            Object::Func(obj) => obj.marked = false,
-            Object::Native(obj) => obj.marked = false,
-            Object::Arr(obj) => obj.marked = false,
+            Object::Str(obj) => obj.header_mut(),
+            Object::Func(obj) => obj.header_mut(),
+            Object::Native(obj) => obj.header_mut(),
+            Object::Arr(obj) => obj.header_mut(),
         }
+    }
+    pub fn is_marked(&self) -> bool {
+        self.header().marked
+    }
+    pub fn unmark(&mut self) {
+        self.header_mut().marked = false;
+    }
+    pub fn mark(&mut self) {
+        self.header_mut().marked = true;
+    }
+    pub fn take_next(&mut self) -> Option<Object> {
+        std::mem::take(&mut self.header_mut().next)
     }
 }
 

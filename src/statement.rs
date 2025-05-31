@@ -33,7 +33,7 @@ pub enum StmtType<'a> {
         condition: Expr<'a>,
         body: Box<Stmt<'a>>,
     },
-    For {
+    For { // var scope goes wrong in semantic analysis stage
         var: Box<Stmt<'a>>,
         condition: Expr<'a>,
         body: Box<Stmt<'a>>,

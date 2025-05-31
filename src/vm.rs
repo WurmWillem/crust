@@ -136,9 +136,6 @@ impl VM {
                 }
 
                 OpCode::Call => {
-                    if PRINT_HEAP {
-                        self.heap.print();
-                    }
                     self.call(frame);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                 }
