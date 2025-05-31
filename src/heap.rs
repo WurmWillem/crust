@@ -6,7 +6,7 @@ use crate::{
 };
 use std::ptr::NonNull;
 
-const GC_THRESHOLD: usize = 1024 * 1024;
+const GC_THRESHOLD: usize = 1024 * 1024 * 100;
 
 pub struct Heap {
     // TODO: maybe add support for Table so we won't have to reallocate every time
