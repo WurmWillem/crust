@@ -13,7 +13,10 @@ pub struct Heap {
 }
 impl Heap {
     pub fn new() -> Self {
-        Self { head: None, permanent_head: None }
+        Self {
+            head: None,
+            permanent_head: None,
+        }
     }
     pub fn print(&self) {
         println!("start");
@@ -77,7 +80,7 @@ impl Heap {
         }
         self.sweep();
         if PRINT_HEAP {
-            // self.print();
+            self.print();
         }
     }
 

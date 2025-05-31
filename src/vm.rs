@@ -183,6 +183,7 @@ impl VM {
                 }
 
                 OpCode::Add => {
+                    self.heap.collect_garbage(&mut self.stack, self.stack_top);
                     let rhs = self.stack_pop();
                     let lhs = self.stack_pop();
 
