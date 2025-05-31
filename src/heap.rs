@@ -153,41 +153,29 @@ impl Heap {
             }
         }
     }
+
+    fn drop_object_list(&mut self, head: Option<Object>) {
+        let mut current = head;
+
+        while let Some(object) = current {
+            let next = match object {
+                Object::Str(ref ptr) => ptr.header.next,
+                Object::Func(ref ptr) => ptr.header.next,
+                Object::Native(ref ptr) => ptr.header.next,
+                Object::Arr(ref ptr) => ptr.header.next,
+            };
+
+            unsafe {
+                self.dealloc(object);
+            }
+
+            current = next;
+        }
+    }
 }
 impl Drop for Heap {
     fn drop(&mut self) {
-        let mut current = self.head.take();
-
-        while let Some(object) = current {
-            let next = match object {
-                Object::Str(ref ptr) => ptr.header.next,
-                Object::Func(ref ptr) => ptr.header.next,
-                Object::Native(ref ptr) => ptr.header.next,
-                Object::Arr(ref ptr) => ptr.header.next,
-            };
-
-            unsafe {
-                //dbg!(i);
-                self.dealloc(object);
-            }
-
-            current = next;
-        }
-        let mut current = self.permanent_head.take();
-
-        while let Some(object) = current {
-            let next = match object {
-                Object::Str(ref ptr) => ptr.header.next,
-                Object::Func(ref ptr) => ptr.header.next,
-                Object::Native(ref ptr) => ptr.header.next,
-                Object::Arr(ref ptr) => ptr.header.next,
-            };
-
-            unsafe {
-                self.dealloc(object);
-            }
-
-            current = next;
-        }
+        self.drop_object_list(self.head);
+        self.drop_object_list(self.permanent_head);
     }
 }
