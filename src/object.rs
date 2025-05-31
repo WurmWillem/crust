@@ -6,34 +6,43 @@ use crate::heap::Heap;
 use crate::value::StackValue;
 
 #[derive(Debug)]
-pub struct Gc<T> {
+pub struct Gc<T: GcMemSize> {
     pub ptr: NonNull<GcData<T>>,
 }
-impl<T> Copy for Gc<T> {}
-impl<T> Clone for Gc<T> {
+impl<T: GcMemSize> Copy for Gc<T> {}
+impl<T: GcMemSize> Clone for Gc<T> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<T> ops::Deref for Gc<T> {
+impl<T: GcMemSize> ops::Deref for Gc<T> {
     type Target = GcData<T>;
 
     fn deref(&self) -> &Self::Target {
         unsafe { self.ptr.as_ref() }
     }
 }
-impl<T> ops::DerefMut for Gc<T> {
+impl<T: GcMemSize> ops::DerefMut for Gc<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { self.ptr.as_mut() }
     }
 }
-impl<T> Gc<T> {
+impl<T: GcMemSize> Gc<T> {
     fn header(&self) -> &GcHeader {
         unsafe { &self.ptr.as_ref().header }
     }
 
     fn header_mut(&mut self) -> &mut GcHeader {
         unsafe { &mut self.ptr.as_mut().header }
+    }
+}
+
+pub trait GcMemSize {
+    fn size_of(&self) -> usize;
+}
+impl GcMemSize for String {
+    fn size_of(&self) -> usize {
+        std::mem::size_of::<String>() + self.capacity()
     }
 }
 
@@ -96,9 +105,14 @@ impl ObjArr {
         Self { values }
     }
 }
-impl std::fmt::Display for ObjArr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.values)
+// impl std::fmt::Display for ObjArr {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{:?}", self.values)
+//     }
+// }
+impl GcMemSize for ObjArr{
+    fn size_of(&self) -> usize {
+        std::mem::size_of::<StackValue>() * self.values.capacity()
     }
 }
 
@@ -118,6 +132,11 @@ impl ObjFunc {
         &self.name
     }
 }
+impl GcMemSize for ObjFunc {
+    fn size_of(&self) -> usize {
+        unreachable!()
+    }
+}
 
 pub type NativeFunc = fn(&[StackValue], &mut Heap) -> StackValue;
 
@@ -133,5 +152,10 @@ impl ObjNative {
     }
     pub fn get_name(&self) -> &String {
         &self.name
+    }
+}
+impl GcMemSize for ObjNative {
+    fn size_of(&self) -> usize {
+        unreachable!()
     }
 }

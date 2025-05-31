@@ -1,21 +1,25 @@
 use crate::{
     error::PRINT_HEAP,
-    object::{Gc, GcData, GcHeader, Object},
+    object::{Gc, GcData, GcHeader, GcMemSize, Object},
     value::StackValue,
     vm::STACK_SIZE,
 };
 use std::ptr::NonNull;
 
+const GC_THRESHOLD: usize = 1024 * 1024;
+
 pub struct Heap {
     // TODO: maybe add support for Table so we won't have to reallocate every time
     head: Option<Object>,
     permanent_head: Option<Object>,
+    bytes_allocated: usize,
 }
 impl Heap {
     pub fn new() -> Self {
         Self {
             head: None,
             permanent_head: None,
+            bytes_allocated: 0,
         }
     }
     pub fn print(&self) {
@@ -90,7 +94,6 @@ impl Heap {
     }
 
     pub fn collect_garbage(&mut self, stack: &mut [StackValue; STACK_SIZE], stack_top: usize) {
-        // return;
         let mut gray_objects = vec![];
         for i in 0..stack_top {
             if let StackValue::Obj(obj) = stack[i] {
@@ -104,12 +107,23 @@ impl Heap {
         }
     }
 
-    pub fn alloc<T, F>(&mut self, data: T, map: F) -> (Object, Gc<T>)
+    pub fn alloc<T: GcMemSize, F>(
+        &mut self,
+        data: T,
+        map: F,
+        stack: &mut [StackValue; STACK_SIZE],
+        stack_top: usize,
+    ) -> (Object, Gc<T>)
     where
         F: Fn(Gc<T>) -> Object,
     {
         // TODO: add realloc()
         //self.collect_garbage();
+        let size = data.size_of() + std::mem::size_of::<GcData<T>>();
+        self.bytes_allocated += size;
+        if self.bytes_allocated > GC_THRESHOLD {
+            self.collect_garbage(stack, stack_top)
+        }
 
         let gc_data = Box::new(GcData {
             header: GcHeader {
@@ -130,7 +144,7 @@ impl Heap {
         (object, gc)
     }
 
-    pub fn alloc_permanent<T, F>(&mut self, data: T, map: F) -> (Object, Gc<T>)
+    pub fn alloc_permanent<T: GcMemSize, F>(&mut self, data: T, map: F) -> (Object, Gc<T>)
     where
         F: Fn(Gc<T>) -> Object,
     {

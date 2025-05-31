@@ -93,8 +93,6 @@ impl VM {
                 }
 
                 OpCode::AllocArr => {
-                    self.heap.collect_garbage(&mut self.stack, self.stack_top);
-
                     let len = self.stack_pop();
                     let len = if let StackValue::F64(len) = len {
                         len as usize
@@ -107,7 +105,9 @@ impl VM {
                     }
 
                     let obj = ObjArr::new(values);
-                    let (object, _) = self.heap.alloc(obj, Object::Arr);
+                    let (object, _) =
+                        self.heap
+                            .alloc(obj, Object::Arr, &mut self.stack, self.stack_top);
                     let arr = StackValue::Obj(object);
                     self.stack_push(arr);
                 }
@@ -183,7 +183,6 @@ impl VM {
                 }
 
                 OpCode::Add => {
-                    self.heap.collect_garbage(&mut self.stack, self.stack_top);
                     let rhs = self.stack_pop();
                     let lhs = self.stack_pop();
 
@@ -340,7 +339,9 @@ impl VM {
         let mut new_str = lhs.data.clone();
         new_str.push_str(&rhs.data);
 
-        let (object, _) = self.heap.alloc(new_str, Object::Str);
+        let (object, _) = self
+            .heap
+            .alloc(new_str, Object::Str, &mut self.stack, self.stack_top);
 
         StackValue::Obj(object)
     }
