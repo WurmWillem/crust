@@ -97,9 +97,11 @@ impl<'a> Analyser<'a> {
                 condition,
                 body,
             } => {
+                self.symbols.begin_scope();
                 self.analyse_stmt(var)?;
                 self.analyse_expr(condition)?;
                 self.analyse_stmt(body)?;
+                self.symbols.end_scope();
             }
             StmtType::Func {
                 name: _,
