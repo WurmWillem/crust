@@ -211,7 +211,7 @@ impl<'a> Parser<'a> {
     fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseErr> {
         let var_ty = match self.advance().kind.as_value_type() {
             Some(mut var_type) => {
-                if self.matches(TokenType::LeftBracket) {
+                while self.matches(TokenType::LeftBracket) {
                     self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
                     var_type = ValueType::Arr(Box::new(var_type));
                 }
