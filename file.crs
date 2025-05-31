@@ -1,6 +1,8 @@
 int[] x = [1, 2];
 int[] y = [3, 4];
 int[][] z = [x, y];
+int b = 3;
+pr b[0];
 
 for j in 0 to len(z) {
     for i in 0 to len(z[j]) {

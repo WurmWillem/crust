@@ -105,7 +105,7 @@ pub fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn print_heap(args: &[StackValue], heap: &mut Heap) -> StackValue {
+pub fn print_heap(_args: &[StackValue], heap: &mut Heap) -> StackValue {
     heap.print();
     StackValue::Null
 }

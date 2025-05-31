@@ -72,7 +72,7 @@ impl SemanticErr {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
             SemErrType::IndexNonArr(ty) => format!(
-                "You can only index arrays, but you tried to index the type {}",
+                "You can only index arrays, but you tried to index the type '{}'.",
                 ty
             ),
 
