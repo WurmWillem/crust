@@ -34,12 +34,12 @@ impl<'a> Analyser<'a> {
         };
         let mut analyser = Analyser::new(func_data, nat_func_data);
 
-        for stmt in stmts {
-            if let Err(err) = analyser.analyse_stmt(stmt) {
-                err.print();
-                return None;
-            }
-        }
+        // for stmt in stmts {
+        //     if let Err(err) = analyser.analyse_stmt(stmt) {
+        //         err.print();
+        //         return None;
+        //     }
+        // }
 
         Some((analyser.func_data, analyser.nat_func_data))
     }
@@ -251,44 +251,46 @@ impl<'a> Analyser<'a> {
                 }
                 ValueType::Arr(Box::new(el_ty))
             }
-            ExprType::Index { name, index: _ } => match self.symbols.resolve(name) {
-                Some(symbol) => match symbol.ty {
-                    ValueType::Arr(ty) => *ty,
-                    _ => {
-                        let ty = SemErrType::IndexNonArr(symbol.ty);
-                        return Err(SemanticErr::new(line, ty));
-                    }
-                },
-                None => {
-                    let ty = SemErrType::UndefinedVar(name.to_string());
-                    return Err(SemanticErr::new(line, ty));
-                }
-            },
+            // ExprType::Index { arr, index: _ } => match self.symbols.resolve(name) {
+            //     Some(symbol) => match symbol.ty {
+            //         ValueType::Arr(ty) => *ty,
+            //         _ => {
+            //             let ty = SemErrType::IndexNonArr(symbol.ty);
+            //             return Err(SemanticErr::new(line, ty));
+            //         }
+            //     },
+            //     None => {
+            //         let ty = SemErrType::UndefinedVar(name.to_string());
+            //         return Err(SemanticErr::new(line, ty));
+            //     }
+            // },
 
-            ExprType::AssignIndex {
-                name,
-                index: _,
-                value,
-            } => match self.symbols.resolve(name) {
-                Some(symbol) => match symbol.ty {
-                    ValueType::Arr(ty) => {
-                        let value_ty = self.analyse_expr(value)?;
-                        if value_ty != *ty {
-                            let ty = SemErrType::AssignArrTypeMismatch(*ty, value_ty);
-                            return Err(SemanticErr::new(line, ty));
-                        }
-                        *ty
-                    }
-                    _ => {
-                        let ty = SemErrType::IndexNonArr(symbol.ty);
-                        return Err(SemanticErr::new(line, ty));
-                    }
-                },
-                None => {
-                    let ty = SemErrType::UndefinedVar(name.to_string());
-                    return Err(SemanticErr::new(line, ty));
-                }
-            },
+            // ExprType::AssignIndex {
+            //     arr: name,
+            //     index: _,
+            //     value,
+            // } => match self.symbols.resolve(name) {
+            //     Some(symbol) => match symbol.ty {
+            //         ValueType::Arr(ty) => {
+            //             let value_ty = self.analyse_expr(value)?;
+            //             if value_ty != *ty {
+            //                 let ty = SemErrType::AssignArrTypeMismatch(*ty, value_ty);
+            //                 return Err(SemanticErr::new(line, ty));
+            //             }
+            //             *ty
+            //         }
+            //         _ => {
+            //             let ty = SemErrType::IndexNonArr(symbol.ty);
+            //             return Err(SemanticErr::new(line, ty));
+            //         }
+            //     },
+            //     None => {
+            //         let ty = SemErrType::UndefinedVar(name.to_string());
+            //         return Err(SemanticErr::new(line, ty));
+            //     }
+            // },
+            ExprType::Index { arr, index } => todo!(),
+            ExprType::AssignIndex { arr, index, value } => todo!(),
         };
         Ok(result)
     }

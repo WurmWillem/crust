@@ -281,19 +281,13 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_constant(StackValue::F64(arr_len), line)?;
                 self.comps.emit_byte(OpCode::AllocArr as u8, line);
             }
-            ExprType::Index { name, index } => {
-                let Some(arg) = self.comps.resolve_local(name) else {
-                    unreachable!()
-                };
-                self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
+            ExprType::Index { arr, index } => {
+                self.emit_expr(arr)?;
                 self.emit_expr(index)?;
                 self.comps.emit_byte(OpCode::IndexArr as u8, line);
             }
-            ExprType::AssignIndex { name, index, value } => {
-                let Some(arg) = self.comps.resolve_local(name) else {
-                    unreachable!()
-                };
-                self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
+            ExprType::AssignIndex { arr, index, value } => {
+                self.emit_expr(arr)?;
                 self.emit_expr(index)?;
                 self.emit_expr(value)?;
                 self.comps.emit_byte(OpCode::AssignIndex as u8, line);

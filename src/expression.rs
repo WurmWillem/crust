@@ -24,11 +24,11 @@ pub enum ExprType<'a> {
         args: Vec<Expr<'a>>,
     },
     Index {
-        name: &'a str,
+        arr: Box<Expr<'a>>,
         index: Box<Expr<'a>>,
     },
     AssignIndex {
-        name: &'a str,
+        arr: Box<Expr<'a>>,
         index: Box<Expr<'a>>,
         value: Box<Expr<'a>>,
     },

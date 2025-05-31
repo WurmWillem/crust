@@ -150,7 +150,10 @@ impl<'a> Parser<'a> {
     }
 
     fn func_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
-        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        self.consume(
+            TokenType::Identifier,
+            "Expected function name after 'fn' keyword.",
+        )?;
         let name = self.previous().lexeme;
         let line = self.previous().line;
 
@@ -229,12 +232,12 @@ impl<'a> Parser<'a> {
     }
 
     fn var_decl(&mut self, mut ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
-        if self.matches(TokenType::LeftBracket) {
+        while self.matches(TokenType::LeftBracket) {
             self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
             ty = ValueType::Arr(Box::new(ty));
         }
 
-        self.consume(TokenType::Identifier, "Expected variable name.")?;
+        self.consume(TokenType::Identifier, "Expected variable name after type.")?;
         let name = self.previous().lexeme;
         let line = self.previous().line;
 
@@ -473,18 +476,15 @@ impl<'a> Parser<'a> {
         let index = Box::new(self.expression()?);
         self.consume(TokenType::RightBracket, "Expected ']' after index.")?;
 
-        if let ExprType::Var(name) = arr.expr {
-            let ty = if can_assign && self.matches(TokenType::Equal) {
-                let value = Box::new(self.expression()?);
-                ExprType::AssignIndex { name, index, value }
-            } else {
-                ExprType::Index { name, index }
-            };
-            let expr = Expr::new(ty, self.previous().line);
-            Ok(expr)
+        let arr = Box::new(arr);
+        let ty = if can_assign && self.matches(TokenType::Equal) {
+            let value = Box::new(self.expression()?);
+            ExprType::AssignIndex { arr, index, value }
         } else {
-            unreachable!()
-        }
+            ExprType::Index { arr, index }
+        };
+        let expr = Expr::new(ty, self.previous().line);
+        Ok(expr)
     }
 
     fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseErr> {

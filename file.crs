@@ -1,4 +1,19 @@
-for i in 0 to 10 {
-    
+int[] x = [1, 2];
+int[] y = [3, 4];
+int[][] z = [x, y];
+
+for j in 0 to len(z) {
+    for i in 0 to len(z[j]) {
+        pr z[j][i];
+    }
 }
-int i = 3;
+for j in 0 to len(z) {
+    for i in 0 to len(z[j]) {
+        z[j][i] = 2;
+    }
+}
+for j in 0 to len(z) {
+    for i in 0 to len(z[j]) {
+        pr z[j][i];
+    }
+}
