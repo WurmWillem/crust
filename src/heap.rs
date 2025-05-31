@@ -9,10 +9,11 @@ use std::ptr::NonNull;
 pub struct Heap {
     // TODO: maybe add support for Table so you won't have to reallocate every time
     head: Option<Object>,
+    permanent_head: Option<Object>,
 }
 impl Heap {
     pub fn new() -> Self {
-        Self { head: None }
+        Self { head: None, permanent_head: None }
     }
     pub fn print(&self) {
         println!("start");
@@ -54,11 +55,12 @@ impl Heap {
         while let Some(mut obj) = current {
             current = obj.take_next();
 
-            if obj.is_marked() || matches!(obj, Object::Func(_)) || matches!(obj, Object::Native(_)) {
+            if obj.is_marked() {
                 obj.unmark();
                 *tail = Some(obj);
                 tail = &mut tail.as_mut().unwrap().header_mut().next;
             } else {
+                // dbg!(obj);
                 unsafe { self.dealloc(obj) };
             }
         }
@@ -75,7 +77,7 @@ impl Heap {
         }
         self.sweep();
         if PRINT_HEAP {
-            self.print();
+            // self.print();
         }
     }
 
@@ -101,6 +103,32 @@ impl Heap {
         let object = map(gc);
 
         self.head = Some(object.clone());
+
+        (object, gc)
+    }
+
+    pub fn alloc_permanent<T, F>(&mut self, data: T, map: F) -> (Object, Gc<T>)
+    where
+        F: Fn(Gc<T>) -> Object,
+    {
+        // TODO: add realloc()
+        //self.collect_garbage();
+
+        let gc_data = Box::new(GcData {
+            header: GcHeader {
+                marked: false,
+                next: self.permanent_head.take(),
+            },
+            data,
+        });
+
+        let gc = Gc {
+            ptr: NonNull::new(Box::into_raw(gc_data)).unwrap(),
+        };
+
+        let object = map(gc);
+
+        self.permanent_head = Some(object.clone());
 
         (object, gc)
     }
@@ -140,6 +168,22 @@ impl Drop for Heap {
 
             unsafe {
                 //dbg!(i);
+                self.dealloc(object);
+            }
+
+            current = next;
+        }
+        let mut current = self.permanent_head.take();
+
+        while let Some(object) = current {
+            let next = match object {
+                Object::Str(ref ptr) => ptr.header.next,
+                Object::Func(ref ptr) => ptr.header.next,
+                Object::Native(ref ptr) => ptr.header.next,
+                Object::Arr(ref ptr) => ptr.header.next,
+            };
+
+            unsafe {
                 self.dealloc(object);
             }
 

@@ -33,7 +33,7 @@ pub struct VM {
 }
 impl VM {
     pub fn interpret(func: ObjFunc, mut heap: Heap) -> InterpretResult {
-        let (func_object, gc_obj) = heap.alloc(func, Object::Func);
+        let (func_object, gc_obj) = heap.alloc_permanent(func, Object::Func);
 
         let frame = CallFrame {
             ip: gc_obj.data.chunk.get_ptr(),

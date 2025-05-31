@@ -57,7 +57,7 @@ impl<'a> Emitter<'a> {
     ) -> Result<(), EmitErr> {
         for (name, data) in nat_func_data.drain() {
             let func = ObjNative::new(name.to_string(), data.func);
-            let (func, _) = self.heap.alloc(func, Object::Native);
+            let (func, _) = self.heap.alloc_permanent(func, Object::Native);
             let value = StackValue::Obj(func);
             self.funcs.insert(name, value);
         }
@@ -66,7 +66,7 @@ impl<'a> Emitter<'a> {
         let mut func_objs = Vec::new();
         for name in func_data.keys() {
             let dummy = ObjFunc::new(name.to_string());
-            let (func_obj, _) = self.heap.alloc(dummy, Object::Func);
+            let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
             self.funcs.insert(name, StackValue::Obj(func_obj));
             func_objs.push(func_obj);
@@ -223,7 +223,7 @@ impl<'a> Emitter<'a> {
             ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
                 Literal::Str(str) => {
-                    let (object, _) = self.heap.alloc(str.to_string(), Object::Str);
+                    let (object, _) = self.heap.alloc_permanent(str.to_string(), Object::Str);
                     let stack_value = StackValue::Obj(object);
                     self.comps.emit_constant(stack_value, line)?;
                 }
