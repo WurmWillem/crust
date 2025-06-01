@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use crate::{
     analysis_types::{
-        get_type_data, FuncHash, NatFuncHash, Operator, SemanticScope, StructHash, Symbol,
+        get_nat_func_hash, FuncData, FuncHash, NatFuncHash, Operator, SemanticScope, StructData,
+        StructHash, Symbol,
     },
-    error::{print_error, SemErrType, SemanticErr},
+    error::{SemErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
@@ -12,38 +15,30 @@ use crate::{
 
 pub struct Analyser<'a> {
     // TODO: make it illegal to define a function inside a different function
-    func_data: FuncHash<'a>,
-    nat_func_data: NatFuncHash<'a>,
-    struct_data: StructHash<'a>,
+    funcs: FuncHash<'a>,
+    nat_funcs: NatFuncHash<'a>,
+    structs: StructHash<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
 }
 impl<'a> Analyser<'a> {
-    fn new(
-        func_data: FuncHash<'a>,
-        nat_func_data: NatFuncHash<'a>,
-        struct_data: StructHash<'a>,
-    ) -> Self {
+    fn new() -> Self {
         Self {
-            func_data,
-            nat_func_data,
+            funcs: HashMap::new(),
+            nat_funcs: HashMap::new(),
             symbols: SemanticScope::new(),
             current_return_ty: ValueType::None,
-            struct_data,
+            structs: HashMap::new(),
         }
     }
     pub fn analyse_stmts(
         stmts: &mut Vec<Stmt<'a>>,
     ) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
-        let (func_data, nat_func_data, struct_data) = match get_type_data(stmts) {
-            Some(data) => data,
-            None => {
-                // TODO: fix error
-                print_error(0, "Function with the same name has already been defined.");
-                return None;
-            }
-        };
-        let mut analyser = Analyser::new(func_data, nat_func_data, struct_data);
+        let mut analyser = Analyser::new();
+        if let Err(err) = analyser.init_type_data(stmts) {
+            err.print();
+            return None;
+        }
 
         for stmt in stmts {
             if let Err(err) = analyser.analyse_stmt(stmt) {
@@ -52,11 +47,44 @@ impl<'a> Analyser<'a> {
             }
         }
 
-        Some((
-            analyser.func_data,
-            analyser.nat_func_data,
-            analyser.struct_data,
-        ))
+        Some((analyser.funcs, analyser.nat_funcs, analyser.structs))
+    }
+
+    fn init_type_data(&mut self, stmts: &Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
+        self.nat_funcs = get_nat_func_hash();
+
+        for stmt in stmts {
+            let line = stmt.line;
+            if let StmtType::Func {
+                name,
+                parameters,
+                body,
+                return_ty,
+            } = &stmt.stmt
+            {
+                let func_data = FuncData {
+                    parameters: parameters.clone(),
+                    body: body.clone(),
+                    return_ty: return_ty.clone(),
+                    line: stmt.line,
+                };
+
+                if self.funcs.insert(*name, func_data).is_some() {
+                    let err_ty = SemErrType::AlreadyDefinedFunc(name.to_string());
+                    return Err(SemanticErr::new(line, err_ty));
+                }
+            }
+            if let StmtType::Struct { name, fields } = &stmt.stmt {
+                let fields = fields.clone();
+                let struct_data = StructData { fields };
+
+                if self.structs.insert(*name, struct_data).is_some() {
+                    let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
+                    return Err(SemanticErr::new(line, err_ty));
+                }
+            }
+        }
+        Ok(())
     }
 
     fn analyse_stmt(&mut self, stmt: &mut Stmt<'a>) -> Result<(), SemanticErr> {
@@ -159,7 +187,7 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::Call { name, args } => {
-                if let Some(_) = self.struct_data.get(name) {
+                if let Some(_) = self.structs.get(name) {
                     return Ok(ValueType::Struct(name.to_string()));
                 }
 
@@ -311,7 +339,7 @@ impl<'a> Analyser<'a> {
                 let ValueType::Struct(name) = inst_ty else {
                     unreachable!()
                 };
-                let Some(data) = self.struct_data.get(&name as &str) else {
+                let Some(data) = self.structs.get(&name as &str) else {
                     unreachable!()
                 };
                 let x = data.fields.iter().find(|f| f.1 == *property).unwrap();
@@ -319,9 +347,13 @@ impl<'a> Analyser<'a> {
                 let index = data
                     .fields
                     .iter()
-                    .position(|(_, field_name)| field_name == property).unwrap() as u8;
-                
-                expr.expr = ExprType::DotResolved { inst: inst.clone(), index };
+                    .position(|(_, field_name)| field_name == property)
+                    .unwrap() as u8;
+
+                expr.expr = ExprType::DotResolved {
+                    inst: inst.clone(),
+                    index,
+                };
                 // todo!()
                 // dbg!(inst_ty);
                 data.fields[index as usize].0.clone()
@@ -352,19 +384,19 @@ impl<'a> Analyser<'a> {
         name: &'a str,
         line: u32,
     ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
-        if let Some(data) = self.func_data.remove(name) {
+        if let Some(data) = self.funcs.remove(name) {
             let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
             let return_ty = data.return_ty.clone();
 
-            self.func_data.insert(name, data);
+            self.funcs.insert(name, data);
 
             return Ok((return_ty, parameters));
         };
-        if let Some(data) = self.nat_func_data.remove(name) {
+        if let Some(data) = self.nat_funcs.remove(name) {
             let parameters = data.parameters.clone();
             let return_ty = data.return_ty.clone();
 
-            self.nat_func_data.insert(name, data);
+            self.nat_funcs.insert(name, data);
 
             return Ok((return_ty, parameters));
         };

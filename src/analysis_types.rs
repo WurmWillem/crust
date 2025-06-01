@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     error::{SemErrType, SemanticErr},
     object::NativeFunc,
-    statement::{Stmt, StmtType},
+    statement::Stmt,
     value::ValueType,
 };
 
@@ -73,44 +73,7 @@ pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
 pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
 pub type StructHash<'a> = HashMap<&'a str, StructData<'a>>;
 
-pub fn get_type_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
-    let nat_funcs = get_nat_func_hash();
-
-    let mut funcs = HashMap::new();
-    let mut structs = HashMap::new();
-
-    for stmt in stmts {
-        if let StmtType::Func {
-            name,
-            parameters,
-            body,
-            return_ty,
-        } = &stmt.stmt
-        {
-            let func_data = FuncData {
-                parameters: parameters.clone(),
-                body: body.clone(),
-                return_ty: return_ty.clone(),
-                line: stmt.line,
-            };
-
-            if funcs.insert(*name, func_data).is_some() {
-                return None;
-            }
-        }
-        if let StmtType::Struct { name, fields } = &stmt.stmt {
-            let fields = fields.clone();
-            let struct_data = StructData { fields };
-            // TODO: error checking
-            if structs.insert(*name, struct_data).is_some() {
-                return None;
-            }
-        }
-    }
-    Some((funcs, nat_funcs, structs))
-}
-
-fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
+pub fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
     let mut nat_funcs = HashMap::new();
     macro_rules! add_func {
         ($name: expr, $func: ident, $parameters: expr, $return_ty: expr) => {

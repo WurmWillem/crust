@@ -61,6 +61,8 @@ pub enum SemErrType {
     IncorrectReturnTy(ValueType, ValueType),
     UndefinedVar(String),
     AlreadyDefinedVar(String),
+    AlreadyDefinedFunc(String),
+    AlreadyDefinedStruct(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
     TypeMismatch(ValueType, ValueType),
     ArrElTypeMismatch(ValueType, ValueType),
@@ -101,9 +103,15 @@ impl SemanticErr {
             }
             SemErrType::AlreadyDefinedVar(name) => {
                 format!(
-                    "Variable '{}' has already been defined in this scope.",
+                    "Variable with name '{}' has already been defined in this scope.",
                     name
                 )
+            }
+            SemErrType::AlreadyDefinedFunc(name) => {
+                format!("Function with name '{}' has already been defined.", name)
+            }
+            SemErrType::AlreadyDefinedStruct(name) => {
+                format!("Struct with name '{}' has already been defined.", name)
             }
 
             SemErrType::OpTypeMismatch(expected, op, found) => {

@@ -292,7 +292,6 @@ impl<'a> Emitter<'a> {
             }
             ExprType::Dot { inst, property } => {
                 todo!()
-
             }
             ExprType::Array(arr) => {
                 let arr_len = arr.len() as f64;
@@ -315,7 +314,8 @@ impl<'a> Emitter<'a> {
             }
             ExprType::DotResolved { inst, index } => {
                 self.emit_expr(inst)?;
-                self.comps.emit_bytes(OpCode::GetProperty as u8, *index, line);
+                self.comps
+                    .emit_bytes(OpCode::GetProperty as u8, *index, line);
             }
         };
         Ok(())

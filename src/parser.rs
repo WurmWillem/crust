@@ -181,10 +181,7 @@ impl<'a> Parser<'a> {
 
         self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
 
-        let ty = StmtType::Struct {
-            name,
-            fields,
-        };
+        let ty = StmtType::Struct { name, fields };
         Ok(Stmt::new(ty, line))
     }
 
