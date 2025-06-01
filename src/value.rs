@@ -152,8 +152,8 @@ impl StackValue {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
-                Object::Arr(a) => format!("{:?}", a.data.values),
-                Object::Instance(_) => todo!(),
+                Object::Arr(a) => format!("arr {:?}", a.data.values),
+                Object::Instance(i) => format!("inst {:?}", i.data.fields),
             },
         }
     }

@@ -17,6 +17,7 @@ pub struct Emitter<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
     funcs: HashMap<&'a str, StackValue>,
+    structs: StructHash<'a>,
 }
 impl<'a> Emitter<'a> {
     fn new() -> Self {
@@ -24,6 +25,7 @@ impl<'a> Emitter<'a> {
             heap: Heap::new(),
             comps: FuncCompilerStack::new(),
             funcs: HashMap::new(),
+            structs: HashMap::new(),
         }
     }
     pub fn compile(
@@ -55,7 +57,7 @@ impl<'a> Emitter<'a> {
         &mut self,
         mut func_data: FuncHash<'a>,
         mut nat_func_data: NatFuncHash<'a>,
-        struct_data: StructHash,
+        struct_data: StructHash<'a>,
     ) -> Result<(), EmitErr> {
         for (name, data) in nat_func_data.drain() {
             let func = ObjNative::new(name.to_string(), data.func);
@@ -96,6 +98,8 @@ impl<'a> Emitter<'a> {
                 unreachable!()
             }
         }
+
+        self.structs = struct_data;
 
         Ok(())
     }
@@ -215,9 +219,7 @@ impl<'a> Emitter<'a> {
             StmtType::Continue => {
                 self.comps.add_continue(line)?;
             }
-            StmtType::Struct { name, fields } => {
-                todo!()
-            }
+            StmtType::Struct { name, fields } => (),
         }
         Ok(())
     }
@@ -269,14 +271,24 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
-                let fn_ptr = *self.funcs.get(name).unwrap();
-                self.comps.emit_constant(fn_ptr, line)?;
+                dbg!(name);
+                let struct_data = self.structs.get(name).unwrap();
+                // self.comps.emit_constant(StackValue::F64(232.), 3)?;
+                // let fields = struct_data.fields.iter().map(|f| f.0);
 
-                for var in args.clone() {
+                // let fn_ptr = *self.funcs.get(name).unwrap();
+                // self.comps.emit_constant(fn_ptr, line)?;
+
+                dbg!(args.len());
+                for var in args {
                     self.emit_expr(&var)?;
                 }
+
                 self.comps
-                    .emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
+                    .emit_bytes(OpCode::AllocInstance as u8, args.len() as u8, line);
+
+                // self.comps
+                //     .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
             }
             ExprType::Array(arr) => {
                 let arr_len = arr.len() as f64;

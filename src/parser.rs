@@ -516,6 +516,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
+        // TODO: update error message
         self.consume(TokenType::RightParen, "Expected ')' after function call.")?;
 
         if let ExprType::Var(name) = name.expr {

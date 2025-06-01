@@ -56,13 +56,15 @@ impl Chunk {
             OpCode::JumpIfFalse => Self::simple_instruction("OP_POP", offset),
             OpCode::Loop => Self::simple_instruction("OP_POP", offset),
 
+            OpCode::AllocInstance => Self::simple_instruction("OP_ALLOC_INSTANCE", offset),
+
             OpCode::AllocArr => Self::simple_instruction("OP_ALLOC_ARRAY", offset),
             OpCode::IndexArr => Self::simple_instruction("OP_INDEX_ARRAY", offset),
             OpCode::AssignIndex => Self::simple_instruction("OP_ASSIGN_INDEX", offset),
 
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 
-            OpCode::Call => Self::simple_instruction("OP_CALL", offset),
+            OpCode::FuncCall => Self::simple_instruction("OP_CALL", offset),
 
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),

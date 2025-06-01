@@ -66,7 +66,7 @@ pub struct NatFuncData {
 }
 #[derive(Debug)]
 pub struct StructData<'a> {
-    fields: Vec<(ValueType, &'a str)>,
+    pub fields: Vec<(ValueType, &'a str)>,
 }
 
 pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;

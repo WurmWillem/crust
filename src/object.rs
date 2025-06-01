@@ -121,7 +121,12 @@ impl GcMemSize for ObjArr {
 
 #[derive(Debug, Clone)]
 pub struct ObjInstance {
-    fields: Vec<StackValue>,
+    pub fields: Vec<StackValue>,
+}
+impl ObjInstance {
+    pub fn new(fields: Vec<StackValue>) -> Self {
+        Self { fields }
+    }
 }
 impl GcMemSize for ObjInstance {
     fn size_of(&self) -> usize {

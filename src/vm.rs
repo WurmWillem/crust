@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{
     error::DEBUG_TRACE_EXECUTION,
     heap::Heap,
-    object::{Gc, ObjArr, ObjFunc, Object},
+    object::{Gc, ObjArr, ObjFunc, ObjInstance, Object},
     op_code::OpCode,
     value::StackValue,
 };
@@ -135,9 +135,25 @@ impl VM {
                     }
                 }
 
-                OpCode::Call => {
+                OpCode::FuncCall => {
                     self.call(frame);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
+                }
+
+                OpCode::AllocInstance => {
+                    let fields_len = self.read_byte(frame) as usize;
+                    let mut fields = Vec::new();
+                    for _ in 0..fields_len {
+                        fields.push(self.stack_pop());
+                    }
+                    dbg!(&fields);
+
+                    let inst = ObjInstance::new(fields);
+                    let (obj, _) =
+                        self.heap
+                            .alloc(inst, Object::Instance, &mut self.stack, self.stack_top);
+                    let obj = StackValue::Obj(obj);
+                    self.stack_push(obj);
                 }
 
                 OpCode::Return => {
