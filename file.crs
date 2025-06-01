@@ -1,3 +1,4 @@
 struct Vec2 {
 }
-Vec2(3, 8);
+int vec = Vec2(3, 8);
+pr vec;

@@ -290,6 +290,10 @@ impl<'a> Emitter<'a> {
                 // self.comps
                 //     .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
             }
+            ExprType::Dot { inst, property } => {
+                self.emit_expr(inst)?;
+
+            }
             ExprType::Array(arr) => {
                 let arr_len = arr.len() as f64;
                 for value in arr.iter().rev() {

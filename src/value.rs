@@ -14,6 +14,7 @@ pub enum ValueType {
     Num,
     Str,
     Arr(Box<ValueType>),
+    Inst(String),
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -25,6 +26,7 @@ impl fmt::Display for ValueType {
             ValueType::Bool => write!(f, "Bool"),
             ValueType::Num => write!(f, "Number"),
             ValueType::Str => write!(f, "String"),
+            ValueType::Inst(s) => write!(f, "inst {}", s),
         }
     }
 }

@@ -1,5 +1,7 @@
 use crate::{
-    analysis_types::{get_type_data, FuncHash, NatFuncHash, Operator, SemanticScope, StructHash, Symbol},
+    analysis_types::{
+        get_type_data, FuncHash, NatFuncHash, Operator, SemanticScope, StructHash, Symbol,
+    },
     error::{print_error, SemErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
@@ -12,36 +14,49 @@ pub struct Analyser<'a> {
     // TODO: make it illegal to define a function inside a different function
     func_data: FuncHash<'a>,
     nat_func_data: NatFuncHash<'a>,
+    struct_data: StructHash<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
 }
 impl<'a> Analyser<'a> {
-    fn new(func_data: FuncHash<'a>, nat_func_data: NatFuncHash<'a>) -> Self {
+    fn new(
+        func_data: FuncHash<'a>,
+        nat_func_data: NatFuncHash<'a>,
+        struct_data: StructHash<'a>,
+    ) -> Self {
         Self {
             func_data,
             nat_func_data,
             symbols: SemanticScope::new(),
             current_return_ty: ValueType::None,
+            struct_data,
         }
     }
-    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
+    pub fn analyse_stmts(
+        stmts: &Vec<Stmt<'a>>,
+    ) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
         let (func_data, nat_func_data, struct_data) = match get_type_data(stmts) {
             Some(data) => data,
             None => {
+                // TODO: fix error
                 print_error(0, "Function with the same name has already been defined.");
                 return None;
             }
         };
-        let mut analyser = Analyser::new(func_data, nat_func_data);
+        let mut analyser = Analyser::new(func_data, nat_func_data, struct_data);
 
-        // for stmt in stmts {
-        //     if let Err(err) = analyser.analyse_stmt(stmt) {
-        //         err.print();
-        //         return None;
-        //     }
-        // }
+        for stmt in stmts {
+            if let Err(err) = analyser.analyse_stmt(stmt) {
+                err.print();
+                return None;
+            }
+        }
 
-        Some((analyser.func_data, analyser.nat_func_data, struct_data))
+        Some((
+            analyser.func_data,
+            analyser.nat_func_data,
+            analyser.struct_data,
+        ))
     }
 
     fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticErr> {
@@ -53,8 +68,9 @@ impl<'a> Analyser<'a> {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    let err_ty = SemErrType::TypeMismatch(ty.clone(), value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    // TODO: uncomment this
+                    // let err_ty = SemErrType::TypeMismatch(ty.clone(), value_ty);
+                    // return Err(SemanticErr::new(line, err_ty));
                 }
                 self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
             }
@@ -124,7 +140,9 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Break => (),
             StmtType::Continue => (),
-            StmtType::Struct { name, fields } => todo!(),
+            StmtType::Struct { name, fields } => {
+                // TODO: this
+            }
         };
         Ok(())
     }
@@ -141,6 +159,10 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::Call { name, args } => {
+                if let Some(_) = self.struct_data.get(name) {
+                    return Ok(ValueType::Inst(name.to_string()));
+                }
+
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
                 if args.len() != parameters.len() {
                     let err_ty = SemErrType::IncorrectArity(
@@ -283,9 +305,29 @@ impl<'a> Analyser<'a> {
                     }
                 }
             }
+            ExprType::Dot { inst, property } => {
+                let inst_ty = self.analyse_expr(inst)?;
+                dbg!(inst_ty);
+                todo!()
+            }
         };
         Ok(result)
     }
+    // fn get_struct_data(
+    //     &mut self,
+    //     name: &'a str,
+    //     line: u32,
+    // ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
+    //     if let Some(data) = self.struct_data.remove(name) {
+    //         data.fields
+    //         let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
+    //         let return_ty = data.return_ty.clone();
+    //
+    //         self.func_data.insert(name, data);
+    //
+    //         return Ok((return_ty, parameters));
+    //     };
+    // }
 
     fn get_called_func_data(
         &mut self,

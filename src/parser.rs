@@ -492,6 +492,16 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn dot(&mut self, inst: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+        self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
+        let property = self.previous();
+
+        let ty = ExprType::Dot {
+            inst: Box::new(inst),
+            property: property.lexeme,
+        };
+        Ok(Expr::new(ty, property.line))
+    }
     fn index(&mut self, arr: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         let index = Box::new(self.expression()?);
         self.consume(TokenType::RightBracket, "Expected ']' after index.")?;
@@ -538,6 +548,7 @@ impl<'a> Parser<'a> {
             FnType::Binary => self.binary(left),
             FnType::Call => self.call(left),
             FnType::Index => self.index(left, can_assign),
+            FnType::Dot => self.dot(left),
             _ => unreachable!(),
         }
     }
