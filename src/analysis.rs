@@ -33,7 +33,7 @@ impl<'a> Analyser<'a> {
         }
     }
     pub fn analyse_stmts(
-        stmts: &Vec<Stmt<'a>>,
+        stmts: &mut Vec<Stmt<'a>>,
     ) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
         let (func_data, nat_func_data, struct_data) = match get_type_data(stmts) {
             Some(data) => data,
@@ -59,9 +59,9 @@ impl<'a> Analyser<'a> {
         ))
     }
 
-    fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticErr> {
+    fn analyse_stmt(&mut self, stmt: &mut Stmt<'a>) -> Result<(), SemanticErr> {
         let line = stmt.line;
-        match &stmt.stmt {
+        match &mut stmt.stmt {
             StmtType::Expr(expr) => {
                 self.analyse_expr(expr)?;
             }
@@ -147,9 +147,9 @@ impl<'a> Analyser<'a> {
         Ok(())
     }
 
-    fn analyse_expr(&mut self, expr: &Expr<'a>) -> Result<ValueType, SemanticErr> {
+    fn analyse_expr(&mut self, expr: &mut Expr<'a>) -> Result<ValueType, SemanticErr> {
         let line = expr.line;
-        let result = match &expr.expr {
+        let result = match &mut expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
             ExprType::Var(name) => match self.symbols.resolve(name) {
                 Some(symbol) => symbol.ty,
@@ -172,7 +172,7 @@ impl<'a> Analyser<'a> {
                     );
                     return Err(SemanticErr::new(line, err_ty));
                 }
-                for (i, arg) in args.iter().enumerate() {
+                for (i, arg) in args.iter_mut().enumerate() {
                     let arg_ty = self.analyse_expr(arg)?;
 
                     let param_ty = &parameters[i];
@@ -262,9 +262,9 @@ impl<'a> Analyser<'a> {
                 }
             }
             ExprType::Array(values) => {
-                let el_ty = self.analyse_expr(&values[0])?;
+                let el_ty = self.analyse_expr(&mut values[0])?;
 
-                for el in values.iter().skip(1) {
+                for el in values.iter_mut().skip(1) {
                     let next_el_ty = self.analyse_expr(el)?;
 
                     if next_el_ty != el_ty {
@@ -315,9 +315,19 @@ impl<'a> Analyser<'a> {
                     unreachable!()
                 };
                 let x = data.fields.iter().find(|f| f.1 == *property).unwrap();
+
+                let index = data
+                    .fields
+                    .iter()
+                    .position(|(_, field_name)| field_name == property).unwrap() as u8;
+                
+                expr.expr = ExprType::DotResolved { inst: inst.clone(), index };
+                // todo!()
                 // dbg!(inst_ty);
-                x.0.clone()
+                data.fields[index as usize].0.clone()
+                // x.0.clone()
             }
+            ExprType::DotResolved { inst, index } => todo!(),
         };
         Ok(result)
     }

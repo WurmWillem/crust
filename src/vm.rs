@@ -155,6 +155,14 @@ impl VM {
                     let obj = StackValue::Obj(obj);
                     self.stack_push(obj);
                 }
+                OpCode::GetProperty => {
+                    let index = self.read_byte(frame) as usize;
+                    let inst = self.stack_pop();
+                    let StackValue::Obj(Object::Instance(inst)) = inst else {
+                        unreachable!()
+                    };
+                    self.stack_push(inst.data.fields[index]);
+                }
 
                 OpCode::Return => {
                     let result = self.stack_pop();

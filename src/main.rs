@@ -56,7 +56,7 @@ fn main() {
         println!();
     }
 
-    let statements = match parser::Parser::compile(tokens) {
+    let mut statements = match parser::Parser::compile(tokens) {
         Some(statements) => statements,
         None => {
             println!(
@@ -67,7 +67,7 @@ fn main() {
         }
     };
 
-    let (func_data, nat_func_data, struct_data) = match Analyser::analyse_stmts(&statements) {
+    let (func_data, nat_func_data, struct_data) = match Analyser::analyse_stmts(&mut statements) {
         Some(func_data) => func_data,
         None => return,
     };

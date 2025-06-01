@@ -271,7 +271,7 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
-                dbg!(name);
+                // dbg!(name);
                 let struct_data = self.structs.get(name).unwrap();
                 // self.comps.emit_constant(StackValue::F64(232.), 3)?;
                 // let fields = struct_data.fields.iter().map(|f| f.0);
@@ -279,7 +279,7 @@ impl<'a> Emitter<'a> {
                 // let fn_ptr = *self.funcs.get(name).unwrap();
                 // self.comps.emit_constant(fn_ptr, line)?;
 
-                dbg!(args.len());
+                // dbg!(args.len());
                 for var in args {
                     self.emit_expr(&var)?;
                 }
@@ -291,7 +291,7 @@ impl<'a> Emitter<'a> {
                 //     .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
             }
             ExprType::Dot { inst, property } => {
-                self.emit_expr(inst)?;
+                todo!()
 
             }
             ExprType::Array(arr) => {
@@ -312,6 +312,10 @@ impl<'a> Emitter<'a> {
                 self.emit_expr(index)?;
                 self.emit_expr(value)?;
                 self.comps.emit_byte(OpCode::AssignIndex as u8, line);
+            }
+            ExprType::DotResolved { inst, index } => {
+                self.emit_expr(inst)?;
+                self.comps.emit_bytes(OpCode::GetProperty as u8, *index, line);
             }
         };
         Ok(())

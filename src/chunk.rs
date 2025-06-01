@@ -57,6 +57,7 @@ impl Chunk {
             OpCode::Loop => Self::simple_instruction("OP_POP", offset),
 
             OpCode::AllocInstance => Self::simple_instruction("OP_ALLOC_INSTANCE", offset),
+            OpCode::GetProperty => Self::simple_instruction("OP_GET_PROPERTY", offset),
 
             OpCode::AllocArr => Self::simple_instruction("OP_ALLOC_ARRAY", offset),
             OpCode::IndexArr => Self::simple_instruction("OP_INDEX_ARRAY", offset),

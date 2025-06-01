@@ -2,5 +2,4 @@ struct Vec2 {
     int x;
 }
 Vec2 vec = Vec2(3);
-int x = vec.x;
-pr x;
+pr vec.x;
