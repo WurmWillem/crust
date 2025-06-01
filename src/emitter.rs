@@ -280,7 +280,7 @@ impl<'a> Emitter<'a> {
                 // self.comps.emit_constant(fn_ptr, line)?;
 
                 // dbg!(args.len());
-                for var in args {
+                for var in args.iter().rev() {
                     self.emit_expr(&var)?;
                 }
 

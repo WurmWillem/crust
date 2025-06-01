@@ -162,7 +162,7 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::LeftBrace, "Expected '{' after struct name.")?;
 
         let mut fields = Vec::new();
-        if !self.check(TokenType::RightBrace) {
+        while !self.check(TokenType::RightBrace) {
             let field_ty = self.advance().as_value_type().unwrap();
             // self.consume(TokenType::Identifier, "Expected field type in struct body.")?;
             // let field_ty = self.previous().as_value_type().unwrap();

@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub struct Analyser<'a> {
-    // TODO: make it illegal to define a function inside a different function
+    // TODO: make it illegal to define a function/struct inside a function
     funcs: FuncHash<'a>,
     nat_funcs: NatFuncHash<'a>,
     structs: StructHash<'a>,
@@ -335,7 +335,6 @@ impl<'a> Analyser<'a> {
             }
             ExprType::Dot { inst, property } => {
                 let inst_ty = self.analyse_expr(inst)?;
-                dbg!(&inst);
                 let ValueType::Struct(name) = inst_ty else {
                     unreachable!()
                 };

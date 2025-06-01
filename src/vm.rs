@@ -146,7 +146,6 @@ impl VM {
                     for _ in 0..fields_len {
                         fields.push(self.stack_pop());
                     }
-                    dbg!(&fields);
 
                     let inst = ObjInstance::new(fields);
                     let (obj, _) =
