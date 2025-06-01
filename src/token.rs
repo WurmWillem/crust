@@ -29,12 +29,26 @@ pub struct Token<'source> {
     pub line: u32,
 }
 impl<'source> Token<'source> {
-    pub fn new(kind: TokenType, lexeme: &'source str, literal: Literal<'source>, line: u32) -> Self {
+    pub fn new(
+        kind: TokenType,
+        lexeme: &'source str,
+        literal: Literal<'source>,
+        line: u32,
+    ) -> Self {
         Self {
             kind,
             lexeme,
             literal,
             line,
+        }
+    }
+    pub fn as_value_type(&self) -> Option<ValueType> {
+        match self.kind {
+            TokenType::F64 => Some(ValueType::Num),
+            TokenType::Bool => Some(ValueType::Bool),
+            TokenType::Str => Some(ValueType::Str),
+            TokenType::Identifier => Some(ValueType::Struct(self.lexeme.to_string())),
+            _ => None,
         }
     }
 }
@@ -116,12 +130,4 @@ impl TokenType {
     //         _ => false,
     //     }
     // }
-    pub fn as_value_type(&self) -> Option<ValueType> {
-        match self {
-            TokenType::F64 => Some(ValueType::Num),
-            TokenType::Bool => Some(ValueType::Bool),
-            TokenType::Str => Some(ValueType::Str),
-            _ => None,
-        }
-    }
 }

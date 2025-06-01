@@ -160,7 +160,7 @@ impl<'a> Analyser<'a> {
             },
             ExprType::Call { name, args } => {
                 if let Some(_) = self.struct_data.get(name) {
-                    return Ok(ValueType::Inst(name.to_string()));
+                    return Ok(ValueType::Struct(name.to_string()));
                 }
 
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
@@ -307,8 +307,16 @@ impl<'a> Analyser<'a> {
             }
             ExprType::Dot { inst, property } => {
                 let inst_ty = self.analyse_expr(inst)?;
-                dbg!(inst_ty);
-                todo!()
+                dbg!(&inst);
+                let ValueType::Struct(name) = inst_ty else {
+                    unreachable!()
+                };
+                let Some(data) = self.struct_data.get(&name as &str) else {
+                    unreachable!()
+                };
+                let x = data.fields.iter().find(|f| f.1 == *property).unwrap();
+                // dbg!(inst_ty);
+                x.0.clone()
             }
         };
         Ok(result)

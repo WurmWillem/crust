@@ -139,7 +139,7 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&mut self) -> Result<Stmt<'a>, ParseErr> {
-        if let Some(var_type) = self.peek().kind.as_value_type() {
+        if let Some(var_type) = self.peek().as_value_type() {
             self.advance();
             self.var_decl(var_type)
         } else if self.matches(TokenType::Fn) {
@@ -160,11 +160,30 @@ impl<'a> Parser<'a> {
         let line = self.previous().line;
 
         self.consume(TokenType::LeftBrace, "Expected '{' after struct name.")?;
+
+        let mut fields = Vec::new();
+        if !self.check(TokenType::RightBrace) {
+            let field_ty = self.advance().as_value_type().unwrap();
+            // self.consume(TokenType::Identifier, "Expected field type in struct body.")?;
+            // let field_ty = self.previous().as_value_type().unwrap();
+
+            self.consume(TokenType::Identifier, "Expected variable name after type.")?;
+            let field_name = self.previous().lexeme;
+
+            fields.push((field_ty, field_name));
+
+            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+
+            // while self.matches(TokenType::Comma) {
+            //     fields.push(self.parse_parameter()?);
+            // }
+        }
+
         self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
 
         let ty = StmtType::Struct {
             name,
-            fields: vec![],
+            fields,
         };
         Ok(Stmt::new(ty, line))
     }
@@ -191,7 +210,7 @@ impl<'a> Parser<'a> {
 
         let mut return_ty = ValueType::Null;
         if self.matches(TokenType::Colon) {
-            return_ty = match self.advance().kind.as_value_type() {
+            return_ty = match self.advance().as_value_type() {
                 Some(return_ty) => return_ty,
                 _ => {
                     return Err(ParseErr::new(
@@ -229,7 +248,7 @@ impl<'a> Parser<'a> {
         Ok(func)
     }
     fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseErr> {
-        let var_ty = match self.advance().kind.as_value_type() {
+        let var_ty = match self.advance().as_value_type() {
             Some(mut var_type) => {
                 while self.matches(TokenType::LeftBracket) {
                     self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
