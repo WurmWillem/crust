@@ -64,13 +64,21 @@ pub struct NatFuncData {
     pub func: NativeFunc,
     pub return_ty: ValueType,
 }
+#[derive(Debug)]
+pub struct StructData<'a> {
+    fields: Vec<(ValueType, &'a str)>,
+}
+
 pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
 pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
+pub type StructHash<'a> = HashMap<&'a str, StructData<'a>>;
 
-pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
+pub fn get_type_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
     let nat_funcs = get_nat_func_hash();
 
     let mut funcs = HashMap::new();
+    let mut structs = HashMap::new();
+
     for stmt in stmts {
         if let StmtType::Func {
             name,
@@ -90,8 +98,16 @@ pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFunc
                 return None;
             }
         }
+        if let StmtType::Struct { name, fields } = &stmt.stmt {
+            let fields = fields.clone();
+            let struct_data = StructData { fields };
+            // TODO: error checking
+            if structs.insert(*name, struct_data).is_some() {
+                return None;
+            }
+        }
     }
-    Some((funcs, nat_funcs))
+    Some((funcs, nat_funcs, structs))
 }
 
 fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {

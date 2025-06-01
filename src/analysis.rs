@@ -1,5 +1,5 @@
 use crate::{
-    analysis_types::{get_func_data, FuncHash, NatFuncHash, Operator, SemanticScope, Symbol},
+    analysis_types::{get_type_data, FuncHash, NatFuncHash, Operator, SemanticScope, Symbol},
     error::{print_error, SemErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
@@ -25,7 +25,7 @@ impl<'a> Analyser<'a> {
         }
     }
     pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
-        let (func_data, nat_func_data) = match get_func_data(stmts) {
+        let (func_data, nat_func_data, struct_data) = match get_type_data(stmts) {
             Some(data) => data,
             None => {
                 print_error(0, "Function with the same name has already been defined.");
@@ -34,12 +34,12 @@ impl<'a> Analyser<'a> {
         };
         let mut analyser = Analyser::new(func_data, nat_func_data);
 
-        for stmt in stmts {
-            if let Err(err) = analyser.analyse_stmt(stmt) {
-                err.print();
-                return None;
-            }
-        }
+        // for stmt in stmts {
+        //     if let Err(err) = analyser.analyse_stmt(stmt) {
+        //         err.print();
+        //         return None;
+        //     }
+        // }
 
         Some((analyser.func_data, analyser.nat_func_data))
     }
@@ -124,6 +124,7 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Break => (),
             StmtType::Continue => (),
+            StmtType::Struct { name, fields } => todo!(),
         };
         Ok(())
     }

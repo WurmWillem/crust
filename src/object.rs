@@ -64,6 +64,7 @@ pub enum Object {
     Func(Gc<ObjFunc>),
     Native(Gc<ObjNative>),
     Arr(Gc<ObjArr>),
+    Instance(Gc<ObjInstance>),
 }
 impl Object {
     pub fn header(&self) -> &GcHeader {
@@ -72,6 +73,7 @@ impl Object {
             Object::Func(obj) => obj.header(),
             Object::Native(obj) => obj.header(),
             Object::Arr(obj) => obj.header(),
+            Object::Instance(obj) => obj.header(),
         }
     }
     pub fn header_mut(&mut self) -> &mut GcHeader {
@@ -80,6 +82,7 @@ impl Object {
             Object::Func(obj) => obj.header_mut(),
             Object::Native(obj) => obj.header_mut(),
             Object::Arr(obj) => obj.header_mut(),
+            Object::Instance(obj) => obj.header_mut(),
         }
     }
     pub fn is_marked(&self) -> bool {
@@ -110,9 +113,20 @@ impl ObjArr {
 //         write!(f, "{:?}", self.values)
 //     }
 // }
-impl GcMemSize for ObjArr{
+impl GcMemSize for ObjArr {
     fn size_of(&self) -> usize {
         std::mem::size_of::<StackValue>() * self.values.capacity()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjInstance {
+    fields: Vec<StackValue>,
+}
+impl GcMemSize for ObjInstance {
+    fn size_of(&self) -> usize {
+        // TODO: make this give actually accurate values
+        0
     }
 }
 

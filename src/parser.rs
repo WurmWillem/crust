@@ -144,9 +144,26 @@ impl<'a> Parser<'a> {
             self.var_decl(var_type)
         } else if self.matches(TokenType::Fn) {
             self.func_decl()
+        } else if self.matches(TokenType::Struct) {
+            self.struct_decl()
         } else {
             self.statement()
         }
+    }
+
+    fn struct_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
+        self.consume(
+            TokenType::Identifier,
+            "Expected struct name after 'struct' keyword.",
+        )?;
+        let name = self.previous().lexeme;
+        let line = self.previous().line;
+
+        self.consume(TokenType::LeftBrace, "Expected '{' after struct name.")?;
+        self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
+
+        let ty = StmtType::Struct { name, fields: vec![] };
+        Ok(Stmt::new(ty, line))
     }
 
     fn func_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {

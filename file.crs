@@ -1,3 +1,7 @@
+struct Vec2 {
+
+}
+
 int[][] x = [[1, 2], [3, 4]];
 
 print_arr(x);

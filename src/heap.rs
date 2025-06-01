@@ -66,6 +66,7 @@ impl Heap {
             Object::Str(_) => (),
             Object::Func(_) => (),
             Object::Native(_) => (),
+            Object::Instance(_) => todo!(),
             Object::Arr(arr) => {
                 for el in &arr.data.values {
                     if let StackValue::Obj(obj) = el {
@@ -155,7 +156,6 @@ impl Heap {
     where
         F: Fn(Gc<T>) -> Object,
     {
-        // TODO: add realloc()
         //self.collect_garbage();
 
         let gc_data = Box::new(GcData {
@@ -195,6 +195,10 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
+            Object::Instance(ptr) => {
+                let raw = ptr.ptr.as_ptr();
+                drop(Box::from_raw(raw));
+            }
         }
     }
 
@@ -207,6 +211,7 @@ impl Heap {
                 Object::Func(ref ptr) => ptr.header.next,
                 Object::Native(ref ptr) => ptr.header.next,
                 Object::Arr(ref ptr) => ptr.header.next,
+                Object::Instance(ref ptr) => ptr.header.next,
             };
 
             unsafe {

@@ -137,6 +137,7 @@ impl Display for StackValue {
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
                 Object::Arr(a) => write!(f, "{:?}", a.data.values),
+                Object::Instance(_) => todo!(),
             },
         }
     }
@@ -152,6 +153,7 @@ impl StackValue {
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
                 Object::Arr(a) => format!("{:?}", a.data.values),
+                Object::Instance(_) => todo!(),
             },
         }
     }

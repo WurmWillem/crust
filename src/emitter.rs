@@ -213,6 +213,9 @@ impl<'a> Emitter<'a> {
             StmtType::Continue => {
                 self.comps.add_continue(line)?;
             }
+            StmtType::Struct { name, fields } => {
+                todo!()
+            }
         }
         Ok(())
     }

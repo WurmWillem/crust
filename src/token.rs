@@ -29,12 +29,7 @@ pub struct Token<'source> {
     pub line: u32,
 }
 impl<'source> Token<'source> {
-    pub fn new(
-        kind: TokenType,
-        lexeme: &'source str,
-        literal: Literal<'source>,
-        line: u32,
-    ) -> Self {
+    pub fn new(kind: TokenType, lexeme: &'source str, literal: Literal<'source>, line: u32) -> Self {
         Self {
             kind,
             lexeme,
