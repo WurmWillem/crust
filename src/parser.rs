@@ -162,7 +162,10 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::LeftBrace, "Expected '{' after struct name.")?;
         self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
 
-        let ty = StmtType::Struct { name, fields: vec![] };
+        let ty = StmtType::Struct {
+            name,
+            fields: vec![],
+        };
         Ok(Stmt::new(ty, line))
     }
 

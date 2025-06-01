@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis_types::{FuncData, NatFuncData},
+    analysis_types::{FuncHash, NatFuncHash, StructHash},
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
@@ -28,11 +28,12 @@ impl<'a> Emitter<'a> {
     }
     pub fn compile(
         stmts: Vec<Stmt>,
-        func_data: HashMap<&'a str, FuncData<'a>>,
-        nat_func_data: HashMap<&'a str, NatFuncData>,
+        func_data: FuncHash,
+        nat_func_data: NatFuncHash,
+        struct_data: StructHash,
     ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        if let Err(err) = comp.init_funcs(func_data, nat_func_data) {
+        if let Err(err) = comp.init_funcs(func_data, nat_func_data, struct_data) {
             print_error(err.line, &err.msg);
 
             return None;
@@ -52,8 +53,9 @@ impl<'a> Emitter<'a> {
 
     fn init_funcs(
         &mut self,
-        mut func_data: HashMap<&'a str, FuncData<'a>>,
-        mut nat_func_data: HashMap<&'a str, NatFuncData>,
+        mut func_data: FuncHash<'a>,
+        mut nat_func_data: NatFuncHash<'a>,
+        struct_data: StructHash,
     ) -> Result<(), EmitErr> {
         for (name, data) in nat_func_data.drain() {
             let func = ObjNative::new(name.to_string(), data.func);

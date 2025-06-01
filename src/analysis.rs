@@ -1,5 +1,5 @@
 use crate::{
-    analysis_types::{get_type_data, FuncHash, NatFuncHash, Operator, SemanticScope, Symbol},
+    analysis_types::{get_type_data, FuncHash, NatFuncHash, Operator, SemanticScope, StructHash, Symbol},
     error::{print_error, SemErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
@@ -24,7 +24,7 @@ impl<'a> Analyser<'a> {
             current_return_ty: ValueType::None,
         }
     }
-    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
+    pub fn analyse_stmts(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
         let (func_data, nat_func_data, struct_data) = match get_type_data(stmts) {
             Some(data) => data,
             None => {
@@ -41,7 +41,7 @@ impl<'a> Analyser<'a> {
         //     }
         // }
 
-        Some((analyser.func_data, analyser.nat_func_data))
+        Some((analyser.func_data, analyser.nat_func_data, struct_data))
     }
 
     fn analyse_stmt(&mut self, stmt: &Stmt<'a>) -> Result<(), SemanticErr> {
