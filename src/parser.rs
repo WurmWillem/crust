@@ -140,11 +140,18 @@ impl<'a> Parser<'a> {
 
     fn declaration(&mut self) -> Result<Stmt<'a>, ParseErr> {
         if let Some(var_type) = self.peek().as_value_type() {
-            if self.peek_next().ty != TokenType::Identifier {
+            if self.peek_next().ty != TokenType::Identifier
+                && self.peek_next().ty != TokenType::LeftBracket
+            {
                 dbg!(3);
                 return self.statement();
             }
             self.advance();
+            if self.peek_next().ty == TokenType::Number {
+                self.current_token -= 1;
+                return self.statement();
+            }
+            dbg!(self.peek_next().ty);
 
             // if self.matches(TokenType::Dot) {
             //     // dot reassignment

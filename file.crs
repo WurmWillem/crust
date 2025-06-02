@@ -6,6 +6,10 @@ int a = 3;
 a = 2;
 
 Vec2 vec = Vec2(3, 2);
-println(a);
+println(vec.x);
+vec.x = 2;
+println(vec.x);
+int[] x = [1, 2];
+x[0] = 0;
 //vec.x = 2;
 //pr vec.x;
