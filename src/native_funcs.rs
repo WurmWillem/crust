@@ -11,7 +11,7 @@ pub fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
 pub fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
-    let string = args[0].display().green();
+    let string = format!("{}", args[0]).green();
     print!("{}", string);
 
     StackValue::Null
@@ -19,7 +19,7 @@ pub fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 pub fn println(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
-    let string = args[0].display().green();
+    let string = format!("{}", args[0]).green();
     println!("{}", string);
 
     StackValue::Null

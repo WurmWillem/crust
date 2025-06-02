@@ -94,3 +94,22 @@ fn arr_print_2d() {
 
     assert_eq!(stdout.trim(), "1234");
 }
+
+#[test]
+fn fields() {
+    let crust_file = "tests/fields.crs";
+
+    let output = Command::new("target/debug/crust")
+        .arg(crust_file)
+        .output()
+        .expect("Failed to run Crust interpreter");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    if !stderr.is_empty() {
+        eprintln!("Crust stderr:\n{}", stderr);
+    }
+
+    assert_eq!(stdout.trim(), "3 2\n1");
+}
