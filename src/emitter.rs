@@ -246,11 +246,11 @@ impl<'a> Emitter<'a> {
                     unreachable!()
                 }
             }
-            ExprType::Assign { name, value } => {
+            ExprType::Assign { name, new_value } => {
                 let Some(arg) = self.comps.resolve_local(name) else {
                     unreachable!()
                 };
-                self.emit_expr(value)?;
+                self.emit_expr(new_value)?;
                 self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
             }
             ExprType::Unary {
@@ -272,23 +272,30 @@ impl<'a> Emitter<'a> {
             }
             ExprType::Call { name, args } => {
                 // dbg!(name);
-                let struct_data = self.structs.get(name).unwrap();
+                // let struct_data = self.structs.get(name).unwrap();
+
+                if let Some(_) = self.structs.get(name) {
+                    for var in args.iter().rev() {
+                        self.emit_expr(&var)?;
+                    }
+
+                    self.comps
+                        .emit_bytes(OpCode::AllocInstance as u8, args.len() as u8, line);
+                } else {
+                    let fn_ptr = *self.funcs.get(name).unwrap();
+                    self.comps.emit_constant(fn_ptr, line)?;
+
+                    for var in args.iter().rev() {
+                        self.emit_expr(&var)?;
+                    }
+
+                    self.comps
+                        .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
+                }
                 // self.comps.emit_constant(StackValue::F64(232.), 3)?;
                 // let fields = struct_data.fields.iter().map(|f| f.0);
 
-                // let fn_ptr = *self.funcs.get(name).unwrap();
-                // self.comps.emit_constant(fn_ptr, line)?;
-
                 // dbg!(args.len());
-                for var in args.iter().rev() {
-                    self.emit_expr(&var)?;
-                }
-
-                self.comps
-                    .emit_bytes(OpCode::AllocInstance as u8, args.len() as u8, line);
-
-                // self.comps
-                //     .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
             }
             ExprType::Dot { inst, property } => {
                 todo!()
@@ -306,10 +313,14 @@ impl<'a> Emitter<'a> {
                 self.emit_expr(index)?;
                 self.comps.emit_byte(OpCode::IndexArr as u8, line);
             }
-            ExprType::AssignIndex { arr, index, value } => {
+            ExprType::AssignIndex {
+                arr,
+                index,
+                new_value,
+            } => {
                 self.emit_expr(arr)?;
                 self.emit_expr(index)?;
-                self.emit_expr(value)?;
+                self.emit_expr(new_value)?;
                 self.comps.emit_byte(OpCode::AssignIndex as u8, line);
             }
             ExprType::DotResolved { inst, index } => {
@@ -317,6 +328,11 @@ impl<'a> Emitter<'a> {
                 self.comps
                     .emit_bytes(OpCode::GetProperty as u8, *index, line);
             }
+            ExprType::DotAssign {
+                inst,
+                property,
+                new_value,
+            } => todo!(),
         };
         Ok(())
     }

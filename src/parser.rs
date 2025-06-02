@@ -52,18 +52,18 @@ impl<'a> Parser<'a> {
         self.advance();
         let (can_assign, mut expr) = self.parse_prefix(precedence)?;
 
-        while self.peek().kind != TokenType::Eof
-            && precedence <= self.get_rule(self.peek().kind).precedence
+        while self.peek().ty != TokenType::Eof
+            && precedence <= self.get_rule(self.peek().ty).precedence
         {
             self.advance();
-            let infix = self.get_rule(self.previous().kind).infix;
+            let infix = self.get_rule(self.previous().ty).infix;
             expr = self.execute_infix(expr, infix, can_assign)?;
         }
         Ok(expr)
     }
 
     fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseErr> {
-        let kind = self.previous().kind;
+        let kind = self.previous().ty;
 
         let prefix = self.get_rule(kind).prefix;
         if prefix == FnType::Empty {
@@ -79,7 +79,7 @@ impl<'a> Parser<'a> {
 
     fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         let left = Box::new(left);
-        let op = BinaryOp::from_token_type(self.previous().kind);
+        let op = BinaryOp::from_token_type(self.previous().ty);
 
         let precedence = op.get_precedency();
         let right = Box::new(self.parse_precedence(precedence)?);
@@ -114,7 +114,7 @@ impl<'a> Parser<'a> {
     }
 
     fn unary(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let prefix = self.previous().kind;
+        let prefix = self.previous().ty;
         let value = Box::new(self.parse_precedence(Precedence::Unary)?);
 
         let line = self.previous().line;
@@ -124,7 +124,7 @@ impl<'a> Parser<'a> {
     }
 
     fn literal(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let literal = match self.previous().kind {
+        let literal = match self.previous().ty {
             TokenType::True => Literal::True,
             TokenType::False => Literal::False,
             TokenType::Null => Literal::Null,
@@ -140,7 +140,18 @@ impl<'a> Parser<'a> {
 
     fn declaration(&mut self) -> Result<Stmt<'a>, ParseErr> {
         if let Some(var_type) = self.peek().as_value_type() {
+            if self.peek_next().ty != TokenType::Identifier {
+                dbg!(3);
+                return self.statement();
+            }
             self.advance();
+
+            // if self.matches(TokenType::Dot) {
+            //     // dot reassignment
+            //     self.dot(inst, can_assign)
+            // } else {
+            //     self.var_decl(var_type)
+            // }
             self.var_decl(var_type)
         } else if self.matches(TokenType::Fn) {
             self.func_decl()
@@ -163,9 +174,8 @@ impl<'a> Parser<'a> {
 
         let mut fields = Vec::new();
         while !self.check(TokenType::RightBrace) {
+            // TODO: error handling
             let field_ty = self.advance().as_value_type().unwrap();
-            // self.consume(TokenType::Identifier, "Expected field type in struct body.")?;
-            // let field_ty = self.previous().as_value_type().unwrap();
 
             self.consume(TokenType::Identifier, "Expected variable name after type.")?;
             let field_name = self.previous().lexeme;
@@ -173,10 +183,6 @@ impl<'a> Parser<'a> {
             fields.push((field_ty, field_name));
 
             self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
-
-            // while self.matches(TokenType::Comma) {
-            //     fields.push(self.parse_parameter()?);
-            // }
         }
 
         self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
@@ -228,7 +234,7 @@ impl<'a> Parser<'a> {
             body.push(self.declaration()?);
         }
 
-        if self.peek().kind != TokenType::Eof {
+        if self.peek().ty != TokenType::Eof {
             self.consume(
                 TokenType::RightBrace,
                 "Expected '}' at end of function body.",
@@ -425,16 +431,15 @@ impl<'a> Parser<'a> {
         self.advance();
         // dbg!(self.peek().kind);
 
-        while self.peek().kind != TokenType::Eof {
+        while self.peek().ty != TokenType::Eof {
             // if we just consumed a semicolon, we probably ended a statement
-            if self.previous().kind == TokenType::Semicolon
-                && self.peek().kind != TokenType::RightBrace
+            if self.previous().ty == TokenType::Semicolon && self.peek().ty != TokenType::RightBrace
             {
                 return;
             }
 
             // check if next token looks like the start of a new statement
-            match self.peek().kind {
+            match self.peek().ty {
                 TokenType::Struct
                 | TokenType::Fn
                 | TokenType::F64
@@ -473,7 +478,10 @@ impl<'a> Parser<'a> {
 
         let ty = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
-            ExprType::Assign { name, value }
+            ExprType::Assign {
+                name,
+                new_value: value,
+            }
         } else {
             ExprType::Var(name)
         };
@@ -508,14 +516,24 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn dot(&mut self, inst: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+    fn dot(&mut self, inst: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
         let property = self.previous();
 
-        let ty = ExprType::Dot {
-            inst: Box::new(inst),
-            property: property.lexeme,
+        let ty = if self.matches(TokenType::Equal) && can_assign {
+            let value = Box::new(self.expression()?);
+            ExprType::DotAssign {
+                inst: Box::new(inst),
+                property: property.lexeme,
+                new_value: value,
+            }
+        } else {
+            ExprType::Dot {
+                inst: Box::new(inst),
+                property: property.lexeme,
+            }
         };
+
         Ok(Expr::new(ty, property.line))
     }
     fn index(&mut self, arr: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
@@ -525,7 +543,11 @@ impl<'a> Parser<'a> {
         let arr = Box::new(arr);
         let ty = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
-            ExprType::AssignIndex { arr, index, value }
+            ExprType::AssignIndex {
+                arr,
+                index,
+                new_value: value,
+            }
         } else {
             ExprType::Index { arr, index }
         };
@@ -564,7 +586,7 @@ impl<'a> Parser<'a> {
             FnType::Binary => self.binary(left),
             FnType::Call => self.call(left),
             FnType::Index => self.index(left, can_assign),
-            FnType::Dot => self.dot(left),
+            FnType::Dot => self.dot(left, can_assign),
             _ => unreachable!(),
         }
     }
@@ -595,11 +617,11 @@ impl<'a> Parser<'a> {
     }
 
     fn check(&self, kind: TokenType) -> bool {
-        self.peek().kind == kind
+        self.peek().ty == kind
     }
 
     fn advance(&mut self) -> Token<'a> {
-        if self.peek().kind != TokenType::Eof {
+        if self.peek().ty != TokenType::Eof {
             self.current_token += 1;
         }
         self.previous()
@@ -607,6 +629,10 @@ impl<'a> Parser<'a> {
 
     fn peek(&self) -> Token<'a> {
         self.tokens[self.current_token]
+    }
+    fn peek_next(&self) -> Token<'a> {
+        // TODO: check for EOF
+        self.tokens[self.current_token + 1]
     }
 
     fn previous(&self) -> Token<'a> {

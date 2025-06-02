@@ -218,7 +218,10 @@ impl<'a> Analyser<'a> {
 
                 return_ty
             }
-            ExprType::Assign { name, value } => match self.symbols.resolve(name) {
+            ExprType::Assign {
+                name,
+                new_value: value,
+            } => match self.symbols.resolve(name) {
                 Some(symbol) => {
                     let value_ty = self.analyse_expr(value)?;
                     if symbol.ty != value_ty && symbol.ty != ValueType::Any {
@@ -315,7 +318,7 @@ impl<'a> Analyser<'a> {
             ExprType::AssignIndex {
                 arr,
                 index: _,
-                value,
+                new_value: value,
             } => {
                 let arr = self.analyse_expr(arr)?;
                 match arr {
@@ -359,6 +362,11 @@ impl<'a> Analyser<'a> {
                 // x.0.clone()
             }
             ExprType::DotResolved { inst, index } => todo!(),
+            ExprType::DotAssign {
+                inst,
+                property,
+                new_value: value,
+            } => todo!(),
         };
         Ok(result)
     }

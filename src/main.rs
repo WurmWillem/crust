@@ -51,7 +51,7 @@ fn main() {
 
     if PRINT_TOKENS {
         for token in &tokens {
-            println!("{:?} type: {:?}", token, token.kind as u8);
+            println!("{:?} type: {:?}", token, token.ty as u8);
         }
         println!();
     }
