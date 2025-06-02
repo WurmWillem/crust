@@ -344,8 +344,6 @@ impl<'a> Analyser<'a> {
                 let Some(data) = self.structs.get(&name as &str) else {
                     unreachable!()
                 };
-                let x = data.fields.iter().find(|f| f.1 == *property).unwrap();
-
                 let index = data
                     .fields
                     .iter()
@@ -361,12 +359,37 @@ impl<'a> Analyser<'a> {
                 data.fields[index as usize].0.clone()
                 // x.0.clone()
             }
-            ExprType::DotResolved { inst, index } => todo!(),
             ExprType::DotAssign {
                 inst,
                 property,
-                new_value: value,
-            } => todo!(),
+                new_value,
+            } => {
+                let inst_ty = self.analyse_expr(inst)?;
+                let ValueType::Struct(name) = inst_ty else {
+                    unreachable!()
+                };
+                let Some(data) = self.structs.get(&name as &str) else {
+                    unreachable!()
+                };
+                let index = data
+                    .fields
+                    .iter()
+                    .position(|(_, field_name)| field_name == property)
+                    .unwrap() as u8;
+
+                expr.expr = ExprType::DotAssignResolved {
+                    inst: inst.clone(),
+                    index,
+                    new_value: new_value.clone(),
+                };
+                data.fields[index as usize].0.clone()
+            }
+            ExprType::DotAssignResolved {
+                inst: _,
+                index: _,
+                new_value: _,
+            } => unreachable!(),
+            ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
         };
         Ok(result)
     }

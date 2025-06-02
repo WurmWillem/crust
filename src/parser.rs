@@ -635,10 +635,6 @@ impl<'a> Parser<'a> {
     fn peek(&self) -> Token<'a> {
         self.tokens[self.current_token]
     }
-    fn peek_next(&self) -> Token<'a> {
-        // TODO: check for EOF
-        self.tokens[self.current_token + 1]
-    }
 
     fn previous(&self) -> Token<'a> {
         self.tokens[self.current_token - 1]

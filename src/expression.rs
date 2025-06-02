@@ -36,6 +36,11 @@ pub enum ExprType<'a> {
         property: &'a str,
         new_value: Box<Expr<'a>>,
     },
+    DotAssignResolved {
+        inst: Box<Expr<'a>>,
+        index: u8,
+        new_value: Box<Expr<'a>>,
+    },
     Index {
         arr: Box<Expr<'a>>,
         index: Box<Expr<'a>>,

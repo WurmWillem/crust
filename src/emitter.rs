@@ -297,9 +297,6 @@ impl<'a> Emitter<'a> {
 
                 // dbg!(args.len());
             }
-            ExprType::Dot { inst, property } => {
-                todo!()
-            }
             ExprType::Array(arr) => {
                 let arr_len = arr.len() as f64;
                 for value in arr.iter().rev() {
@@ -328,11 +325,25 @@ impl<'a> Emitter<'a> {
                 self.comps
                     .emit_bytes(OpCode::GetProperty as u8, *index, line);
             }
-            ExprType::DotAssign {
+            ExprType::DotAssignResolved {
                 inst,
-                property,
+                index,
                 new_value,
-            } => todo!(),
+            } => {
+                self.emit_expr(inst)?;
+                self.emit_expr(new_value)?;
+                self.comps
+                    .emit_bytes(OpCode::SetProperty as u8, *index, line);
+            }
+            ExprType::Dot {
+                inst: _,
+                property: _,
+            } => unreachable!(),
+            ExprType::DotAssign {
+                inst: _,
+                property: _,
+                new_value: _,
+            } => unreachable!(),
         };
         Ok(())
     }
