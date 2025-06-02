@@ -61,7 +61,7 @@ fn main() {
         None => {
             println!(
                 "{}",
-                "Compile error(s) detected, terminating program.".purple()
+                "Parse error(s) detected, terminating program.".purple()
             );
             return;
         }

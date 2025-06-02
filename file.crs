@@ -4,9 +4,5 @@ struct Vec2 {
 }
 
 Vec2 vec = Vec2(3, 2);
-print(vec.x);
-print(" ");
-println(vec.y);
-
-vec.x = 1;
-println(vec.x);
+vec.x = false;
+pr vec.x;

@@ -96,7 +96,7 @@ impl<'a> Analyser<'a> {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    let err_ty = SemErrType::TypeMismatch(ty.clone(), value_ty);
+                    let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
                 self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
@@ -208,7 +208,7 @@ impl<'a> Analyser<'a> {
                         && matches!(arg_ty, ValueType::Arr(_));
 
                     if !is_exact_match && !is_any && !is_array_match {
-                        let err_ty = SemErrType::TypeMismatch(param_ty.clone(), arg_ty);
+                        let err_ty = SemErrType::VarDeclTypeMismatch(param_ty.clone(), arg_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                 }
@@ -222,7 +222,7 @@ impl<'a> Analyser<'a> {
                 Some(symbol) => {
                     let value_ty = self.analyse_expr(value)?;
                     if symbol.ty != value_ty && symbol.ty != ValueType::Any {
-                        let err_ty = SemErrType::TypeMismatch(symbol.ty, value_ty);
+                        let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                     symbol.ty
@@ -368,6 +368,7 @@ impl<'a> Analyser<'a> {
                 new_value,
             } => {
                 let inst_ty = self.analyse_expr(inst)?;
+                let new_value_ty = self.analyse_expr(new_value)?;
                 let ValueType::Struct(name) = inst_ty else {
                     unreachable!()
                 };
@@ -380,12 +381,18 @@ impl<'a> Analyser<'a> {
                     .position(|(_, field_name)| field_name == property)
                     .unwrap() as u8;
 
+
                 expr.expr = ExprType::DotAssignResolved {
                     inst: inst.clone(),
                     index,
                     new_value: new_value.clone(),
                 };
-                data.fields[index as usize].0.clone()
+                let field_ty = data.fields[index as usize].clone().0;
+                if new_value_ty != field_ty {
+                    let err_ty = SemErrType::FieldTypeMismatch(field_ty, new_value_ty);
+                    return Err(SemanticErr::new(line, err_ty));
+                }
+                field_ty
             }
             ExprType::DotAssignResolved {
                 inst: _,

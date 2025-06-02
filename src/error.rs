@@ -69,7 +69,8 @@ pub enum SemErrType {
     AlreadyDefinedFunc(String),
     AlreadyDefinedStruct(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
-    TypeMismatch(ValueType, ValueType),
+    VarDeclTypeMismatch(ValueType, ValueType),
+    FieldTypeMismatch(ValueType, ValueType),
     ArrElTypeMismatch(ValueType, ValueType),
 }
 impl SemanticErr {
@@ -138,9 +139,15 @@ impl SemanticErr {
                     op, expected, found
                 )
             }
-            SemErrType::TypeMismatch(expected, found) => {
+            SemErrType::VarDeclTypeMismatch(expected, found) => {
                 format!(
-                    "Variable was given type '{}' but found type '{}'.",
+                    "Variable was given type '{}', but found type '{}'.",
+                    expected, found
+                )
+            }
+            SemErrType::FieldTypeMismatch(expected, found) => {
+                format!(
+                    "Field was given type '{}', but found type '{}'.",
                     expected, found
                 )
             }
