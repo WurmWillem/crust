@@ -8,4 +8,4 @@ a = 2;
 Vec2 vec = Vec2(3, 2);
 println(vec.x);
 vec.x = 1;
-println(vec.x);
+println(vec.z);

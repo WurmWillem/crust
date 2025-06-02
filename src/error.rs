@@ -54,9 +54,12 @@ impl SemanticErr {
 pub enum SemErrType {
     InvalidPrefix,
     InvalidInfix,
+    InvalidPropertyAccess(ValueType),
+    InvalidProperty(String, String),
     IndexNonArr(ValueType),
     AssignArrTypeMismatch(ValueType, ValueType),
     UndefinedFunc(String),
+    UndefinedStruct(String),
     IncorrectArity(String, u8, u8),
     IncorrectReturnTy(ValueType, ValueType),
     UndefinedVar(String),
@@ -73,6 +76,18 @@ impl SemanticErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
+            SemErrType::InvalidPropertyAccess(ty) => {
+                format!(
+                    "You can only access properities of instances, but you tried to access properties of type '{}'.",
+                    ty
+                )
+            }
+            SemErrType::InvalidProperty(name, property) => {
+                format!(
+                    "'{}' is not a valid property of Struct '{}'.",
+                    property, name
+                )
+            }
             SemErrType::IndexNonArr(ty) => format!(
                 "You can only index arrays, but you tried to index the type '{}'.",
                 ty
@@ -98,6 +113,7 @@ impl SemanticErr {
             }
 
             SemErrType::UndefinedFunc(name) => format!("Function '{}' has not been defined.", name),
+            SemErrType::UndefinedStruct(name) => format!("Struct '{}' has not been defined.", name),
             SemErrType::UndefinedVar(name) => {
                 format!("Variable '{}' has not been defined in this scope.", name)
             }

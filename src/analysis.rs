@@ -339,25 +339,30 @@ impl<'a> Analyser<'a> {
             ExprType::Dot { inst, property } => {
                 let inst_ty = self.analyse_expr(inst)?;
                 let ValueType::Struct(name) = inst_ty else {
-                    unreachable!()
+                    let ty = SemErrType::InvalidPropertyAccess(inst_ty);
+                    return Err(SemanticErr::new(line, ty));
                 };
                 let Some(data) = self.structs.get(&name as &str) else {
-                    unreachable!()
+                    let ty = SemErrType::UndefinedStruct(name);
+                    return Err(SemanticErr::new(line, ty));
                 };
-                let index = data
+                let index = match data
                     .fields
                     .iter()
                     .position(|(_, field_name)| field_name == property)
-                    .unwrap() as u8;
+                {
+                    Some(index) => index as u8,
+                    None => {
+                        let ty = SemErrType::InvalidProperty(name, property.to_string());
+                        return Err(SemanticErr::new(line, ty));
+                    }
+                };
 
                 expr.expr = ExprType::DotResolved {
                     inst: inst.clone(),
                     index,
                 };
-                // todo!()
-                // dbg!(inst_ty);
                 data.fields[index as usize].0.clone()
-                // x.0.clone()
             }
             ExprType::DotAssign {
                 inst,
