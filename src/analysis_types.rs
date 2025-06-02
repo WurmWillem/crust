@@ -52,7 +52,6 @@ impl core::fmt::Display for Operator {
 
 #[derive(Debug)]
 pub struct FuncData<'a> {
-    // TODO: check if ty is necessary
     pub parameters: Vec<(ValueType, &'a str)>,
     pub body: Vec<Stmt<'a>>,
     pub return_ty: ValueType,

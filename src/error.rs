@@ -6,11 +6,13 @@ pub const PRINT_TOKENS: bool = false;
 pub const DEBUG_TRACE_EXECUTION: bool = false;
 pub const PRINT_HEAP: bool = false;
 
-pub fn print_error(line: u32, message: &str) {
+pub fn print_error(line: u32, msg: &str) {
     let l = "[line ".blue();
-    let i = "] Error: ".blue();
-    let message = message.red();
-    println!("{}{}{}{}", l, line, i, message);
+    // let line = line.to_string().magenta();
+    let closing_bracket = "]".blue();
+    let i = " Error: ".bright_red();
+    let msg = msg.yellow();
+    println!("{}{}{}{}{}", l, line, closing_bracket, i, msg);
 }
 
 #[derive(Debug)]
@@ -78,7 +80,7 @@ impl SemanticErr {
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
             SemErrType::InvalidPropertyAccess(ty) => {
                 format!(
-                    "You can only access properities of instances, but you tried to access properties of type '{}'.",
+                    "You can only access properties of instances, but you tried to access properties of type '{}'.",
                     ty
                 )
             }

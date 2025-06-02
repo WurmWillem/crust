@@ -219,7 +219,7 @@ impl<'a> Emitter<'a> {
             StmtType::Continue => {
                 self.comps.add_continue(line)?;
             }
-            StmtType::Struct { name, fields } => (),
+            StmtType::Struct { name: _, fields: _ } => (),
         }
         Ok(())
     }

@@ -96,9 +96,8 @@ impl<'a> Analyser<'a> {
             StmtType::Var { name, value, ty } => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
-                    // TODO: uncomment this
-                    // let err_ty = SemErrType::TypeMismatch(ty.clone(), value_ty);
-                    // return Err(SemanticErr::new(line, err_ty));
+                    let err_ty = SemErrType::TypeMismatch(ty.clone(), value_ty);
+                    return Err(SemanticErr::new(line, err_ty));
                 }
                 self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
             }
@@ -168,9 +167,7 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Break => (),
             StmtType::Continue => (),
-            StmtType::Struct { name, fields } => {
-                // TODO: this
-            }
+            StmtType::Struct { name: _, fields: _ } => {}
         };
         Ok(())
     }
@@ -346,6 +343,7 @@ impl<'a> Analyser<'a> {
                     let ty = SemErrType::UndefinedStruct(name);
                     return Err(SemanticErr::new(line, ty));
                 };
+
                 let index = match data
                     .fields
                     .iter()

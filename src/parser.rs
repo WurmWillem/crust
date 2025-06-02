@@ -175,8 +175,13 @@ impl<'a> Parser<'a> {
 
         let mut fields = Vec::new();
         while !self.check(TokenType::RightBrace) {
-            // TODO: error handling
-            let field_ty = self.advance().as_value_type().unwrap();
+            let field_ty = match self.advance().as_value_type() {
+                Some(ty) => ty,
+                None => {
+                    let msg = "Expected type for field declaration in struct body.";
+                    return Err(ParseErr::new(line, msg));
+                }
+            };
 
             self.consume(TokenType::Identifier, "Expected variable name after type.")?;
             let field_name = self.previous().lexeme;
@@ -565,8 +570,10 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        // TODO: update error message
-        self.consume(TokenType::RightParen, "Expected ')' after function call.")?;
+        self.consume(
+            TokenType::RightParen,
+            "Expected ')' after function/constructor call.",
+        )?;
 
         if let ExprType::Var(name) = name.expr {
             let ty = ExprType::Call { name, args };

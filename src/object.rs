@@ -161,7 +161,6 @@ pub type NativeFunc = fn(&[StackValue], &mut Heap) -> StackValue;
 
 #[derive(Debug, Clone)]
 pub struct ObjNative {
-    // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
     name: String,
     pub func: NativeFunc,
 }
