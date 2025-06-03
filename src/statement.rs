@@ -47,6 +47,6 @@ pub enum StmtType<'a> {
     Struct {
         name: &'a str,
         fields: Vec<(ValueType, &'a str)>,
-        // body: Vec<Stmt<'a>>,
+        methods: Vec<Stmt<'a>>,
     },
 }

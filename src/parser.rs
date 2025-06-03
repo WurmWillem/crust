@@ -174,7 +174,7 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::LeftBrace, "Expected '{' after struct name.")?;
 
         let mut fields = Vec::new();
-        while !self.check(TokenType::RightBrace) {
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Fn) {
             let field_ty = match self.advance().as_value_type() {
                 Some(ty) => ty,
                 None => {
@@ -190,10 +190,14 @@ impl<'a> Parser<'a> {
 
             self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
         }
+        let mut methods = vec![];
+        while self.matches(TokenType::Fn) {
+           methods.push(self.func_decl()?); 
+        }
 
         self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
 
-        let ty = StmtType::Struct { name, fields };
+        let ty = StmtType::Struct { name, fields, methods };
         Ok(Stmt::new(ty, line))
     }
 

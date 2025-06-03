@@ -74,7 +74,7 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticErr::new(line, err_ty));
                 }
             }
-            if let StmtType::Struct { name, fields } = &stmt.stmt {
+            if let StmtType::Struct { name, fields, methods } = &stmt.stmt {
                 let fields = fields.clone();
                 let struct_data = StructData { fields };
 
@@ -167,7 +167,7 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Break => (),
             StmtType::Continue => (),
-            StmtType::Struct { name: _, fields: _ } => {}
+            StmtType::Struct { name: _, fields: _, methods: _ } => {}
         };
         Ok(())
     }
