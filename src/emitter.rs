@@ -344,6 +344,8 @@ impl<'a> Emitter<'a> {
                 property: _,
                 new_value: _,
             } => unreachable!(),
+            ExprType::MethodCall { inst, property, args } => todo!(),
+            ExprType::MethodCallResolved { inst, index, args } => todo!(),
         };
         Ok(())
     }

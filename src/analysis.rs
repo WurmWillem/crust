@@ -404,6 +404,7 @@ impl<'a> Analyser<'a> {
                 let Some(data) = self.structs.get(&name as &str) else {
                     unreachable!()
                 };
+                // data.methods.iter().enumerate()
                 let index = data
                     .fields
                     .iter()
@@ -422,12 +423,37 @@ impl<'a> Analyser<'a> {
                 }
                 field_ty
             }
-            ExprType::DotAssignResolved {
-                inst: _,
-                index: _,
-                new_value: _,
-            } => unreachable!(),
+            ExprType::MethodCall {
+                inst,
+                property,
+                args,
+            } => {
+                // TODO: error checking
+                let inst_ty = self.analyse_expr(inst)?;
+                let ValueType::Struct(name) = inst_ty else {
+                    unreachable!()
+                };
+                let Some(data) = self.structs.get(&name as &str) else {
+                    unreachable!()
+                };
+                let Some(func_data) = data.methods.get(property) else {
+                    unreachable!()
+                };
+                func_data.parameters
+                expr.expr = ExprType::MethodCallResolved {
+                    inst: inst.clone(),
+                    index: 0,
+                    args: args.clone(),
+                };
+                func_data.return_ty.clone()
+            }
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
+            ExprType::MethodCallResolved { inst, index, args } => unreachable!(),
+            ExprType::DotAssignResolved {
+                inst,
+                index,
+                new_value,
+            } => unreachable!(),
         };
         Ok(result)
     }

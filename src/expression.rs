@@ -23,6 +23,16 @@ pub enum ExprType<'a> {
         name: &'a str,
         args: Vec<Expr<'a>>,
     },
+    MethodCall {
+        inst: Box<Expr<'a>>,
+        property: &'a str,
+        args: Vec<Expr<'a>>,
+    },
+    MethodCallResolved {
+        inst: Box<Expr<'a>>,
+        index: usize,
+        args: Vec<Expr<'a>>,
+    },
     Dot {
         inst: Box<Expr<'a>>,
         property: &'a str,

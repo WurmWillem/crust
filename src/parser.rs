@@ -192,12 +192,16 @@ impl<'a> Parser<'a> {
         }
         let mut methods = vec![];
         while self.matches(TokenType::Fn) {
-           methods.push(self.func_decl()?); 
+            methods.push(self.func_decl()?);
         }
 
         self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
 
-        let ty = StmtType::Struct { name, fields, methods };
+        let ty = StmtType::Struct {
+            name,
+            fields,
+            methods,
+        };
         Ok(Stmt::new(ty, line))
     }
 
@@ -580,6 +584,10 @@ impl<'a> Parser<'a> {
 
         if let ExprType::Var(name) = name.expr {
             let ty = ExprType::Call { name, args };
+            let expr = Expr::new(ty, self.previous().line);
+            Ok(expr)
+        } else if let ExprType::Dot{ inst, property } = name.expr {
+            let ty = ExprType::MethodCall { inst, property, args};
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
         } else {
