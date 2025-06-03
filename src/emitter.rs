@@ -271,9 +271,6 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
-                // dbg!(name);
-                // let struct_data = self.structs.get(name).unwrap();
-
                 if let Some(_) = self.structs.get(name) {
                     for var in args.iter().rev() {
                         self.emit_expr(&var)?;
@@ -292,10 +289,6 @@ impl<'a> Emitter<'a> {
                     self.comps
                         .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
                 }
-                // self.comps.emit_constant(StackValue::F64(232.), 3)?;
-                // let fields = struct_data.fields.iter().map(|f| f.0);
-
-                // dbg!(args.len());
             }
             ExprType::Array(arr) => {
                 let arr_len = arr.len() as f64;

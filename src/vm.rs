@@ -139,6 +139,18 @@ impl VM {
                     self.call(frame);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                 }
+                OpCode::MethodCall => {
+                    let index = self.read_byte(frame) as usize;
+                    let inst = self.stack_pop();
+                    let StackValue::Obj(Object::Instance(inst)) = inst else {
+                        unreachable!()
+                    };
+                    let method = inst.data.methods[index];
+                    self.stack_push(method);
+
+                    self.call(frame);
+                    frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
+                }
 
                 OpCode::AllocInstance => {
                     let fields_len = self.read_byte(frame) as usize;
@@ -147,7 +159,8 @@ impl VM {
                         fields.push(self.stack_pop());
                     }
 
-                    let inst = ObjInstance::new(fields);
+                    // TODO: update methods
+                    let inst = ObjInstance::new(fields, vec![]);
                     let (obj, _) =
                         self.heap
                             .alloc(inst, Object::Instance, &mut self.stack, self.stack_top);
