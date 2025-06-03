@@ -17,7 +17,7 @@ pub struct Emitter<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
     funcs: HashMap<&'a str, StackValue>,
-    structs: StructHash<'a>,
+    structs: HashMap<&'a str, HashMap<&'a str, StackValue>>,
 }
 impl<'a> Emitter<'a> {
     fn new() -> Self {
@@ -72,6 +72,7 @@ impl<'a> Emitter<'a> {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
+            // TODO: check for duplicates
             self.funcs.insert(name, StackValue::Obj(func_obj));
             func_objs.push(func_obj);
         }
@@ -99,7 +100,45 @@ impl<'a> Emitter<'a> {
             }
         }
 
-        self.structs = struct_data;
+        // insert dummy function objects for recursion
+        let mut method_objs = Vec::new();
+        for (struct_name, data) in &struct_data {
+            let mut methods = HashMap::new();
+            for (name, _) in &data.methods {
+                let dummy = ObjFunc::new(name.to_string());
+                let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
+
+                methods.insert(*name, StackValue::Obj(func_obj));
+                method_objs.push(func_obj);
+            }
+            self.structs.insert(struct_name, methods);
+        }
+
+        for (_, mut data) in struct_data {
+            for (i, (name, data)) in data.methods.drain(0..data.methods.len()).enumerate() {
+                let line = data.line;
+
+                self.comps.push(name.to_string());
+                self.comps.begin_scope();
+                for (_, name) in data.parameters {
+                    self.comps.add_local(name, line)?;
+                }
+
+                for stmt in data.body {
+                    self.emit_stmt(stmt)?;
+                }
+
+                self.comps.emit_return(line);
+
+                let compiled_func = self.comps.end_compiler(line);
+                if let Object::Func(ref mut func) = method_objs[i].borrow_mut() {
+                    func.data = compiled_func;
+                } else {
+                    unreachable!()
+                }
+            }
+        }
+        // self.structs = struct_data;
 
         Ok(())
     }
@@ -219,7 +258,11 @@ impl<'a> Emitter<'a> {
             StmtType::Continue => {
                 self.comps.add_continue(line)?;
             }
-            StmtType::Struct { name: _, fields: _, methods: _ } => (),
+            StmtType::Struct {
+                name: _,
+                fields: _,
+                methods: _,
+            } => (),
         }
         Ok(())
     }
@@ -337,7 +380,11 @@ impl<'a> Emitter<'a> {
                 property: _,
                 new_value: _,
             } => unreachable!(),
-            ExprType::MethodCall { inst, property, args } => unreachable!(),
+            ExprType::MethodCall {
+                inst,
+                property,
+                args,
+            } => unreachable!(),
             ExprType::MethodCallResolved { inst, index, args } => {
                 todo!()
             }
