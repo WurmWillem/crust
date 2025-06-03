@@ -145,22 +145,34 @@ impl VM {
                     let StackValue::Obj(Object::Instance(inst)) = inst else {
                         unreachable!()
                     };
+
                     let method = inst.data.methods[index];
+                    // dbg!(method);
                     self.stack_push(method);
+                    // dbg!(self.stack_peek());
 
                     self.call(frame);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                 }
 
                 OpCode::AllocInstance => {
+                    let methods_len = self.read_byte(frame) as usize;
                     let fields_len = self.read_byte(frame) as usize;
+
                     let mut fields = Vec::new();
                     for _ in 0..fields_len {
                         fields.push(self.stack_pop());
                     }
+                    // dbg!(&fields);
+
+                    let mut methods = Vec::new();
+                    for _ in 0..methods_len {
+                        methods.push(self.stack_pop());
+                    }
+                    // dbg!(&methods);
 
                     // TODO: update methods
-                    let inst = ObjInstance::new(fields, vec![]);
+                    let inst = ObjInstance::new(fields, methods);
                     let (obj, _) =
                         self.heap
                             .alloc(inst, Object::Instance, &mut self.stack, self.stack_top);
@@ -279,7 +291,10 @@ impl VM {
     unsafe fn call(&mut self, frame: *mut CallFrame) {
         let arg_count = self.read_byte(frame) as usize;
         let slots = self.stack_top - arg_count;
+        // dbg!(arg_count);
         let value = self.stack[slots];
+        // dbg!(self.stack[self.stack_top - 1]);
+        // dbg!(value);
 
         if let StackValue::Obj(obj) = value {
             match obj {

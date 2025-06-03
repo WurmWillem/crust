@@ -2,10 +2,10 @@ struct Vec2 {
     int x;
     int y;
 
-    fn dot() {
+    fn greet() {
         println("hoi");
     }
 }
 
 Vec2 vec = Vec2(3, 2);
-vec.dot();
+vec.greet();

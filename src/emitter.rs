@@ -314,13 +314,18 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(op_code as u8, line);
             }
             ExprType::Call { name, args } => {
-                if let Some(_) = self.structs.get(name) {
+                if let Some(methods) = self.structs.get(name) {
+                    let method_len = methods.len() as u8;
+                    for (_, value) in methods {
+                        self.comps.emit_constant(*value, line)?;
+                    }
                     for var in args.iter().rev() {
                         self.emit_expr(&var)?;
                     }
 
                     self.comps
-                        .emit_bytes(OpCode::AllocInstance as u8, args.len() as u8, line);
+                        .emit_bytes(OpCode::AllocInstance as u8, method_len, line);
+                    self.comps.emit_byte(args.len() as u8, line);
                 } else {
                     let fn_ptr = *self.funcs.get(name).unwrap();
                     self.comps.emit_constant(fn_ptr, line)?;
@@ -371,6 +376,12 @@ impl<'a> Emitter<'a> {
                 self.comps
                     .emit_bytes(OpCode::SetProperty as u8, *index, line);
             }
+            ExprType::MethodCallResolved { inst, index, args } => {
+                self.emit_expr(inst)?;
+                self.comps
+                    .emit_bytes(OpCode::MethodCall as u8, *index, line);
+                self.comps.emit_byte(1, line);
+            }
             ExprType::Dot {
                 inst: _,
                 property: _,
@@ -385,9 +396,6 @@ impl<'a> Emitter<'a> {
                 property,
                 args,
             } => unreachable!(),
-            ExprType::MethodCallResolved { inst, index, args } => {
-                todo!()
-            }
         };
         Ok(())
     }
