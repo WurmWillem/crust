@@ -66,6 +66,7 @@ fn main() {
             return;
         }
     };
+    // dbg!(&statements);
 
     let (func_data, nat_func_data, struct_data) = match Analyser::analyse_stmts(&mut statements) {
         Some(func_data) => func_data,

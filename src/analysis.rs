@@ -446,6 +446,10 @@ impl<'a> Analyser<'a> {
                     index += 1;
                 }
 
+                for arg in args.iter_mut() {
+                    self.analyse_expr(arg)?;
+                }
+
                 expr.expr = ExprType::MethodCallResolved {
                     inst: inst.clone(),
                     index,
