@@ -147,12 +147,7 @@ impl VM {
                     };
 
                     let method = inst.data.methods[index];
-                    // dbg!(method);
                     self.stack_push(method);
-                    // dbg!(self.stack_peek());
-
-                    self.call(frame);
-                    frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                 }
 
                 OpCode::AllocInstance => {

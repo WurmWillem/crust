@@ -380,7 +380,13 @@ impl<'a> Emitter<'a> {
                 self.emit_expr(inst)?;
                 self.comps
                     .emit_bytes(OpCode::MethodCall as u8, *index, line);
-                self.comps.emit_byte(1, line);
+
+                for var in args {
+                    self.emit_expr(&var)?;
+                }
+
+                self.comps
+                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
             }
             ExprType::Dot {
                 inst: _,
