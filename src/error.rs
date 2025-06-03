@@ -110,27 +110,39 @@ impl SemanticErr {
             }
             SemErrType::IncorrectArity(name, expected, found) => {
                 format!(
-                    "Function '{}' expected {} arguments, but found {}.",
-                    name, expected, found
+                    "Function '{}' expected {} argument(s), but found {}.",
+                    name.green(),
+                    expected,
+                    found
                 )
             }
 
-            SemErrType::UndefinedFunc(name) => format!("Function '{}' has not been defined.", name),
-            SemErrType::UndefinedStruct(name) => format!("Struct '{}' has not been defined.", name),
+            SemErrType::UndefinedFunc(name) => {
+                format!("Function '{}' has not been defined.", name.green())
+            }
+            SemErrType::UndefinedStruct(name) => {
+                format!("Struct '{}' has not been defined.", name.green())
+            }
             SemErrType::UndefinedVar(name) => {
-                format!("Variable '{}' has not been defined in this scope.", name)
+                format!(
+                    "Variable '{}' has not been defined in this scope.",
+                    name.green()
+                )
             }
             SemErrType::AlreadyDefinedVar(name) => {
                 format!(
                     "Variable with name '{}' has already been defined in this scope.",
-                    name
+                    name.green()
                 )
             }
             SemErrType::AlreadyDefinedFunc(name) => {
-                format!("Function with name '{}' has already been defined.", name)
+                format!(
+                    "Function with name '{}' has already been defined.",
+                    name.green()
+                )
             }
             SemErrType::AlreadyDefinedStruct(name) => {
-                format!("Struct with name '{}' has already been defined.", name)
+                format!("Struct with name '{}' has already been defined.", name.green())
             }
 
             SemErrType::OpTypeMismatch(expected, op, found) => {

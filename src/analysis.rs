@@ -221,8 +221,8 @@ impl<'a> Analyser<'a> {
                 if args.len() != parameters.len() {
                     let err_ty = SemErrType::IncorrectArity(
                         name.to_string(),
-                        args.len() as u8,
                         parameters.len() as u8,
+                        args.len() as u8,
                     );
                     return Err(SemanticErr::new(line, err_ty));
                 }

@@ -438,8 +438,7 @@ impl<'a> Parser<'a> {
     }
 
     fn synchronize(&mut self) {
-        self.advance();
-        // dbg!(self.peek().kind);
+        // self.advance();
 
         while self.peek().ty != TokenType::Eof {
             // if we just consumed a semicolon, we probably ended a statement
