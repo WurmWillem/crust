@@ -74,9 +74,34 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticErr::new(line, err_ty));
                 }
             }
-            if let StmtType::Struct { name, fields, methods } = &stmt.stmt {
-                let fields = fields.clone();
-                let struct_data = StructData { fields };
+            if let StmtType::Struct {
+                name,
+                fields,
+                methods,
+            } = &stmt.stmt
+            {
+                let mut struct_data = StructData::new(fields.clone());
+                for method in methods {
+                    if let StmtType::Func {
+                        name,
+                        parameters,
+                        body,
+                        return_ty,
+                    } = &method.stmt
+                    {
+                        let func_data = FuncData {
+                            parameters: parameters.clone(),
+                            body: body.clone(),
+                            return_ty: return_ty.clone(),
+                            line: stmt.line,
+                        };
+
+                        if struct_data.methods.insert(*name, func_data).is_some() {
+                            let err_ty = SemErrType::AlreadyDefinedFunc(name.to_string());
+                            return Err(SemanticErr::new(line, err_ty));
+                        }
+                    }
+                }
 
                 if self.structs.insert(*name, struct_data).is_some() {
                     let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
@@ -167,7 +192,11 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Break => (),
             StmtType::Continue => (),
-            StmtType::Struct { name: _, fields: _, methods: _ } => {}
+            StmtType::Struct {
+                name: _,
+                fields: _,
+                methods: _,
+            } => {}
         };
         Ok(())
     }
@@ -380,7 +409,6 @@ impl<'a> Analyser<'a> {
                     .iter()
                     .position(|(_, field_name)| field_name == property)
                     .unwrap() as u8;
-
 
                 expr.expr = ExprType::DotAssignResolved {
                     inst: inst.clone(),

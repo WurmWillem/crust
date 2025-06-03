@@ -6,6 +6,8 @@ struct Vec2 {
         println("hoi");
     }
 }
+dot();
+
 
 Vec2 vec = Vec2(3, 2);
 vec.x = 1;
