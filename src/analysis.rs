@@ -95,11 +95,7 @@ impl<'a> Analyser<'a> {
                             return_ty: return_ty.clone(),
                             line: stmt.line,
                         };
-
-                        if struct_data.methods.insert(*name, func_data).is_some() {
-                            let err_ty = SemErrType::AlreadyDefinedFunc(name.to_string());
-                            return Err(SemanticErr::new(line, err_ty));
-                        }
+                        struct_data.methods.push((name, func_data));
                     }
                 }
 
@@ -436,16 +432,26 @@ impl<'a> Analyser<'a> {
                 let Some(data) = self.structs.get(&name as &str) else {
                     unreachable!()
                 };
-                let Some(func_data) = data.methods.get(property) else {
-                    unreachable!()
-                };
-                func_data.parameters
+                // let Some(func_data) = data.methods.get(property) else {
+                //     unreachable!()
+                // };
+                // func_data.parameters
+                let mut index = 0;
+                let mut return_ty = None;
+                for (method_name, data) in data.methods.iter(){
+                    if method_name == property {
+                        return_ty = Some(data.return_ty.clone());
+                       break; 
+                    }
+                    index += 1;
+                }
+
                 expr.expr = ExprType::MethodCallResolved {
                     inst: inst.clone(),
-                    index: 0,
+                    index,
                     args: args.clone(),
                 };
-                func_data.return_ty.clone()
+                return_ty.unwrap()
             }
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
             ExprType::MethodCallResolved { inst, index, args } => unreachable!(),

@@ -66,11 +66,11 @@ pub struct NatFuncData {
 #[derive(Debug)]
 pub struct StructData<'a> {
     pub fields: Vec<(ValueType, &'a str)>,
-    pub methods: FuncHash<'a>,
+    pub methods: Vec<(&'a str, FuncData<'a>)>,
 }
 impl<'a> StructData<'a> {
     pub fn new(fields: Vec<(ValueType, &'a str)>) -> Self {
-        Self { fields, methods: HashMap::new() }
+        Self { fields, methods: vec![] }
     }
 }
 

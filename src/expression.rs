@@ -30,7 +30,7 @@ pub enum ExprType<'a> {
     },
     MethodCallResolved {
         inst: Box<Expr<'a>>,
-        index: usize,
+        index: u8,
         args: Vec<Expr<'a>>,
     },
     Dot {
