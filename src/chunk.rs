@@ -57,8 +57,8 @@ impl Chunk {
             OpCode::Loop => Self::simple_instruction("OP_POP", offset),
 
             OpCode::AllocInstance => Self::simple_instruction("OP_ALLOC_INSTANCE", offset),
-            OpCode::GetProperty => Self::simple_instruction("OP_GET_PROPERTY", offset),
-            OpCode::SetProperty => Self::simple_instruction("OP_SET_PROPERTY", offset),
+            OpCode::GetPubField => Self::simple_instruction("OP_GET_PROPERTY", offset),
+            OpCode::SetPubField => Self::simple_instruction("OP_SET_PROPERTY", offset),
 
             OpCode::AllocArr => Self::simple_instruction("OP_ALLOC_ARRAY", offset),
             OpCode::IndexArr => Self::simple_instruction("OP_INDEX_ARRAY", offset),
@@ -71,8 +71,8 @@ impl Chunk {
 
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),
-            OpCode::GetField => self.constant_instruction("OP_GET_FIELD", offset),
-            OpCode::SetField => self.constant_instruction("OP_SET_FIELD", offset),
+            OpCode::GetSelfField => self.constant_instruction("OP_GET_FIELD", offset),
+            OpCode::GetSetField => self.constant_instruction("OP_SET_FIELD", offset),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),

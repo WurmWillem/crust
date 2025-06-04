@@ -56,8 +56,9 @@ impl SemanticErr {
 pub enum SemErrType {
     InvalidPrefix,
     InvalidInfix,
-    InvalidPropertyAccess(ValueType),
-    InvalidProperty(String, String),
+    InvalidThis,
+    InvalidTypeFieldAccess(ValueType),
+    InvalidPubField(String, String),
     IndexNonArr(ValueType),
     AssignArrTypeMismatch(ValueType, ValueType),
     UndefinedFunc(String),
@@ -80,15 +81,16 @@ impl SemanticErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
-            SemErrType::InvalidPropertyAccess(ty) => {
+            SemErrType::InvalidThis => "'self' can only be used inside methods of structs.".to_string(),
+            SemErrType::InvalidTypeFieldAccess(ty) => {
                 format!(
-                    "You can only access properties of instances, but you tried to access properties of type '{}'.",
+                    "You can only access fields of instances, but you tried to access a field of type '{}'.",
                     ty
                 )
             }
-            SemErrType::InvalidProperty(name, property) => {
+            SemErrType::InvalidPubField(name, property) => {
                 format!(
-                    "'{}' is not a valid property of Struct '{}'.",
+                    "'{}' is not a valid field of Struct '{}'.",
                     property, name
                 )
             }

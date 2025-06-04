@@ -172,7 +172,7 @@ impl VM {
                     let obj = StackValue::Obj(obj);
                     self.stack_push(obj);
                 }
-                OpCode::GetProperty => {
+                OpCode::GetPubField => {
                     let index = self.read_byte(frame) as usize;
                     let inst = self.stack_pop();
                     let StackValue::Obj(Object::Instance(inst)) = inst else {
@@ -180,7 +180,7 @@ impl VM {
                     };
                     self.stack_push(inst.data.fields[index]);
                 }
-                OpCode::SetProperty => {
+                OpCode::SetPubField => {
                     let new_value = self.stack_pop();
                     let index = self.read_byte(frame) as usize;
                     let inst = self.stack_peek();
@@ -189,7 +189,7 @@ impl VM {
                     };
                     inst.data.fields[index] = new_value;
                 }
-                OpCode::GetField => {
+                OpCode::GetSelfField => {
                     let index = self.read_byte(frame) as usize;
                     let inst = self.stack[(*frame).slots - 1];
                     // dbg!(inst);
@@ -198,7 +198,7 @@ impl VM {
                     };
                     self.stack_push(inst.data.fields[index]);
                 }
-                OpCode::SetField => {
+                OpCode::GetSetField => {
                     let new_value = self.stack_pop();
                     let index = self.read_byte(frame) as usize;
                     let inst = self.stack[(*frame).slots - 1];

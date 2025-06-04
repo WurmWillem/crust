@@ -16,7 +16,8 @@ struct Vec2 {
 product(3);
 Vec2 vec = Vec2(3, 2);
 pr vec.product();
-self.x;
+vec.z = 2;
+//4.x();
 
 vec.increment_x();
 pr vec.x;
