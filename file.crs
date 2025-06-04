@@ -6,7 +6,7 @@ struct Vec2 {
         return 1;
     }
     fn product(int x, int y): int {
-        return 2;
+        return x * y;
     }
 }
 

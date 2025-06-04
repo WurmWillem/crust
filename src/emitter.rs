@@ -17,7 +17,7 @@ pub struct Emitter<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
     funcs: HashMap<&'a str, StackValue>,
-    structs: HashMap<&'a str, HashMap<&'a str, StackValue>>,
+    structs: HashMap<&'a str, Vec<(&'a str, StackValue)>>,
 }
 impl<'a> Emitter<'a> {
     fn new() -> Self {
@@ -103,12 +103,12 @@ impl<'a> Emitter<'a> {
         // insert dummy function objects for recursion
         let mut method_objs = Vec::new();
         for (struct_name, data) in &struct_data {
-            let mut methods = HashMap::new();
+            let mut methods = vec![];
             for (name, _) in &data.methods {
                 let dummy = ObjFunc::new(name.to_string());
                 let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
-                methods.insert(*name, StackValue::Obj(func_obj));
+                methods.push((*name, StackValue::Obj(func_obj)));
                 method_objs.push(func_obj);
             }
             self.structs.insert(struct_name, methods);
@@ -271,7 +271,7 @@ impl<'a> Emitter<'a> {
             ExprType::Call { name, args } => {
                 if let Some(methods) = self.structs.get(name) {
                     let method_len = methods.len() as u8;
-                    for (_, value) in methods {
+                    for (_, value) in methods.iter().rev() {
                         self.comps.emit_constant(*value, line)?;
                     }
                     for var in args.iter().rev() {
