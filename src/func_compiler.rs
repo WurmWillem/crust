@@ -177,7 +177,6 @@ impl<'a> FuncCompilerStack<'a> {
         let continues = self.comps[self.current].continue_stack.pop().unwrap();
         for from in continues {
             self.patch_jump_to(from, loop_start, line)?;
-            //self.patch_jump_to(from, loop_start, line)?;
         }
         Ok(())
     }

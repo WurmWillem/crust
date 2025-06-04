@@ -57,8 +57,10 @@ pub enum SemErrType {
     InvalidPrefix,
     InvalidInfix,
     InvalidThis,
+    InvalidTypeMethodAccess(ValueType),
     InvalidTypeFieldAccess(ValueType),
     InvalidPubField(String, String),
+    InvalidMethod(String, String),
     IndexNonArr(ValueType),
     AssignArrTypeMismatch(ValueType, ValueType),
     UndefinedFunc(String),
@@ -82,6 +84,12 @@ impl SemanticErr {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
             SemErrType::InvalidThis => "'self' can only be used inside methods of structs.".to_string(),
+            SemErrType::InvalidTypeMethodAccess(ty) => {
+                format!(
+                    "You can only access methods of instances, but you tried to access a method of type '{}'.",
+                    ty
+                )
+            }
             SemErrType::InvalidTypeFieldAccess(ty) => {
                 format!(
                     "You can only access fields of instances, but you tried to access a field of type '{}'.",
@@ -90,8 +98,14 @@ impl SemanticErr {
             }
             SemErrType::InvalidPubField(name, property) => {
                 format!(
-                    "'{}' is not a valid field of Struct '{}'.",
-                    property, name
+                    "Struct '{}' has no field named '{}'.",
+                    name, property
+                )
+            }
+            SemErrType::InvalidMethod(name, property) => {
+                format!(
+                    "Struct '{}' has no method named '{}'.",
+                    name, property
                 )
             }
             SemErrType::IndexNonArr(ty) => format!(

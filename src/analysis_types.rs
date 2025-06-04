@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     error::{SemErrType, SemanticErr},
+    expression::ExprType,
     object::NativeFunc,
     statement::Stmt,
     value::ValueType,
@@ -70,7 +71,47 @@ pub struct StructData<'a> {
 }
 impl<'a> StructData<'a> {
     pub fn new(fields: Vec<(ValueType, &'a str)>) -> Self {
-        Self { fields, methods: vec![] }
+        Self {
+            fields,
+            methods: vec![],
+        }
+    }
+
+    pub fn get_method_index_and_return_ty(
+        &self,
+        name: String,
+        property: &str,
+        line: u32,
+    ) -> Result<(u8, ValueType), SemanticErr> {
+        let mut index = 0;
+        for (method_name, data) in self.methods.iter() {
+            if *method_name == property {
+                return Ok((index, data.return_ty.clone()));
+            }
+            index += 1;
+        }
+        let ty = SemErrType::InvalidMethod(name, property.to_string());
+        return Err(SemanticErr::new(line, ty));
+    }
+
+    pub fn get_field_index(
+        &self,
+        name: String,
+        property: &str,
+        line: u32,
+    ) -> Result<u8, SemanticErr> {
+        let index = match self
+            .fields
+            .iter()
+            .position(|(_, field_name)| *field_name == property)
+        {
+            Some(index) => index as u8,
+            None => {
+                let ty = SemErrType::InvalidPubField(name, property.to_string());
+                return Err(SemanticErr::new(line, ty));
+            }
+        };
+        Ok(index)
     }
 }
 

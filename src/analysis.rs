@@ -374,7 +374,8 @@ impl<'a> Analyser<'a> {
                 property,
                 new_value,
             } => {
-                let (return_ty, new_expr) = self.analyse_dot(Some(new_value), inst, line, property)?;
+                let (return_ty, new_expr) =
+                    self.analyse_dot(Some(new_value), inst, line, property)?;
                 expr.expr = new_expr;
                 return_ty
             }
@@ -383,23 +384,18 @@ impl<'a> Analyser<'a> {
                 property,
                 args,
             } => {
-                // TODO: error checking
                 let inst_ty = self.analyse_expr(inst)?;
                 let ValueType::Struct(name) = inst_ty else {
-                    unreachable!()
+                    let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
+                    return Err(SemanticErr::new(line, ty));
                 };
                 let Some(data) = self.structs.get(&name as &str) else {
-                    unreachable!()
+                    let ty = SemErrType::UndefinedStruct(name);
+                    return Err(SemanticErr::new(line, ty));
                 };
-                let mut index = 0;
-                let mut return_ty = None;
-                for (method_name, data) in data.methods.iter() {
-                    if method_name == property {
-                        return_ty = Some(data.return_ty.clone());
-                        break;
-                    }
-                    index += 1;
-                }
+
+                let (index, return_ty) =
+                    data.get_method_index_and_return_ty(name, property, line)?;
 
                 for arg in args.iter_mut() {
                     self.analyse_expr(arg)?;
@@ -410,7 +406,7 @@ impl<'a> Analyser<'a> {
                     index,
                     args: args.clone(),
                 };
-                return_ty.unwrap()
+                return_ty
             }
             ExprType::This => unreachable!(),
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
@@ -461,18 +457,8 @@ impl<'a> Analyser<'a> {
             let ty = SemErrType::UndefinedStruct(name);
             return Err(SemanticErr::new(line, ty));
         };
-        let index = match data
-            .fields
-            .iter()
-            .position(|(_, field_name)| *field_name == property)
-        {
-            Some(index) => index as u8,
-            None => {
-                let ty = SemErrType::InvalidPubField(name, property.to_string());
-                return Err(SemanticErr::new(line, ty));
-            }
-        };
 
+        let index = data.get_field_index(name, property, line)?;
         let field_ty = data.fields[index as usize].clone().0;
 
         let expr = if let Some(new_value) = new_value {
