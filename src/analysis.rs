@@ -83,7 +83,14 @@ impl<'a> Analyser<'a> {
             } = &mut stmt.stmt
             {
                 self.current_struct = Some(name);
-                let mut struct_data = StructData::new(fields.clone());
+                let struct_data = StructData::new(fields.clone());
+                let mut method_data = vec![];
+
+                if self.structs.insert(*name, struct_data).is_some() {
+                    let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
+                    return Err(SemanticErr::new(line, err_ty));
+                }
+
                 for method in methods {
                     self.analyse_stmt(method)?;
                     if let StmtType::Func {
@@ -99,17 +106,13 @@ impl<'a> Analyser<'a> {
                             return_ty: return_ty.clone(),
                             line: stmt.line,
                         };
-                        struct_data.methods.push((name, func_data));
+                        method_data.push((*name, func_data));
                     } else {
                         unreachable!()
                     }
                 }
 
-                if self.structs.insert(*name, struct_data).is_some() {
-                    let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
-                    return Err(SemanticErr::new(line, err_ty));
-                }
-                dbg!(name);
+                self.structs.get_mut(name).unwrap().methods = method_data;
                 self.current_struct = None;
             }
         }
@@ -377,7 +380,7 @@ impl<'a> Analyser<'a> {
                     };
                     name
                 };
-                dbg!(&inst);
+                // dbg!(&inst);
                 let Some(data) = self.structs.get(&name as &str) else {
                     let ty = SemErrType::UndefinedStruct(name);
                     return Err(SemanticErr::new(line, ty));

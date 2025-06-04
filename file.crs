@@ -2,14 +2,14 @@ struct Vec2 {
     int x;
     int y;
 
-    fn t() {
-        //a.b;
-        pr self.x;
+    fn t(): int {
+        return 1;
     }
-    //fn product(int x, int y) {
-    //    pr x * y;
-    //}
+    fn product(int x, int y): int {
+        return 2;
+    }
 }
 
-//Vec2 vec = Vec2(3, 2);
-//vec.product(vec.x, vec.y);
+Vec2 vec = Vec2(3, 2);
+int p = vec.product(vec.x, vec.y);
+pr p;
