@@ -26,8 +26,8 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "if",If "else",Else "while",While "for",For
-            "true",True "false",False "null",Null "this",This "parent",Super
+            "if",If "else",Else "while",While "for",For 
+            "true",True "false",False "null",Null "self",This "parent",Super
             "struct",Struct "fn",Fn "return",Return "pr",Print
             "int",F64 "bool",Bool "str",Str "in",In "to",To "break",Break "continue",Continue
         );

@@ -3,7 +3,7 @@ struct Vec2 {
     int y;
 
     fn t() {
-        pr x;
+        pr self.x;
     }
     fn product(int x, int y) {
         pr x * y;

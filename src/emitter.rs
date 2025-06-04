@@ -138,8 +138,6 @@ impl<'a> Emitter<'a> {
                 }
             }
         }
-        // self.structs = struct_data;
-
         Ok(())
     }
 
@@ -270,49 +268,6 @@ impl<'a> Emitter<'a> {
     fn emit_expr(&mut self, expr: &Expr<'a>) -> Result<(), EmitErr> {
         let line = expr.line;
         match &expr.expr {
-            ExprType::Lit(lit) => match lit {
-                Literal::None => unreachable!(),
-                Literal::Str(str) => {
-                    let (object, _) = self.heap.alloc_permanent(str.to_string(), Object::Str);
-                    let stack_value = StackValue::Obj(object);
-                    self.comps.emit_constant(stack_value, line)?;
-                }
-                Literal::Num(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
-                Literal::True => self.comps.emit_byte(OpCode::True as u8, line),
-                Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
-                Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),
-            },
-            ExprType::Var(name) => {
-                if let Some(arg) = self.comps.resolve_local(name) {
-                    self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
-                } else {
-                    unreachable!()
-                }
-            }
-            ExprType::Assign { name, new_value } => {
-                let Some(arg) = self.comps.resolve_local(name) else {
-                    unreachable!()
-                };
-                self.emit_expr(new_value)?;
-                self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
-            }
-            ExprType::Unary {
-                prefix,
-                value: right,
-            } => {
-                self.emit_expr(right)?;
-                match prefix {
-                    TokenType::Minus => self.comps.emit_byte(OpCode::Negate as u8, line),
-                    TokenType::Bang => self.comps.emit_byte(OpCode::Not as u8, line),
-                    _ => unreachable!(),
-                }
-            }
-            ExprType::Binary { left, op, right } => {
-                self.emit_expr(left)?;
-                self.emit_expr(right)?;
-                let op_code = op.to_op_code();
-                self.comps.emit_byte(op_code as u8, line);
-            }
             ExprType::Call { name, args } => {
                 if let Some(methods) = self.structs.get(name) {
                     let method_len = methods.len() as u8;
@@ -387,6 +342,49 @@ impl<'a> Emitter<'a> {
 
                 self.comps
                     .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
+            }
+            ExprType::Lit(lit) => match lit {
+                Literal::None => unreachable!(),
+                Literal::Str(str) => {
+                    let (object, _) = self.heap.alloc_permanent(str.to_string(), Object::Str);
+                    let stack_value = StackValue::Obj(object);
+                    self.comps.emit_constant(stack_value, line)?;
+                }
+                Literal::Num(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
+                Literal::True => self.comps.emit_byte(OpCode::True as u8, line),
+                Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
+                Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),
+            },
+            ExprType::Var(name) => {
+                if let Some(arg) = self.comps.resolve_local(name) {
+                    self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
+                } else {
+                    unreachable!()
+                }
+            }
+            ExprType::Assign { name, new_value } => {
+                let Some(arg) = self.comps.resolve_local(name) else {
+                    unreachable!()
+                };
+                self.emit_expr(new_value)?;
+                self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
+            }
+            ExprType::Unary {
+                prefix,
+                value: right,
+            } => {
+                self.emit_expr(right)?;
+                match prefix {
+                    TokenType::Minus => self.comps.emit_byte(OpCode::Negate as u8, line),
+                    TokenType::Bang => self.comps.emit_byte(OpCode::Not as u8, line),
+                    _ => unreachable!(),
+                }
+            }
+            ExprType::Binary { left, op, right } => {
+                self.emit_expr(left)?;
+                self.emit_expr(right)?;
+                let op_code = op.to_op_code();
+                self.comps.emit_byte(op_code as u8, line);
             }
             ExprType::Dot {
                 inst: _,
