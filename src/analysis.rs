@@ -431,12 +431,6 @@ impl<'a> Analyser<'a> {
         line: u32,
         property: &str,
     ) -> Result<(ValueType, ExprType<'a>), SemanticErr> {
-        let new_value = if let Some(ty) = new_value {
-            Some(ty)
-        } else {
-            None
-        };
-
         let name = if let ExprType::This = inst.expr {
             match self.current_struct {
                 Some(name) => name.to_string(),

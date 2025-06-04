@@ -83,7 +83,9 @@ impl SemanticErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
-            SemErrType::InvalidThis => "'self' can only be used inside methods of structs.".to_string(),
+            SemErrType::InvalidThis => {
+                "'self' can only be used inside methods of structs.".to_string()
+            }
             SemErrType::InvalidTypeMethodAccess(ty) => {
                 format!(
                     "You can only access methods of instances, but you tried to access a method of type '{}'.",
@@ -97,16 +99,10 @@ impl SemanticErr {
                 )
             }
             SemErrType::InvalidPubField(name, property) => {
-                format!(
-                    "Struct '{}' has no field named '{}'.",
-                    name, property
-                )
+                format!("Struct '{}' has no field named '{}'.", name, property)
             }
             SemErrType::InvalidMethod(name, property) => {
-                format!(
-                    "Struct '{}' has no method named '{}'.",
-                    name, property
-                )
+                format!("Struct '{}' has no method named '{}'.", name, property)
             }
             SemErrType::IndexNonArr(ty) => format!(
                 "You can only index arrays, but you tried to index the type '{}'.",
@@ -159,7 +155,10 @@ impl SemanticErr {
                 )
             }
             SemErrType::AlreadyDefinedStruct(name) => {
-                format!("Struct with name '{}' has already been defined.", name.green())
+                format!(
+                    "Struct with name '{}' has already been defined.",
+                    name.green()
+                )
             }
 
             SemErrType::OpTypeMismatch(expected, op, found) => {

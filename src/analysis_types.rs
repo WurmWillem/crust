@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::{
     error::{SemErrType, SemanticErr},
-    expression::ExprType,
     object::NativeFunc,
     statement::Stmt,
     value::ValueType,

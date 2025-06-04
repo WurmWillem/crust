@@ -131,8 +131,8 @@ impl ObjInstance {
 }
 impl GcMemSize for ObjInstance {
     fn size_of(&self) -> usize {
-        // TODO: make this give actually accurate values
-        0
+        std::mem::size_of::<StackValue>() * self.fields.capacity()
+            + std::mem::size_of::<StackValue>() * self.methods.capacity()
     }
 }
 
