@@ -113,3 +113,22 @@ fn fields() {
 
     assert_eq!(stdout.trim(), "3 2\n1");
 }
+
+#[test]
+fn methods() {
+    let crust_file = "tests/methods.crs";
+
+    let output = Command::new("target/debug/crust")
+        .arg(crust_file)
+        .output()
+        .expect("Failed to run Crust interpreter");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    if !stderr.is_empty() {
+        eprintln!("Crust stderr:\n{}", stderr);
+    }
+
+    assert_eq!(stdout.trim(), "6\n4");
+}

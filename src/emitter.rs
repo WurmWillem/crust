@@ -318,8 +318,7 @@ impl<'a> Emitter<'a> {
             }
             ExprType::DotResolved { inst, index } => {
                 if let ExprType::This = inst.expr {
-                    self.comps
-                        .emit_bytes(OpCode::GetField as u8, *index, line);
+                    self.comps.emit_bytes(OpCode::GetField as u8, *index, line);
                 } else {
                     self.emit_expr(inst)?;
                     self.comps
@@ -333,16 +332,15 @@ impl<'a> Emitter<'a> {
             } => {
                 if let ExprType::This = inst.expr {
                     self.emit_expr(new_value)?;
-                    self.comps
-                        .emit_bytes(OpCode::SetField as u8, *index, line);
+                    self.comps.emit_bytes(OpCode::SetField as u8, *index, line);
                 } else {
-                    
                     self.emit_expr(inst)?;
                     self.emit_expr(new_value)?;
                     self.comps
                         .emit_bytes(OpCode::SetProperty as u8, *index, line);
                 }
             }
+
             ExprType::MethodCallResolved { inst, index, args } => {
                 self.emit_expr(inst)?;
                 self.comps
