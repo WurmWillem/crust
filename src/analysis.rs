@@ -75,8 +75,7 @@ impl<'a> Analyser<'a> {
                     let err_ty = SemErrType::AlreadyDefinedFunc(name.to_string());
                     return Err(SemanticErr::new(line, err_ty));
                 }
-            }
-            if let StmtType::Struct {
+            } else if let StmtType::Struct {
                 name,
                 fields,
                 methods,
@@ -203,7 +202,7 @@ impl<'a> Analyser<'a> {
                 name: _,
                 fields: _,
                 methods: _,
-            } => {}
+            } => (),
         };
         Ok(())
     }
@@ -220,10 +219,6 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::Call { name, args } => {
-                if let Some(_) = self.structs.get(name) {
-                    return Ok(ValueType::Struct(name.to_string()));
-                }
-
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
                 if args.len() != parameters.len() {
                     let err_ty = SemErrType::IncorrectArity(
@@ -244,7 +239,7 @@ impl<'a> Analyser<'a> {
                         && matches!(arg_ty, ValueType::Arr(_));
 
                     if !is_exact_match && !is_any && !is_array_match {
-                        let err_ty = SemErrType::VarDeclTypeMismatch(param_ty.clone(), arg_ty);
+                        let err_ty = SemErrType::ParamTypeMismatch(param_ty.clone(), arg_ty);
                         return Err(SemanticErr::new(line, err_ty));
                     }
                 }
@@ -511,19 +506,22 @@ impl<'a> Analyser<'a> {
         name: &'a str,
         line: u32,
     ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
-        if let Some(data) = self.funcs.remove(name) {
+        if let Some(data) = self.structs.get(name) {
+            let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
+            let return_ty = ValueType::Struct(name.to_string());
+            return Ok((return_ty, params));
+        }
+
+        if let Some(data) = self.funcs.get(name) {
             let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
             let return_ty = data.return_ty.clone();
 
-            self.funcs.insert(name, data);
-
             return Ok((return_ty, parameters));
         };
-        if let Some(data) = self.nat_funcs.remove(name) {
+
+        if let Some(data) = self.nat_funcs.get(name) {
             let parameters = data.parameters.clone();
             let return_ty = data.return_ty.clone();
-
-            self.nat_funcs.insert(name, data);
 
             return Ok((return_ty, parameters));
         };

@@ -70,6 +70,7 @@ pub enum SemErrType {
     AlreadyDefinedStruct(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
     VarDeclTypeMismatch(ValueType, ValueType),
+    ParamTypeMismatch(ValueType, ValueType),
     FieldTypeMismatch(ValueType, ValueType),
     ArrElTypeMismatch(ValueType, ValueType),
 }
@@ -154,6 +155,12 @@ impl SemanticErr {
             SemErrType::VarDeclTypeMismatch(expected, found) => {
                 format!(
                     "Variable was given type '{}', but found type '{}'.",
+                    expected, found
+                )
+            }
+            SemErrType::ParamTypeMismatch(expected, found) => {
+                format!(
+                    "Parameter has type '{}', but found type '{}'.",
                     expected, found
                 )
             }
