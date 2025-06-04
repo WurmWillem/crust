@@ -365,97 +365,18 @@ impl<'a> Analyser<'a> {
                 }
             }
             ExprType::Dot { inst, property } => {
-                let name = if let ExprType::This = inst.expr {
-                    match self.current_struct {
-                        Some(name) => name.to_string(),
-                        None => {
-                            let ty = SemErrType::InvalidThis;
-                            return Err(SemanticErr::new(line, ty));
-                        }
-                    }
-                } else {
-                    let inst_ty = self.analyse_expr(inst)?;
-                    let ValueType::Struct(name) = inst_ty else {
-                        let ty = SemErrType::InvalidTypeFieldAccess(inst_ty);
-                        return Err(SemanticErr::new(line, ty));
-                    };
-                    name
-                };
-
-                let Some(data) = self.structs.get(&name as &str) else {
-                    let ty = SemErrType::UndefinedStruct(name);
-                    return Err(SemanticErr::new(line, ty));
-                };
-
-                let index = match data
-                    .fields
-                    .iter()
-                    .position(|(_, field_name)| field_name == property)
-                {
-                    Some(index) => index as u8,
-                    None => {
-                        let ty = SemErrType::InvalidPubField(name, property.to_string());
-                        return Err(SemanticErr::new(line, ty));
-                    }
-                };
-
-                expr.expr = ExprType::DotResolved {
-                    inst: inst.clone(),
-                    index,
-                };
-                data.fields[index as usize].0.clone()
+                let (return_ty, new_expr) = self.analyse_dot(None, inst, line, property)?;
+                expr.expr = new_expr;
+                return_ty
             }
             ExprType::DotAssign {
                 inst,
                 property,
                 new_value,
             } => {
-                let new_value_ty = self.analyse_expr(new_value)?;
-                let name = if let ExprType::This = inst.expr {
-                    match self.current_struct {
-                        Some(name) => name.to_string(),
-                        None => {
-                            let ty = SemErrType::InvalidThis;
-                            return Err(SemanticErr::new(line, ty));
-                        }
-                    }
-                } else {
-                    let inst_ty = self.analyse_expr(inst)?;
-                    let ValueType::Struct(name) = inst_ty else {
-                        let ty = SemErrType::InvalidTypeFieldAccess(inst_ty);
-                        return Err(SemanticErr::new(line, ty));
-                    };
-                    name
-                };
-                let Some(data) = self.structs.get(&name as &str) else {
-                    let ty = SemErrType::UndefinedStruct(name);
-                    return Err(SemanticErr::new(line, ty));
-                };
-
-                let index = match data
-                    .fields
-                    .iter()
-                    .position(|(_, field_name)| field_name == property)
-                {
-                    Some(index) => index as u8,
-                    None => {
-                        let ty = SemErrType::InvalidPubField(name, property.to_string());
-                        return Err(SemanticErr::new(line, ty));
-                    }
-                };
-
-                expr.expr = ExprType::DotAssignResolved {
-                    inst: inst.clone(),
-                    index,
-                    new_value: new_value.clone(),
-                };
-                
-                let field_ty = data.fields[index as usize].clone().0;
-                if new_value_ty != field_ty {
-                    let err_ty = SemErrType::FieldTypeMismatch(field_ty, new_value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
-                }
-                field_ty
+                let (return_ty, new_expr) = self.analyse_dot(Some(new_value), inst, line, property)?;
+                expr.expr = new_expr;
+                return_ty
             }
             ExprType::MethodCall {
                 inst,
@@ -506,21 +427,74 @@ impl<'a> Analyser<'a> {
         };
         Ok(result)
     }
-    // fn get_struct_data(
-    //     &mut self,
-    //     name: &'a str,
-    //     line: u32,
-    // ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
-    //     if let Some(data) = self.struct_data.remove(name) {
-    //         data.fields
-    //         let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
-    //         let return_ty = data.return_ty.clone();
-    //
-    //         self.func_data.insert(name, data);
-    //
-    //         return Ok((return_ty, parameters));
-    //     };
-    // }
+
+    fn analyse_dot(
+        &mut self,
+        new_value: Option<&mut Box<Expr<'a>>>,
+        inst: &mut Box<Expr<'a>>,
+        line: u32,
+        property: &str,
+    ) -> Result<(ValueType, ExprType<'a>), SemanticErr> {
+        let new_value = if let Some(ty) = new_value {
+            Some(ty)
+        } else {
+            None
+        };
+
+        let name = if let ExprType::This = inst.expr {
+            match self.current_struct {
+                Some(name) => name.to_string(),
+                None => {
+                    let ty = SemErrType::InvalidThis;
+                    return Err(SemanticErr::new(line, ty));
+                }
+            }
+        } else {
+            let inst_ty = self.analyse_expr(inst)?;
+            let ValueType::Struct(name) = inst_ty else {
+                let ty = SemErrType::InvalidTypeFieldAccess(inst_ty);
+                return Err(SemanticErr::new(line, ty));
+            };
+            name
+        };
+        let Some(data) = self.structs.get(&name as &str) else {
+            let ty = SemErrType::UndefinedStruct(name);
+            return Err(SemanticErr::new(line, ty));
+        };
+        let index = match data
+            .fields
+            .iter()
+            .position(|(_, field_name)| *field_name == property)
+        {
+            Some(index) => index as u8,
+            None => {
+                let ty = SemErrType::InvalidPubField(name, property.to_string());
+                return Err(SemanticErr::new(line, ty));
+            }
+        };
+
+        let field_ty = data.fields[index as usize].clone().0;
+
+        let expr = if let Some(new_value) = new_value {
+            let new_value_ty = self.analyse_expr(new_value)?;
+            if new_value_ty != field_ty {
+                let err_ty = SemErrType::FieldTypeMismatch(field_ty, new_value_ty);
+                return Err(SemanticErr::new(line, err_ty));
+            }
+            ExprType::DotAssignResolved {
+                inst: inst.clone(),
+                new_value: new_value.clone(),
+                index,
+            }
+        } else {
+            ExprType::DotResolved {
+                inst: inst.clone(),
+                index,
+            }
+        };
+
+        Ok((field_ty, expr))
+    }
 
     fn get_called_func_data(
         &mut self,
