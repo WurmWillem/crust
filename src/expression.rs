@@ -33,6 +33,7 @@ pub enum ExprType<'a> {
         index: u8,
         args: Vec<Expr<'a>>,
     },
+    This,
     Dot {
         inst: Box<Expr<'a>>,
         property: &'a str,

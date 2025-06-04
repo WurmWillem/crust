@@ -400,6 +400,7 @@ impl<'a> Emitter<'a> {
                 property,
                 args,
             } => unreachable!(),
+            ExprType::This => todo!(),
         };
         Ok(())
     }

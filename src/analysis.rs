@@ -20,6 +20,7 @@ pub struct Analyser<'a> {
     structs: StructHash<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
+    current_struct: Option<&'a str>,
 }
 impl<'a> Analyser<'a> {
     fn new() -> Self {
@@ -29,6 +30,7 @@ impl<'a> Analyser<'a> {
             symbols: SemanticScope::new(),
             current_return_ty: ValueType::None,
             structs: HashMap::new(),
+            current_struct: None,
         }
     }
     pub fn analyse_stmts(
@@ -50,7 +52,7 @@ impl<'a> Analyser<'a> {
         Some((analyser.funcs, analyser.nat_funcs, analyser.structs))
     }
 
-    fn init_type_data(&mut self, stmts: &Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
+    fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
         self.nat_funcs = get_nat_func_hash();
 
         for stmt in stmts {
@@ -78,10 +80,12 @@ impl<'a> Analyser<'a> {
                 name,
                 fields,
                 methods,
-            } = &stmt.stmt
+            } = &mut stmt.stmt
             {
+                self.current_struct = Some(name);
                 let mut struct_data = StructData::new(fields.clone());
                 for method in methods {
+                    self.analyse_stmt(method)?;
                     if let StmtType::Func {
                         name,
                         parameters,
@@ -96,6 +100,8 @@ impl<'a> Analyser<'a> {
                             line: stmt.line,
                         };
                         struct_data.methods.push((name, func_data));
+                    } else {
+                        unreachable!()
                     }
                 }
 
@@ -103,6 +109,8 @@ impl<'a> Analyser<'a> {
                     let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
                     return Err(SemanticErr::new(line, err_ty));
                 }
+                dbg!(name);
+                self.current_struct = None;
             }
         }
         Ok(())
@@ -359,11 +367,17 @@ impl<'a> Analyser<'a> {
                 }
             }
             ExprType::Dot { inst, property } => {
-                let inst_ty = self.analyse_expr(inst)?;
-                let ValueType::Struct(name) = inst_ty else {
-                    let ty = SemErrType::InvalidPropertyAccess(inst_ty);
-                    return Err(SemanticErr::new(line, ty));
+                let name = if let ExprType::This = inst.expr {
+                    self.current_struct.unwrap().to_string()
+                } else {
+                    let inst_ty = self.analyse_expr(inst)?;
+                    let ValueType::Struct(name) = inst_ty else {
+                        let ty = SemErrType::InvalidPropertyAccess(inst_ty);
+                        return Err(SemanticErr::new(line, ty));
+                    };
+                    name
                 };
+                dbg!(&inst);
                 let Some(data) = self.structs.get(&name as &str) else {
                     let ty = SemErrType::UndefinedStruct(name);
                     return Err(SemanticErr::new(line, ty));
@@ -438,10 +452,10 @@ impl<'a> Analyser<'a> {
                 // func_data.parameters
                 let mut index = 0;
                 let mut return_ty = None;
-                for (method_name, data) in data.methods.iter(){
+                for (method_name, data) in data.methods.iter() {
                     if method_name == property {
                         return_ty = Some(data.return_ty.clone());
-                       break; 
+                        break;
                     }
                     index += 1;
                 }
@@ -457,6 +471,7 @@ impl<'a> Analyser<'a> {
                 };
                 return_ty.unwrap()
             }
+            ExprType::This => todo!(),
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
             ExprType::MethodCallResolved { inst, index, args } => unreachable!(),
             ExprType::DotAssignResolved {

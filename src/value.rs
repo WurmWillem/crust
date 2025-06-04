@@ -13,6 +13,7 @@ pub enum ValueType {
     Bool,
     Num,
     Str,
+    This,
     Arr(Box<ValueType>),
     Struct(String),
 }
@@ -27,6 +28,7 @@ impl fmt::Display for ValueType {
             ValueType::Num => write!(f, "Number"),
             ValueType::Str => write!(f, "String"),
             ValueType::Struct(s) => write!(f, "struct {}", s),
+            ValueType::This => todo!(),
         }
     }
 }

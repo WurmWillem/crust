@@ -485,6 +485,10 @@ impl<'a> Parser<'a> {
         Ok(block)
     }
 
+    fn this(&mut self) -> Result<Expr<'a>, ParseErr> {
+        Ok(Expr::new(ExprType::This, self.previous().line))
+    }
+
     fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         let name = self.previous().lexeme;
         let line = self.previous().line;
@@ -525,6 +529,7 @@ impl<'a> Parser<'a> {
             FnType::String => self.string(),
             FnType::Literal => self.literal(),
             FnType::Var => self.var(can_assign),
+            FnType::This => self.this(),
             _ => unreachable!(),
         }
     }
@@ -586,8 +591,12 @@ impl<'a> Parser<'a> {
             let ty = ExprType::Call { name, args };
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
-        } else if let ExprType::Dot{ inst, property } = name.expr {
-            let ty = ExprType::MethodCall { inst, property, args};
+        } else if let ExprType::Dot { inst, property } = name.expr {
+            let ty = ExprType::MethodCall {
+                inst,
+                property,
+                args,
+            };
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
         } else {
