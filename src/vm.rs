@@ -200,6 +200,15 @@ impl VM {
                     };
                     self.stack_push(inst.data.fields[index]);
                 }
+                OpCode::SetField => {
+                    let new_value = self.stack_pop();
+                    let index = self.read_byte(frame) as usize;
+                    let inst = self.stack[(*frame).slots - 1];
+                    let StackValue::Obj(Object::Instance(mut inst)) = inst else {
+                        unreachable!()
+                    };
+                    inst.data.fields[index] = new_value;
+                }
 
                 OpCode::Return => {
                     let result = self.stack_pop();

@@ -5,7 +5,23 @@ struct Vec2 {
     fn product(): int {
         return self.x * self.y;
     }
+    fn increment(): int {
+        self.x = self.x + 1;
+    }
 }
 
 Vec2 vec = Vec2(3, 2);
-pr vec.product(vec.x, vec.y);
+//pr vec.product(vec.x, vec.y);
+pr vec.x;
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+vec.increment();
+pr vec.x;

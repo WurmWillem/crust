@@ -331,10 +331,17 @@ impl<'a> Emitter<'a> {
                 index,
                 new_value,
             } => {
-                self.emit_expr(inst)?;
-                self.emit_expr(new_value)?;
-                self.comps
-                    .emit_bytes(OpCode::SetProperty as u8, *index, line);
+                if let ExprType::This = inst.expr {
+                    self.emit_expr(new_value)?;
+                    self.comps
+                        .emit_bytes(OpCode::SetField as u8, *index, line);
+                } else {
+                    
+                    self.emit_expr(inst)?;
+                    self.emit_expr(new_value)?;
+                    self.comps
+                        .emit_bytes(OpCode::SetProperty as u8, *index, line);
+                }
             }
             ExprType::MethodCallResolved { inst, index, args } => {
                 self.emit_expr(inst)?;

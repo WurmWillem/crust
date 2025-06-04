@@ -409,10 +409,15 @@ impl<'a> Analyser<'a> {
                 property,
                 new_value,
             } => {
-                let inst_ty = self.analyse_expr(inst)?;
                 let new_value_ty = self.analyse_expr(new_value)?;
-                let ValueType::Struct(name) = inst_ty else {
-                    unreachable!()
+                let name = if let ExprType::This = inst.expr {
+                    self.current_struct.unwrap().to_string()
+                } else {
+                    let inst_ty = self.analyse_expr(inst)?;
+                    let ValueType::Struct(name) = inst_ty else {
+                        unreachable!()
+                    };
+                    name
                 };
                 let Some(data) = self.structs.get(&name as &str) else {
                     unreachable!()
@@ -470,7 +475,7 @@ impl<'a> Analyser<'a> {
                 };
                 return_ty.unwrap()
             }
-            ExprType::This => todo!(),
+            ExprType::This => unreachable!(),
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
             ExprType::MethodCallResolved {
                 inst: _,
