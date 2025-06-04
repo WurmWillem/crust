@@ -24,6 +24,7 @@ pub enum OpCode {
     AllocInstance,
     GetProperty,
     SetProperty,
+    GetField,
 
     // literals
     True,

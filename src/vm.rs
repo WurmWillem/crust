@@ -191,6 +191,15 @@ impl VM {
                     };
                     inst.data.fields[index] = new_value;
                 }
+                OpCode::GetField => {
+                    let index = self.read_byte(frame) as usize;
+                    let inst = self.stack[(*frame).slots - 1];
+                    // dbg!(inst);
+                    let StackValue::Obj(Object::Instance(inst)) = inst else {
+                        unreachable!()
+                    };
+                    self.stack_push(inst.data.fields[index]);
+                }
 
                 OpCode::Return => {
                     let result = self.stack_pop();

@@ -317,9 +317,14 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(OpCode::AssignIndex as u8, line);
             }
             ExprType::DotResolved { inst, index } => {
-                self.emit_expr(inst)?;
-                self.comps
-                    .emit_bytes(OpCode::GetProperty as u8, *index, line);
+                if let ExprType::This = inst.expr {
+                    self.comps
+                        .emit_bytes(OpCode::GetField as u8, *index, line);
+                } else {
+                    self.emit_expr(inst)?;
+                    self.comps
+                        .emit_bytes(OpCode::GetProperty as u8, *index, line);
+                }
             }
             ExprType::DotAssignResolved {
                 inst,

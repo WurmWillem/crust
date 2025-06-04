@@ -449,10 +449,6 @@ impl<'a> Analyser<'a> {
                 let Some(data) = self.structs.get(&name as &str) else {
                     unreachable!()
                 };
-                // let Some(func_data) = data.methods.get(property) else {
-                //     unreachable!()
-                // };
-                // func_data.parameters
                 let mut index = 0;
                 let mut return_ty = None;
                 for (method_name, data) in data.methods.iter() {
@@ -476,11 +472,15 @@ impl<'a> Analyser<'a> {
             }
             ExprType::This => todo!(),
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
-            ExprType::MethodCallResolved { inst, index, args } => unreachable!(),
+            ExprType::MethodCallResolved {
+                inst: _,
+                index: _,
+                args: _,
+            } => unreachable!(),
             ExprType::DotAssignResolved {
-                inst,
-                index,
-                new_value,
+                inst: _,
+                index: _,
+                new_value: _,
             } => unreachable!(),
         };
         Ok(result)
