@@ -1,16 +1,9 @@
-struct Vec2 {
-    int x;
-    int y;
-    int[] z;
+int i = 0;
+int result = 0;
 
-    fn product(): int {
-        return self.x * self.y;
-    }
-    fn z(): int {
-        return 0;
-    }
+while (i < 100000000) {
+    i = i + 1;
 }
+pr result;
+pr i;
 
-Vec2 vec = Vec2(3, 2, [1012, 2]);
-pr vec.z();
-//pr vec.z[0];

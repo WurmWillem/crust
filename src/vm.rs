@@ -57,6 +57,7 @@ impl VM {
 
     unsafe fn run(&mut self) -> InterpretResult {
         let mut frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
+        let mut ip = (*frame).ip;
 
         loop {
             if DEBUG_TRACE_EXECUTION {
@@ -71,24 +72,24 @@ impl VM {
                 }};
             }
 
-            let op_code = std::mem::transmute::<u8, OpCode>(self.read_byte(frame));
+            let op_code = std::mem::transmute::<u8, OpCode>(self.rb(&mut ip));
             match op_code {
                 OpCode::Pop => {
                     self.pop_no_return();
                 }
                 OpCode::Constant => {
-                    let index = self.read_byte(frame) as usize;
+                    let index = self.rb(&mut ip) as usize;
                     let constant = (*frame).func.data.chunk.constants[index];
                     self.stack_push(constant);
                 }
 
                 OpCode::GetLocal => {
-                    let slot = self.read_byte(frame) as usize;
+                    let slot = self.rb(&mut ip) as usize;
                     let value = self.stack[(*frame).slots + slot];
                     self.stack_push(value);
                 }
                 OpCode::SetLocal => {
-                    let slot = self.read_byte(frame) as usize;
+                    let slot = self.rb(&mut ip) as usize;
                     self.stack[(*frame).slots + slot] = self.stack_peek();
                 }
 
@@ -135,11 +136,13 @@ impl VM {
                 }
 
                 OpCode::FuncCall => {
+                    (*frame).ip = ip;
                     self.call(frame);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
+                    ip = (*frame).ip;
                 }
                 OpCode::MethodCall => {
-                    let index = self.read_byte(frame) as usize;
+                    let index = self.rb(&mut ip) as usize;
                     let inst = self.stack_pop();
                     let StackValue::Obj(Object::Instance(inst)) = inst else {
                         unreachable!()
@@ -150,8 +153,8 @@ impl VM {
                 }
 
                 OpCode::AllocInstance => {
-                    let methods_len = self.read_byte(frame) as usize;
-                    let fields_len = self.read_byte(frame) as usize;
+                    let methods_len = self.rb(&mut ip) as usize;
+                    let fields_len = self.rb(&mut ip) as usize;
 
                     let mut fields = Vec::new();
                     for _ in 0..fields_len {
@@ -173,7 +176,7 @@ impl VM {
                     self.stack_push(obj);
                 }
                 OpCode::GetPubField => {
-                    let index = self.read_byte(frame) as usize;
+                    let index = self.rb(&mut ip) as usize;
                     let inst = self.stack_pop();
                     let StackValue::Obj(Object::Instance(inst)) = inst else {
                         unreachable!()
@@ -182,7 +185,7 @@ impl VM {
                 }
                 OpCode::SetPubField => {
                     let new_value = self.stack_pop();
-                    let index = self.read_byte(frame) as usize;
+                    let index = self.rb(&mut ip) as usize;
                     let inst = self.stack_peek();
                     let StackValue::Obj(Object::Instance(mut inst)) = inst else {
                         unreachable!()
@@ -190,7 +193,7 @@ impl VM {
                     inst.data.fields[index] = new_value;
                 }
                 OpCode::GetSelfField => {
-                    let index = self.read_byte(frame) as usize;
+                    let index = self.rb(&mut ip) as usize;
                     let inst = self.stack[(*frame).slots - 1];
                     // dbg!(inst);
                     let StackValue::Obj(Object::Instance(inst)) = inst else {
@@ -200,7 +203,7 @@ impl VM {
                 }
                 OpCode::GetSetField => {
                     let new_value = self.stack_pop();
-                    let index = self.read_byte(frame) as usize;
+                    let index = self.rb(&mut ip) as usize;
                     let inst = self.stack[(*frame).slots - 1];
                     let StackValue::Obj(Object::Instance(mut inst)) = inst else {
                         unreachable!()
@@ -220,21 +223,22 @@ impl VM {
                     self.stack_top = (*frame).slots;
                     self.stack_push(result);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
+                    ip = (*frame).ip;
                 }
 
                 OpCode::Jump => {
-                    let offset = self.read_short(frame) as usize;
-                    (*frame).ip = (*frame).ip.add(offset);
+                    let offset = self.rs(&mut ip) as usize;
+                    ip = ip.add(offset);
                 }
                 OpCode::JumpIfFalse => {
-                    let offset = self.read_short(frame) as usize;
+                    let offset = self.rs(&mut ip) as usize;
                     if let StackValue::Bool(false) = self.stack_peek() {
-                        (*frame).ip = (*frame).ip.add(offset);
+                        ip = ip.add(offset);
                     }
                 }
                 OpCode::Loop => {
-                    let offset = self.read_short(frame) as usize;
-                    (*frame).ip = (*frame).ip.sub(offset);
+                    let offset = self.rs(&mut ip) as usize;
+                    ip = ip.sub(offset);
                 }
 
                 OpCode::True => self.stack_push(StackValue::Bool(true)),
@@ -368,6 +372,25 @@ impl VM {
         let byte = *(*frame).ip;
         (*frame).ip = (*frame).ip.add(1);
         byte
+    }
+
+    #[inline(always)]
+    unsafe fn rb(&mut self, ip: &mut *const u8) -> u8 {
+        unsafe {
+            let byte = **ip;
+            *ip = ip.add(1);
+            byte
+        }
+    }
+
+    #[inline(always)]
+    unsafe fn rs(&mut self, ip: &mut *const u8) -> u16 {
+        *ip = ip.add(2);
+
+        let high = *ip.offset(-2);
+        let low = *ip.offset(-1);
+
+        ((high as u16) << 8) | (low as u16)
     }
 
     #[inline(always)]
