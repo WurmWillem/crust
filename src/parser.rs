@@ -175,13 +175,17 @@ impl<'a> Parser<'a> {
 
         let mut fields = Vec::new();
         while !self.check(TokenType::RightBrace) && !self.check(TokenType::Fn) {
-            let field_ty = match self.advance().as_value_type() {
+            let mut field_ty = match self.advance().as_value_type() {
                 Some(ty) => ty,
                 None => {
                     let msg = "Expected type for field declaration in struct body.";
                     return Err(ParseErr::new(line, msg));
                 }
             };
+            while self.matches(TokenType::LeftBracket) {
+                self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
+                field_ty = ValueType::Arr(Box::new(field_ty));
+            }
 
             self.consume(TokenType::Identifier, "Expected variable name after type.")?;
             let field_name = self.previous().lexeme;
