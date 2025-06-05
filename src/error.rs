@@ -67,6 +67,7 @@ pub enum SemErrType {
     UndefinedStruct(String),
     IncorrectArity(String, u8, u8),
     IncorrectReturnTy(ValueType, ValueType),
+    NoReturnTy(String, ValueType),
     UndefinedVar(String),
     AlreadyDefinedVar(String),
     AlreadyDefinedFunc(String),
@@ -119,6 +120,12 @@ impl SemanticErr {
                 format!(
                     "Function expected return type {}, but found type {}.",
                     expected, found
+                )
+            }
+            SemErrType::NoReturnTy(name, return_ty) => {
+                format!(
+                    "Function '{}' has return type '{}', but no return statement was found.",
+                    name, return_ty
                 )
             }
             SemErrType::IncorrectArity(name, expected, found) => {

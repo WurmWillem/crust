@@ -20,6 +20,7 @@ pub struct Analyser<'a> {
     structs: StructHash<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
+    return_stmt_found: bool,
     current_struct: Option<&'a str>,
 }
 impl<'a> Analyser<'a> {
@@ -31,6 +32,7 @@ impl<'a> Analyser<'a> {
             current_return_ty: ValueType::None,
             structs: HashMap::new(),
             current_struct: None,
+            return_stmt_found: false,
         }
     }
     pub fn analyse_stmts(
@@ -136,6 +138,7 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Return(expr) => {
+                self.return_stmt_found = true;
                 let return_ty = self.analyse_expr(expr)?;
 
                 if return_ty != self.current_return_ty && return_ty != ValueType::Null {
@@ -178,7 +181,7 @@ impl<'a> Analyser<'a> {
                 self.symbols.end_scope();
             }
             StmtType::Func {
-                name: _,
+                name,
                 parameters,
                 body,
                 return_ty,
@@ -190,8 +193,14 @@ impl<'a> Analyser<'a> {
                 for (ty, name) in parameters {
                     self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
                 }
+
+                self.return_stmt_found = false;
                 for stmt in body {
                     self.analyse_stmt(stmt)?;
+                }
+                if *return_ty != ValueType::Null && !self.return_stmt_found {
+                    let ty = SemErrType::NoReturnTy(name.to_string(), return_ty.clone());
+                    return Err(SemanticErr::new(line, ty));
                 }
                 self.symbols.end_scope();
                 self.current_return_ty = prev_return_ty;
