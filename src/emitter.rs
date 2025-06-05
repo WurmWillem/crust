@@ -275,7 +275,7 @@ impl<'a> Emitter<'a> {
                         self.comps.emit_constant(*value, line)?;
                     }
                     for var in args.iter().rev() {
-                        self.emit_expr(&var)?;
+                        self.emit_expr(var)?;
                     }
 
                     self.comps
@@ -286,7 +286,7 @@ impl<'a> Emitter<'a> {
                     self.comps.emit_constant(fn_ptr, line)?;
 
                     for var in args.iter().rev() {
-                        self.emit_expr(&var)?;
+                        self.emit_expr(var)?;
                     }
 
                     self.comps
@@ -349,7 +349,7 @@ impl<'a> Emitter<'a> {
                     .emit_bytes(OpCode::MethodCall as u8, *index, line);
 
                 for var in args {
-                    self.emit_expr(&var)?;
+                    self.emit_expr(var)?;
                 }
 
                 self.comps

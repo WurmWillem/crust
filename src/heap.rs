@@ -98,9 +98,9 @@ impl Heap {
 
     pub fn collect_garbage(&mut self, stack: &mut [StackValue; STACK_SIZE], stack_top: usize) {
         let mut gray_objects = vec![];
-        for i in 0..stack_top {
-            if let StackValue::Obj(obj) = stack[i] {
-                self.mark_object(obj, &mut gray_objects);
+        for value in stack.iter().take(stack_top) {
+            if let StackValue::Obj(obj) = value {
+                self.mark_object(*obj, &mut gray_objects);
             }
         }
 
@@ -147,7 +147,7 @@ impl Heap {
 
         let object = map(gc);
 
-        self.head = Some(object.clone());
+        self.head = Some(object);
 
         (object, gc)
     }
@@ -172,7 +172,7 @@ impl Heap {
 
         let object = map(gc);
 
-        self.permanent_head = Some(object.clone());
+        self.permanent_head = Some(object);
 
         (object, gc)
     }

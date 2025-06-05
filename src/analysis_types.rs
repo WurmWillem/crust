@@ -82,15 +82,13 @@ impl<'a> StructData<'a> {
         property: &str,
         line: u32,
     ) -> Result<(u8, ValueType), SemanticErr> {
-        let mut index = 0;
-        for (method_name, data) in self.methods.iter() {
+        for (index, (method_name, data)) in self.methods.iter().enumerate() {
             if *method_name == property {
-                return Ok((index, data.return_ty.clone()));
+                return Ok((index as u8, data.return_ty.clone()));
             }
-            index += 1;
         }
         let ty = SemErrType::InvalidMethod(name, property.to_string());
-        return Err(SemanticErr::new(line, ty));
+        Err(SemanticErr::new(line, ty))
     }
 
     pub fn get_field_index(
