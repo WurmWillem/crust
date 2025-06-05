@@ -1,9 +1,10 @@
-int i = 0;
-int result = 0;
+int[] values = [1, 2];
+pr values;
+push(values, 3);
+pr values;
 
-while (i < 100000000) {
-    i = i + 1;
+fn p(int a, int b) {
+    pr a;
+    pr b;
 }
-pr result;
-pr i;
-
+p(3, 4);

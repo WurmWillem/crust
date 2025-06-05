@@ -109,3 +109,13 @@ pub fn print_heap(_args: &[StackValue], heap: &mut Heap) -> StackValue {
     heap.print();
     StackValue::Null
 }
+
+pub fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let arr = args[0];
+    if let StackValue::Obj(Object::Arr(mut arr)) = arr {
+        arr.data.values.push(args[1]);
+    } else {
+        unreachable!()
+    }
+    StackValue::Null
+}

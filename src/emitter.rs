@@ -285,7 +285,7 @@ impl<'a> Emitter<'a> {
                     let fn_ptr = *self.funcs.get(name).unwrap();
                     self.comps.emit_constant(fn_ptr, line)?;
 
-                    for var in args.iter().rev() {
+                    for var in args {
                         self.emit_expr(var)?;
                     }
 
