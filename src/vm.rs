@@ -136,8 +136,9 @@ impl VM {
                 }
 
                 OpCode::FuncCall => {
+                    let arg_count = self.rb(&mut ip) as usize;
                     (*frame).ip = ip;
-                    self.call(frame);
+                    self.call(arg_count);
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                     ip = (*frame).ip;
                 }
@@ -303,8 +304,7 @@ impl VM {
         }
     }
 
-    unsafe fn call(&mut self, frame: *mut CallFrame) {
-        let arg_count = self.read_byte(frame) as usize;
+    unsafe fn call(&mut self, arg_count: usize) {
         let slots = self.stack_top - arg_count;
         // dbg!(arg_count);
         let value = self.stack[slots];
