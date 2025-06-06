@@ -78,16 +78,17 @@ impl<'a> StructData<'a> {
 
     pub fn get_method_index_and_return_ty(
         &self,
-        name: String,
+        name: &str,
         property: &str,
         line: u32,
-    ) -> Result<(u8, ValueType), SemanticErr> {
+    ) -> Result<(u8, ValueType, Vec<ValueType>), SemanticErr> {
         for (index, (method_name, data)) in self.methods.iter().enumerate() {
             if *method_name == property {
-                return Ok((index as u8, data.return_ty.clone()));
+                let params = data.parameters.iter().map(|p| p.0.clone()).collect();
+                return Ok((index as u8, data.return_ty.clone(), params));
             }
         }
-        let ty = SemErrType::InvalidMethod(name, property.to_string());
+        let ty = SemErrType::InvalidMethod(name.to_string(), property.to_string());
         Err(SemanticErr::new(line, ty))
     }
 

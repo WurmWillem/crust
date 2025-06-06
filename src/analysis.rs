@@ -229,30 +229,7 @@ impl<'a> Analyser<'a> {
             },
             ExprType::Call { name, args } => {
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
-                if args.len() != parameters.len() {
-                    let err_ty = SemErrType::IncorrectArity(
-                        name.to_string(),
-                        parameters.len() as u8,
-                        args.len() as u8,
-                    );
-                    return Err(SemanticErr::new(line, err_ty));
-                }
-                for (i, arg) in args.iter_mut().enumerate() {
-                    let arg_ty = self.analyse_expr(arg)?;
-
-                    let param_ty = &parameters[i];
-
-                    let is_exact_match = arg_ty == *param_ty;
-                    let is_any = *param_ty == ValueType::Any;
-                    let is_array_match = matches!(param_ty, ValueType::Arr(inner) if **inner == ValueType::Any)
-                        && matches!(arg_ty, ValueType::Arr(_));
-
-                    if !is_exact_match && !is_any && !is_array_match {
-                        let err_ty = SemErrType::ParamTypeMismatch(param_ty.clone(), arg_ty);
-                        return Err(SemanticErr::new(line, err_ty));
-                    }
-                }
-
+                self.check_if_params_and_args_correspond(args, parameters, name.to_string(), line)?;
                 return_ty
             }
             ExprType::Assign {
@@ -402,10 +379,12 @@ impl<'a> Analyser<'a> {
                     let ty = SemErrType::UndefinedStruct(name);
                     return Err(SemanticErr::new(line, ty));
                 };
+                let (index, return_ty, parameters) =
+                    data.get_method_index_and_return_ty(&name, property, line)?;
 
-                let (index, return_ty) =
-                    data.get_method_index_and_return_ty(name, property, line)?;
+                self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
+                // TODO: add check for parameters
                 for arg in args.iter_mut() {
                     self.analyse_expr(arg)?;
                 }
@@ -431,6 +410,38 @@ impl<'a> Analyser<'a> {
             } => unreachable!(),
         };
         Ok(result)
+    }
+
+    fn check_if_params_and_args_correspond(
+        &mut self,
+        args: &mut Vec<Expr<'a>>,
+        parameters: Vec<ValueType>,
+        name: String,
+        line: u32,
+    ) -> Result<(), SemanticErr> {
+        if args.len() != parameters.len() {
+            let err_ty = SemErrType::IncorrectArity(
+                name.to_string(),
+                parameters.len() as u8,
+                args.len() as u8,
+            );
+            return Err(SemanticErr::new(line, err_ty));
+        }
+        Ok(for (i, arg) in args.iter_mut().enumerate() {
+            let arg_ty = self.analyse_expr(arg)?;
+
+            let param_ty = &parameters[i];
+
+            let is_exact_match = arg_ty == *param_ty;
+            let is_any = *param_ty == ValueType::Any;
+            let is_array_match = matches!(param_ty, ValueType::Arr(inner) if **inner == ValueType::Any)
+                && matches!(arg_ty, ValueType::Arr(_));
+
+            if !is_exact_match && !is_any && !is_array_match {
+                let err_ty = SemErrType::ParamTypeMismatch(param_ty.clone(), arg_ty);
+                return Err(SemanticErr::new(line, err_ty));
+            }
+        })
     }
 
     fn analyse_dot(

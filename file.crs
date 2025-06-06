@@ -1,10 +1,17 @@
-int[] values = [1, 2];
-pr values;
-push(values, 3);
-pr values;
+struct Vec2 {
+    int x;
+    int y;
+    int[] z;
 
-fn p(int a, int b) {
-    pr a;
-    pr b;
+    fn product(): int {
+        return self.x * self.y;
+    }
+
+    fn z(int a, int b) {
+        pr a;
+        pr b;
+    }
 }
-p(3, 4);
+
+Vec2 vec = Vec2(3, 2, [1012, 2]);
+vec.z(false, true);
