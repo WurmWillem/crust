@@ -10,9 +10,10 @@ struct Vec2 {
     }
 }
 
-Vec2 vec = Vec2(3, 2);
-pr vec.product();
+fn main() {
+    Vec2 vec = Vec2(3, 2);
+    pr vec.product();
 
-vec.increment_x();
-pr vec.x;
-
+    vec.increment_x();
+    pr vec.x;
+}

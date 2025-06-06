@@ -2,12 +2,11 @@ use crate::{error::EmitErr, object::ObjFunc, op_code::OpCode, value::StackValue}
 
 #[derive(Debug)]
 pub struct FuncCompilerStack<'a> {
-    pub comps: Vec<FuncCompiler<'a>>,
-    pub current: usize,
+    comps: Vec<FuncCompiler<'a>>,
+    current: usize,
 }
 impl<'a> FuncCompilerStack<'a> {
     pub fn new() -> Self {
-        // let root = FuncCompiler::new("".to_string());
         Self {
             comps: vec![],
             current: 0,

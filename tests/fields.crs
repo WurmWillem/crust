@@ -3,11 +3,12 @@ struct Vec2 {
     int y;
 }
 
-Vec2 vec = Vec2(3, 2);
-print(vec.x);
-print(" ");
-println(vec.y);
+fn main() {
+    Vec2 vec = Vec2(3, 2);
+    print(vec.x);
+    print(" ");
+    println(vec.y);
 
-vec.x = 1;
-println(vec.x);
-
+    vec.x = 1;
+    println(vec.x);
+}

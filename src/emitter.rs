@@ -35,11 +35,6 @@ impl<'a> Emitter<'a> {
         struct_data: StructHash,
     ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        // if let Err(err) = comp.init_funcs(func_data, nat_func_data, struct_data) {
-        //     print_error(err.line, &err.msg);
-        //
-        //     return None;
-        // }
         let func = match comp.init_funcs(func_data, nat_func_data, struct_data) {
             Ok(func) => func,
             Err(err) => {
@@ -75,18 +70,13 @@ impl<'a> Emitter<'a> {
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
 
-        let mut func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
-        for (index, (name, _)) in func_data.iter().enumerate() {
+        let func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
+        for (name, _) in func_data.iter() {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
-            // TODO: check for duplicates
             self.funcs.insert(name, StackValue::Obj(func_obj));
             func_objs.push(func_obj);
-
-            // if *name == "main" {
-            //     main_index = Some(index);
-            // }
         }
 
         // insert dummy function objects for recursion
@@ -102,32 +92,6 @@ impl<'a> Emitter<'a> {
             }
             self.structs.insert(struct_name, methods);
         }
-
-        // let main_index = main_index.unwrap();
-        // {
-        //     let (name, data) = func_data.remove(main_index);
-        //     let line = data.line;
-        //
-        //     self.comps.push(name.to_string());
-        //     self.comps.begin_scope();
-        //     for (_, name) in data.parameters {
-        //         self.comps.add_local(name, line)?;
-        //     }
-        //
-        //     for stmt in data.body {
-        //         self.emit_stmt(stmt)?;
-        //     }
-        //
-        //     self.comps.emit_return(line);
-        //
-        //     let compiled_func = self.comps.end_compiler(line);
-        //     if let Object::Func(ref mut func) = func_objs[main_index].borrow_mut() {
-        //         func.data = compiled_func;
-        //     } else {
-        //         unreachable!()
-        //     }
-        // }
-        // func_data.iter().filter_map(b)
 
         let mut main_func_obj = None;
         for (i, (name, data)) in func_data.into_iter().enumerate() {
@@ -147,9 +111,10 @@ impl<'a> Emitter<'a> {
 
             let compiled_func = self.comps.end_compiler(line);
             if let Object::Func(ref mut func) = func_objs[i].borrow_mut() {
-                // func.data = compiled_func;
                 if name == "main" {
                     main_func_obj = Some(compiled_func);
+                } else {
+                    func.data = compiled_func;
                 }
             } else {
                 unreachable!()

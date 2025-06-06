@@ -3,5 +3,7 @@ fn fib(int n): int {
     return fib(n - 1) + fib(n - 2);
 }
 
-int result = fib(20);
-println(result);
+fn main() {
+    int result = fib(20);
+    println(result);
+}
