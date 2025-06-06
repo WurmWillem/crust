@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis_types::{FuncHash, NatFuncHash, StructHash},
+    analysis_types::{FuncData, FuncHash, NatFuncHash, StructHash},
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
@@ -68,16 +68,48 @@ impl<'a> Emitter<'a> {
 
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
-        for name in func_data.keys() {
+        let mut main_index = None;
+
+        let mut func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
+        for (index, (name, _)) in func_data.iter().enumerate() {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
             // TODO: check for duplicates
             self.funcs.insert(name, StackValue::Obj(func_obj));
             func_objs.push(func_obj);
-        }
 
-        for (i, (name, data)) in func_data.drain().enumerate() {
+            if *name == "main" {
+                main_index = Some(index);
+            }
+        }
+        let main_index = main_index.unwrap();
+        {
+            let (name, data) = func_data.remove(main_index);
+            let line = data.line;
+
+            self.comps.push(name.to_string());
+            self.comps.begin_scope();
+            for (_, name) in data.parameters {
+                self.comps.add_local(name, line)?;
+            }
+
+            for stmt in data.body {
+                self.emit_stmt(stmt)?;
+            }
+
+            self.comps.emit_return(line);
+
+            let compiled_func = self.comps.end_compiler(line);
+            if let Object::Func(ref mut func) = func_objs[main_index].borrow_mut() {
+                func.data = compiled_func;
+            } else {
+                unreachable!()
+            }
+        }
+        // func_data.iter().filter_map(b)
+
+        for (i, (name, data)) in func_data.into_iter().enumerate() {
             let line = data.line;
 
             self.comps.push(name.to_string());

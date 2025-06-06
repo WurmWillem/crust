@@ -14,4 +14,11 @@ struct Vec2 {
 }
 
 Vec2 vec = Vec2(3, 2, [1012, 2]);
-vec.z(false, true);
+vec.z(0, 0);
+fn bruh() {
+
+}
+
+fn main() {
+
+}
