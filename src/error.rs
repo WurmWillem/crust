@@ -57,6 +57,7 @@ pub enum SemErrType {
     InvalidPrefix,
     InvalidInfix,
     InvalidThis,
+    NoMainFunc,
     InvalidTypeMethodAccess(ValueType),
     InvalidTypeFieldAccess(ValueType),
     InvalidPubField(String, String),
@@ -84,6 +85,7 @@ impl SemanticErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
+            SemErrType::NoMainFunc => "You have to define a function with the name 'main' as entry point for the program.".to_string(),
             SemErrType::InvalidThis => {
                 "'self' can only be used inside methods of structs.".to_string()
             }

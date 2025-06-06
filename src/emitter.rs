@@ -50,7 +50,6 @@ impl<'a> Emitter<'a> {
             }
         }
 
-        // let func = comp.comps.end_compiler(69);
         Some((func, comp.heap))
     }
 
@@ -69,7 +68,6 @@ impl<'a> Emitter<'a> {
 
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
-
         let func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
         for (name, _) in func_data.iter() {
             let dummy = ObjFunc::new(name.to_string());
@@ -79,7 +77,6 @@ impl<'a> Emitter<'a> {
             func_objs.push(func_obj);
         }
 
-        // insert dummy function objects for recursion
         let mut method_objs = Vec::new();
         for (struct_name, data) in &struct_data {
             let mut methods = vec![];
@@ -121,8 +118,8 @@ impl<'a> Emitter<'a> {
             }
         }
 
-        for (_, mut data) in struct_data {
-            for (i, (name, data)) in data.methods.drain(0..data.methods.len()).enumerate() {
+        for (_, data) in struct_data {
+            for (i, (name, data)) in data.methods.into_iter().enumerate() {
                 let line = data.line;
 
                 self.comps.push(name.to_string());

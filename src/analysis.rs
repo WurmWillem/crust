@@ -117,6 +117,11 @@ impl<'a> Analyser<'a> {
                 self.current_struct = None;
             }
         }
+
+        if self.funcs.get("main").is_none() {
+            let err_ty = SemErrType::NoMainFunc;
+            return Err(SemanticErr::new(0, err_ty));
+        }
         Ok(())
     }
 
@@ -490,7 +495,7 @@ impl<'a> Analyser<'a> {
             );
             return Err(SemanticErr::new(line, err_ty));
         }
-    
+
         for (i, arg) in args.iter_mut().enumerate() {
             let arg_ty = self.analyse_expr(arg)?;
 
