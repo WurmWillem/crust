@@ -1,16 +1,4 @@
-struct Vec2 {
-    int x;
-    int y;
-    int[] z;
-
-    fn product(): int {
-        return self.x * self.y;
-    }
-
-    fn z(int a, int b) {
-        pr a;
-        pr b;
-    }
+fn main() {
+    int x = 3;
+    pr x;
 }
-
-pr 3;

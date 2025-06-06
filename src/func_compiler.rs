@@ -2,14 +2,14 @@ use crate::{error::EmitErr, object::ObjFunc, op_code::OpCode, value::StackValue}
 
 #[derive(Debug)]
 pub struct FuncCompilerStack<'a> {
-    comps: Vec<FuncCompiler<'a>>,
-    current: usize,
+    pub comps: Vec<FuncCompiler<'a>>,
+    pub current: usize,
 }
 impl<'a> FuncCompilerStack<'a> {
     pub fn new() -> Self {
-        let root = FuncCompiler::new("".to_string());
+        // let root = FuncCompiler::new("".to_string());
         Self {
-            comps: vec![root],
+            comps: vec![],
             current: 0,
         }
     }
@@ -22,6 +22,7 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].scope_depth -= 1;
 
         while self.should_remove_local() {
+            // TODO: see if this is needed
             self.emit_byte(OpCode::Pop as u8, 69);
             self.comps[self.current].local_count -= 1;
         }

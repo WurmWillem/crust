@@ -62,7 +62,7 @@ impl<'a> Analyser<'a> {
             if let StmtType::Func {
                 name,
                 parameters,
-                body,
+                body: _,
                 return_ty,
             } = &stmt.stmt
             {

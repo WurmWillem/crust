@@ -35,11 +35,18 @@ impl<'a> Emitter<'a> {
         struct_data: StructHash,
     ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        if let Err(err) = comp.init_funcs(func_data, nat_func_data, struct_data) {
-            print_error(err.line, &err.msg);
-
-            return None;
-        }
+        // if let Err(err) = comp.init_funcs(func_data, nat_func_data, struct_data) {
+        //     print_error(err.line, &err.msg);
+        //
+        //     return None;
+        // }
+        let func = match comp.init_funcs(func_data, nat_func_data, struct_data) {
+            Ok(func) => func,
+            Err(err) => {
+                print_error(err.line, &err.msg);
+                return None;
+            }
+        };
 
         for stmt in stmts {
             if let Err(err) = comp.emit_stmt(stmt) {
@@ -48,7 +55,7 @@ impl<'a> Emitter<'a> {
             }
         }
 
-        let func = comp.comps.end_compiler(69);
+        // let func = comp.comps.end_compiler(69);
         Some((func, comp.heap))
     }
 
@@ -57,7 +64,7 @@ impl<'a> Emitter<'a> {
         mut func_data: FuncHash<'a>,
         mut nat_func_data: NatFuncHash<'a>,
         struct_data: StructHash<'a>,
-    ) -> Result<(), EmitErr> {
+    ) -> Result<ObjFunc, EmitErr> {
         for (name, data) in nat_func_data.drain() {
             let func = ObjNative::new(name.to_string(), data.func);
             let (func, _) = self.heap.alloc_permanent(func, Object::Native);
@@ -67,7 +74,6 @@ impl<'a> Emitter<'a> {
 
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
-        let mut main_index = None;
 
         let mut func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
         for (index, (name, _)) in func_data.iter().enumerate() {
@@ -78,9 +84,9 @@ impl<'a> Emitter<'a> {
             self.funcs.insert(name, StackValue::Obj(func_obj));
             func_objs.push(func_obj);
 
-            if *name == "main" {
-                main_index = Some(index);
-            }
+            // if *name == "main" {
+            //     main_index = Some(index);
+            // }
         }
 
         // insert dummy function objects for recursion
@@ -123,6 +129,7 @@ impl<'a> Emitter<'a> {
         // }
         // func_data.iter().filter_map(b)
 
+        let mut main_func_obj = None;
         for (i, (name, data)) in func_data.into_iter().enumerate() {
             let line = data.line;
 
@@ -140,7 +147,10 @@ impl<'a> Emitter<'a> {
 
             let compiled_func = self.comps.end_compiler(line);
             if let Object::Func(ref mut func) = func_objs[i].borrow_mut() {
-                func.data = compiled_func;
+                // func.data = compiled_func;
+                if name == "main" {
+                    main_func_obj = Some(compiled_func);
+                }
             } else {
                 unreachable!()
             }
@@ -170,7 +180,7 @@ impl<'a> Emitter<'a> {
                 }
             }
         }
-        Ok(())
+        Ok(main_func_obj.unwrap())
     }
 
     fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), EmitErr> {
