@@ -44,7 +44,6 @@ impl<'a> Emitter<'a> {
         for stmt in stmts {
             if let Err(err) = comp.emit_stmt(stmt) {
                 print_error(err.line, &err.msg);
-
                 return None;
             }
         }
@@ -83,6 +82,21 @@ impl<'a> Emitter<'a> {
                 main_index = Some(index);
             }
         }
+
+        // insert dummy function objects for recursion
+        let mut method_objs = Vec::new();
+        for (struct_name, data) in &struct_data {
+            let mut methods = vec![];
+            for (name, _) in &data.methods {
+                let dummy = ObjFunc::new(name.to_string());
+                let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
+
+                methods.push((*name, StackValue::Obj(func_obj)));
+                method_objs.push(func_obj);
+            }
+            self.structs.insert(struct_name, methods);
+        }
+
         let main_index = main_index.unwrap();
         {
             let (name, data) = func_data.remove(main_index);
@@ -130,20 +144,6 @@ impl<'a> Emitter<'a> {
             } else {
                 unreachable!()
             }
-        }
-
-        // insert dummy function objects for recursion
-        let mut method_objs = Vec::new();
-        for (struct_name, data) in &struct_data {
-            let mut methods = vec![];
-            for (name, _) in &data.methods {
-                let dummy = ObjFunc::new(name.to_string());
-                let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
-
-                methods.push((*name, StackValue::Obj(func_obj)));
-                method_objs.push(func_obj);
-            }
-            self.structs.insert(struct_name, methods);
         }
 
         for (_, mut data) in struct_data {
@@ -444,7 +444,7 @@ impl<'a> Emitter<'a> {
                 property: _,
                 args: _,
             } => unreachable!(),
-            ExprType::This => todo!(),
+            ExprType::This => unreachable!(),
         };
         Ok(())
     }

@@ -343,6 +343,7 @@ impl<'a> Analyser<'a> {
         line: u32,
         args: &mut Vec<Expr<'a>>,
     ) -> Result<(u8, ValueType), SemanticErr> {
+        dbg!(3);
         let inst_ty = self.analyse_expr(inst)?;
         let ValueType::Struct(name) = inst_ty else {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
@@ -352,9 +353,12 @@ impl<'a> Analyser<'a> {
             let ty = SemErrType::UndefinedStruct(name);
             return Err(SemanticErr::new(line, ty));
         };
+
         let (index, return_ty, parameters) =
             data.get_method_index_and_return_ty(&name, property, line)?;
+
         self.check_if_params_and_args_correspond(args, parameters, name, line)?;
+
         for arg in args.iter_mut() {
             self.analyse_expr(arg)?;
         }
