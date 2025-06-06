@@ -21,7 +21,6 @@ impl<'a> FuncCompilerStack<'a> {
         self.comps[self.current].scope_depth -= 1;
 
         while self.should_remove_local() {
-            // TODO: see if this is needed
             self.emit_byte(OpCode::Pop as u8, 69);
             self.comps[self.current].local_count -= 1;
         }
