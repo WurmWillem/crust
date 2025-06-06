@@ -97,30 +97,30 @@ impl<'a> Emitter<'a> {
             self.structs.insert(struct_name, methods);
         }
 
-        let main_index = main_index.unwrap();
-        {
-            let (name, data) = func_data.remove(main_index);
-            let line = data.line;
-
-            self.comps.push(name.to_string());
-            self.comps.begin_scope();
-            for (_, name) in data.parameters {
-                self.comps.add_local(name, line)?;
-            }
-
-            for stmt in data.body {
-                self.emit_stmt(stmt)?;
-            }
-
-            self.comps.emit_return(line);
-
-            let compiled_func = self.comps.end_compiler(line);
-            if let Object::Func(ref mut func) = func_objs[main_index].borrow_mut() {
-                func.data = compiled_func;
-            } else {
-                unreachable!()
-            }
-        }
+        // let main_index = main_index.unwrap();
+        // {
+        //     let (name, data) = func_data.remove(main_index);
+        //     let line = data.line;
+        //
+        //     self.comps.push(name.to_string());
+        //     self.comps.begin_scope();
+        //     for (_, name) in data.parameters {
+        //         self.comps.add_local(name, line)?;
+        //     }
+        //
+        //     for stmt in data.body {
+        //         self.emit_stmt(stmt)?;
+        //     }
+        //
+        //     self.comps.emit_return(line);
+        //
+        //     let compiled_func = self.comps.end_compiler(line);
+        //     if let Object::Func(ref mut func) = func_objs[main_index].borrow_mut() {
+        //         func.data = compiled_func;
+        //     } else {
+        //         unreachable!()
+        //     }
+        // }
         // func_data.iter().filter_map(b)
 
         for (i, (name, data)) in func_data.into_iter().enumerate() {

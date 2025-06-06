@@ -68,7 +68,7 @@ impl<'a> Analyser<'a> {
             {
                 let func_data = FuncData {
                     parameters: parameters.clone(),
-                    body: body.clone(),
+                    body: vec![],
                     return_ty: return_ty.clone(),
                     line: stmt.line,
                 };
@@ -300,8 +300,12 @@ impl<'a> Analyser<'a> {
         }
         self.return_stmt_found = false;
 
-        for stmt in body {
+        for stmt in body.iter_mut() {
             self.analyse_stmt(stmt)?;
+        }
+
+        if let Some(func) = self.funcs.get_mut(name) {
+            func.body = body.clone();
         }
 
         if return_ty != ValueType::Null && !self.return_stmt_found {
@@ -311,6 +315,7 @@ impl<'a> Analyser<'a> {
 
         self.symbols.end_scope();
         self.current_return_ty = prev_return_ty;
+
         Ok(())
     }
 
@@ -343,7 +348,6 @@ impl<'a> Analyser<'a> {
         line: u32,
         args: &mut Vec<Expr<'a>>,
     ) -> Result<(u8, ValueType), SemanticErr> {
-        dbg!(3);
         let inst_ty = self.analyse_expr(inst)?;
         let ValueType::Struct(name) = inst_ty else {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
