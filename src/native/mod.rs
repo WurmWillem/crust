@@ -1,12 +1,16 @@
-use crate::analysis_types::NatFuncData;
+use crate::analysis_types::{NatFuncData, NatFuncHash, StructHash};
 
 use std::collections::HashMap;
 
-mod core;
-pub fn register<'a>() -> HashMap<&'a str, NatFuncData> {
+mod funcs;
+mod structs;
+
+pub fn register<'a>() -> (NatFuncHash<'a>, StructHash<'a>) {
     let mut funcs = HashMap::new();
+    let mut structs = HashMap::new();
 
-    core::register(&mut funcs);
+    funcs::register(&mut funcs);
+    structs::register(&mut structs);
 
-    funcs
+    (funcs, structs)
 }

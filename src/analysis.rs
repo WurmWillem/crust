@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     analysis_types::{
-        FuncData, FuncHash, NatFuncHash, Operator, SemanticScope, StructData,
-        StructHash, Symbol,
+        FuncData, FuncHash, NatFuncHash, Operator, SemanticScope, StructData, StructHash, Symbol,
     },
     error::{SemErrType, SemanticErr},
     expression::{Expr, ExprType},
@@ -55,7 +54,9 @@ impl<'a> Analyser<'a> {
     }
 
     fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
-        self.nat_funcs = crate::native::register();
+        let (nat_funcs, structs) = crate::native::register();
+        self.nat_funcs = nat_funcs;
+        self.structs = structs;
 
         for stmt in stmts {
             let line = stmt.line;
@@ -132,6 +133,13 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Var { name, value, ty } => {
+                if let ValueType::Struct(name) = ty {
+                    if self.structs.get(&**name).is_none() {
+                        let err = SemErrType::UndefinedStruct(name.clone());
+                        return Err(SemanticErr::new(line, err));
+                    }
+                }
+                
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
                     let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
