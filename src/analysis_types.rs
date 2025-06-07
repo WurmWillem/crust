@@ -135,6 +135,23 @@ impl<'a> StructData<'a> {
     }
 }
 
+pub struct EnityData<'a> {
+    pub funcs: FuncHash<'a>,
+    pub nat_funcs: NatFuncHash<'a>,
+    pub structs: StructHash<'a>,
+    pub nat_structs: NatStructHash<'a>,
+}
+impl<'a> EnityData<'a> {
+    pub fn new() -> Self {
+        Self {
+            funcs: HashMap::new(),
+            nat_funcs: HashMap::new(),
+            structs: HashMap::new(),
+            nat_structs: HashMap::new(),
+        }
+    }
+}
+
 pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
 pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
 pub type StructHash<'a> = HashMap<&'a str, StructData<'a>>;

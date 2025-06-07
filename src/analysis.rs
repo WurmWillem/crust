@@ -1,10 +1,5 @@
-use std::collections::HashMap;
-
 use crate::{
-    analysis_types::{
-        FuncData, FuncHash, NatFuncHash, NatStructHash, Operator, SemanticScope, StructData,
-        StructHash, Symbol,
-    },
+    analysis_types::{EnityData, FuncData, Operator, SemanticScope, StructData, Symbol},
     error::{SemErrType, SemanticErr},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
@@ -15,11 +10,7 @@ use crate::{
 
 pub struct Analyser<'a> {
     // TODO: make it illegal to define a function/struct inside a function
-    // TODO: combine the hash fields
-    funcs: FuncHash<'a>,
-    nat_funcs: NatFuncHash<'a>,
-    structs: StructHash<'a>,
-    nat_structs: NatStructHash<'a>,
+    enities: EnityData<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
     return_stmt_found: bool,
@@ -28,24 +19,14 @@ pub struct Analyser<'a> {
 impl<'a> Analyser<'a> {
     fn new() -> Self {
         Self {
-            funcs: HashMap::new(),
-            nat_funcs: HashMap::new(),
             symbols: SemanticScope::new(),
             current_return_ty: ValueType::None,
-            structs: HashMap::new(),
-            nat_structs: HashMap::new(),
+            enities: EnityData::new(),
             current_struct: None,
             return_stmt_found: false,
         }
     }
-    pub fn analyse_stmts(
-        stmts: &mut Vec<Stmt<'a>>,
-    ) -> Option<(
-        FuncHash<'a>,
-        NatFuncHash<'a>,
-        StructHash<'a>,
-        NatStructHash<'a>,
-    )> {
+    pub fn analyse_stmts(stmts: &mut Vec<Stmt<'a>>) -> Option<EnityData<'a>> {
         let mut analyser = Analyser::new();
         if let Err(err) = analyser.init_type_data(stmts) {
             err.print();
@@ -59,18 +40,13 @@ impl<'a> Analyser<'a> {
             }
         }
 
-        Some((
-            analyser.funcs,
-            analyser.nat_funcs,
-            analyser.structs,
-            analyser.nat_structs,
-        ))
+        Some(analyser.enities)
     }
 
     fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
         let (nat_funcs, nat_structs) = crate::native::register();
-        self.nat_funcs = nat_funcs;
-        self.nat_structs = nat_structs;
+        self.enities.nat_funcs = nat_funcs;
+        self.enities.nat_structs = nat_structs;
 
         for stmt in stmts {
             let line = stmt.line;
@@ -88,7 +64,7 @@ impl<'a> Analyser<'a> {
                     line: stmt.line,
                 };
 
-                if self.funcs.insert(*name, func_data).is_some() {
+                if self.enities.funcs.insert(*name, func_data).is_some() {
                     let err_ty = SemErrType::AlreadyDefinedFunc(name.to_string());
                     return Err(SemanticErr::new(line, err_ty));
                 }
@@ -102,7 +78,7 @@ impl<'a> Analyser<'a> {
                 let struct_data = StructData::new(fields.clone());
                 let mut method_data = vec![];
 
-                if self.structs.insert(*name, struct_data).is_some() {
+                if self.enities.structs.insert(*name, struct_data).is_some() {
                     let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
                     return Err(SemanticErr::new(line, err_ty));
                 }
@@ -128,12 +104,12 @@ impl<'a> Analyser<'a> {
                     }
                 }
 
-                self.structs.get_mut(name).unwrap().methods = method_data;
+                self.enities.structs.get_mut(name).unwrap().methods = method_data;
                 self.current_struct = None;
             }
         }
 
-        if self.funcs.get("main").is_none() {
+        if self.enities.funcs.get("main").is_none() {
             let err_ty = SemErrType::NoMainFunc;
             return Err(SemanticErr::new(0, err_ty));
         }
@@ -148,8 +124,8 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Var { name, value, ty } => {
                 if let ValueType::Struct(name) = ty {
-                    if self.structs.get(&**name).is_none()
-                        && self.nat_structs.get(&**name).is_none()
+                    if self.enities.structs.get(&**name).is_none()
+                        && self.enities.nat_structs.get(&**name).is_none()
                     {
                         let err = SemErrType::UndefinedStruct(name.clone());
                         return Err(SemanticErr::new(line, err));
@@ -333,7 +309,7 @@ impl<'a> Analyser<'a> {
             self.analyse_stmt(stmt)?;
         }
 
-        if let Some(func) = self.funcs.get_mut(name) {
+        if let Some(func) = self.enities.funcs.get_mut(name) {
             func.body = body.clone();
         }
 
@@ -387,13 +363,13 @@ impl<'a> Analyser<'a> {
             self.analyse_expr(arg)?;
         }
 
-        if let Some(data) = self.structs.get(&name as &str) {
+        if let Some(data) = self.enities.structs.get(&name as &str) {
             let (index, return_ty, parameters) =
                 data.get_method_index_and_return_ty(&name, property, line)?;
             self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
             Ok((index, return_ty))
-        } else if let Some(data) = self.nat_structs.get(&name as &str) {
+        } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
             let (index, return_ty, parameters) =
                 data.get_method_index_and_return_ty(&name, property, line)?;
             self.check_if_params_and_args_correspond(args, parameters, name, line)?;
@@ -571,7 +547,7 @@ impl<'a> Analyser<'a> {
             };
             name
         };
-        let Some(data) = self.structs.get(&name as &str) else {
+        let Some(data) = self.enities.structs.get(&name as &str) else {
             let ty = SemErrType::UndefinedStruct(name);
             return Err(SemanticErr::new(line, ty));
         };
@@ -605,26 +581,26 @@ impl<'a> Analyser<'a> {
         name: &'a str,
         line: u32,
     ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
-        if let Some(data) = self.structs.get(name) {
+        if let Some(data) = self.enities.structs.get(name) {
             let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
             let return_ty = ValueType::Struct(name.to_string());
             return Ok((return_ty, params));
         }
 
-        if let Some(data) = self.nat_structs.get(name) {
+        if let Some(data) = self.enities.nat_structs.get(name) {
             let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
             let return_ty = ValueType::Struct(name.to_string());
             return Ok((return_ty, params));
         }
 
-        if let Some(data) = self.funcs.get(name) {
+        if let Some(data) = self.enities.funcs.get(name) {
             let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
             let return_ty = data.return_ty.clone();
 
             return Ok((return_ty, parameters));
         };
 
-        if let Some(data) = self.nat_funcs.get(name) {
+        if let Some(data) = self.enities.nat_funcs.get(name) {
             let parameters = data.parameters.clone();
             let return_ty = data.return_ty.clone();
 

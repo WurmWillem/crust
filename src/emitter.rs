@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis_types::{FuncData, FuncHash, NatFuncHash, NatStructHash, StructHash},
+    analysis_types::{EnityData, FuncData},
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
@@ -28,15 +28,9 @@ impl<'a> Emitter<'a> {
             structs: HashMap::new(),
         }
     }
-    pub fn compile(
-        stmts: Vec<Stmt>,
-        func_data: FuncHash,
-        nat_func_data: NatFuncHash,
-        struct_data: StructHash,
-        nat_struct_data: NatStructHash,
-    ) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(stmts: Vec<Stmt>, entities: EnityData) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        let func = match comp.init_funcs(func_data, nat_func_data, struct_data, nat_struct_data) {
+        let func = match comp.init_funcs(entities) {
             Ok(func) => func,
             Err(err) => {
                 print_error(err.line, &err.msg);
@@ -54,14 +48,8 @@ impl<'a> Emitter<'a> {
         Some((func, comp.heap))
     }
 
-    fn init_funcs(
-        &mut self,
-        mut func_data: FuncHash<'a>,
-        mut nat_func_data: NatFuncHash<'a>,
-        struct_data: StructHash<'a>,
-        nat_struct_data: NatStructHash<'a>,
-    ) -> Result<ObjFunc, EmitErr> {
-        for (name, data) in nat_func_data.drain() {
+    fn init_funcs(&mut self, mut entities: EnityData<'a>) -> Result<ObjFunc, EmitErr> {
+        for (name, data) in entities.nat_funcs.drain() {
             let func = ObjNative::new(name.to_string(), data.func);
             let (func, _) = self.heap.alloc_permanent(func, Object::Native);
             let value = StackValue::Obj(func);
@@ -70,7 +58,7 @@ impl<'a> Emitter<'a> {
 
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
-        let func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
+        let func_data: Vec<(&'a str, FuncData<'a>)> = entities.funcs.drain().collect();
         for (name, _) in func_data.iter() {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
@@ -80,7 +68,7 @@ impl<'a> Emitter<'a> {
         }
 
         let mut method_objs = Vec::new();
-        for (struct_name, data) in &struct_data {
+        for (struct_name, data) in &entities.structs {
             let mut methods = vec![];
             for (name, _) in &data.methods {
                 let dummy = ObjFunc::new(name.to_string());
@@ -92,7 +80,7 @@ impl<'a> Emitter<'a> {
             self.structs.insert(struct_name, methods);
         }
 
-        for (struct_name, data) in nat_struct_data {
+        for (struct_name, data) in entities.nat_structs {
             let mut methods = vec![];
             for (name, data) in &data.methods {
                 let func = ObjNative::new(name.to_string(), data.func);
@@ -131,7 +119,7 @@ impl<'a> Emitter<'a> {
             }
         }
 
-        for (_, data) in struct_data {
+        for (_, data) in entities.structs {
             for (i, (name, data)) in data.methods.into_iter().enumerate() {
                 let line = data.line;
 
