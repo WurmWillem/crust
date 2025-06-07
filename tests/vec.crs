@@ -1,0 +1,10 @@
+fn main() {
+    Vec ven = Vec([1, 2, 3]);
+    pr ven.get(1);
+    pr ven.pop();
+
+    ven.print();
+    ven.push(4);
+    ven.print();
+    pr ven.len();
+}
