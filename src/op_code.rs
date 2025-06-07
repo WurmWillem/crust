@@ -18,14 +18,16 @@ pub enum OpCode {
     SetLocal,
 
     AllocArr,
-    IndexArr,
-    AssignIndex,
-
     AllocInstance,
+
     GetPubField,
     SetPubField,
     GetSelfField,
     GetSetField,
+    
+    IndexArr,
+    AssignIndex,
+
 
     // literals
     True,
