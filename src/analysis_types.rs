@@ -117,43 +117,6 @@ pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
 pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
 pub type StructHash<'a> = HashMap<&'a str, StructData<'a>>;
 
-pub fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
-    let mut nat_funcs = HashMap::new();
-    macro_rules! add_func {
-        ($name: expr, $func: ident, $parameters: expr, $return_ty: expr) => {
-            let nat_func = NatFuncData {
-                parameters: $parameters,
-                func: crate::native_funcs::$func,
-                return_ty: $return_ty,
-            };
-            nat_funcs.insert($name, nat_func);
-        };
-    }
-
-    use ValueType as VT;
-    add_func!("clock", clock, vec![], VT::Num);
-    add_func!("print", print, vec![VT::Any], VT::Null);
-    add_func!("println", println, vec![VT::Any], VT::Null);
-    add_func!("sin", sin, vec![VT::Num], VT::Num);
-    add_func!("cos", cos, vec![VT::Num], VT::Num);
-    add_func!("tan", tan, vec![VT::Num], VT::Num);
-    add_func!("min", min, vec![VT::Num, VT::Num], VT::Num);
-    add_func!("max", max, vec![VT::Num, VT::Num], VT::Num);
-    add_func!("abs", abs, vec![VT::Num], VT::Num);
-    add_func!("sqrt", sqrt, vec![VT::Num], VT::Num);
-    add_func!("pow", pow, vec![VT::Num, VT::Num], VT::Num);
-    add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::Num);
-    add_func!("print_heap", print_heap, vec![], VT::Null);
-    add_func!(
-        "push",
-        push,
-        vec![VT::Arr(Box::new(VT::Any)), VT::Any],
-        VT::Null
-    );
-
-    nat_funcs
-}
-
 #[derive(Debug, Clone)]
 pub struct Symbol<'a> {
     name: &'a str,

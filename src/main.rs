@@ -15,7 +15,7 @@ mod error;
 mod expression;
 mod func_compiler;
 mod heap;
-mod native_funcs;
+mod native;
 mod object;
 mod op_code;
 mod parse_types;
