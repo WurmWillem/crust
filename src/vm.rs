@@ -119,7 +119,7 @@ impl VM {
                     } else {
                         unreachable!()
                     };
-                    let mut values = Vec::new();
+                    let mut values = Vec::with_capacity(len);
                     for _ in 0..len {
                         values.push(self.stack_pop());
                     }
@@ -176,13 +176,13 @@ impl VM {
                     let methods_len = read_byte(&mut ip) as usize;
                     let fields_len = read_byte(&mut ip) as usize;
 
-                    let mut fields = Vec::new();
+                    let mut fields = Vec::with_capacity(fields_len);
                     for _ in 0..fields_len {
                         fields.push(self.stack_pop());
                     }
                     // dbg!(&fields);
 
-                    let mut methods = Vec::new();
+                    let mut methods = Vec::with_capacity(methods_len);
                     for _ in 0..methods_len {
                         methods.push(self.stack_pop());
                     }
