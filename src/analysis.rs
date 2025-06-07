@@ -113,7 +113,7 @@ impl<'a> Analyser<'a> {
             }
         }
 
-        if self.enities.funcs.get("main").is_none() {
+        if !self.enities.funcs.contains_key("main") {
             let err_ty = SemErrType::NoMainFunc;
             return Err(SemanticErr::new(0, err_ty));
         }
@@ -128,8 +128,8 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Var { name, value, ty } => {
                 if let ValueType::Struct(name) = ty {
-                    if self.enities.structs.get(&**name).is_none()
-                        && self.enities.nat_structs.get(&**name).is_none()
+                    if !self.enities.funcs.contains_key(name as &str)
+                        && !self.enities.nat_structs.contains_key(name as &str)
                     {
                         let err = SemErrType::UndefinedStruct(name.clone());
                         return Err(SemanticErr::new(line, err));
@@ -296,7 +296,7 @@ impl<'a> Analyser<'a> {
         return_ty: ValueType,
         parameters: &mut Vec<(ValueType, &'a str)>,
         line: u32,
-        body: &mut Vec<Stmt<'a>>,
+        body: &mut [Stmt<'a>],
         name: &str,
     ) -> Result<(), SemanticErr> {
         if self.current_return_ty != ValueType::None {
@@ -318,7 +318,7 @@ impl<'a> Analyser<'a> {
         }
 
         if let Some(func) = self.enities.funcs.get_mut(name) {
-            func.body = body.clone();
+            func.body = body.to_owned();
         }
 
         if return_ty != ValueType::Null && !self.return_stmt_found {
@@ -359,7 +359,7 @@ impl<'a> Analyser<'a> {
         inst: &mut Box<Expr<'a>>,
         property: &str,
         line: u32,
-        args: &mut Vec<Expr<'a>>,
+        args: &mut [Expr<'a>],
     ) -> Result<(u8, ValueType), SemanticErr> {
         let inst_ty = self.analyse_expr(inst)?;
         let ValueType::Struct(name) = inst_ty else {
@@ -414,7 +414,7 @@ impl<'a> Analyser<'a> {
 
     fn analyse_array_expr(
         &mut self,
-        values: &mut Vec<Expr<'a>>,
+        values: &mut [Expr<'a>],
         line: u32,
     ) -> Result<ValueType, SemanticErr> {
         if values.is_empty() {
@@ -500,7 +500,7 @@ impl<'a> Analyser<'a> {
 
     fn check_if_params_and_args_correspond(
         &mut self,
-        args: &mut Vec<Expr<'a>>,
+        args: &mut [Expr<'a>],
         parameters: Vec<ValueType>,
         name: String,
         line: u32,

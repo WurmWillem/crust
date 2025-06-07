@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{analysis_types::NatFuncData, heap::Heap, object::Object, value::StackValue};
 
-pub fn register<'a>(nat_funcs: &mut HashMap<&'a str, NatFuncData>) {
+pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
     use crate::value::ValueType;
 
     macro_rules! add_func {

@@ -65,8 +65,7 @@ fn get(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         unreachable!()
     };
 
-    let value = arr.data.elements[index as usize];
-    value
+    arr.data.elements[index as usize]
 }
 
 fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {

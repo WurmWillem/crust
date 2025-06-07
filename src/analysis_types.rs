@@ -77,7 +77,7 @@ impl<'a> NatStructData<'a> {
     ) -> Result<(u8, ValueType, Vec<ValueType>), SemanticErr> {
         for (index, (method_name, data)) in self.methods.iter().enumerate() {
             if *method_name == property {
-                let params = data.parameters.iter().map(|p| p.clone()).collect();
+                let params = data.parameters.to_vec();
                 return Ok((index as u8, data.return_ty.clone(), params));
             }
         }
