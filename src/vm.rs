@@ -149,13 +149,15 @@ impl VM {
                 }
                 OpCode::AssignIndex => {
                     let new_value = self.stack_pop();
-                    let StackValue::F64(index) = self.stack_pop() else {
-                        unreachable!()
+                    let index = match self.stack_pop() {
+                        StackValue::U64(index) => index as usize,
+                        StackValue::I64(index) => index as usize,
+                        _ => unreachable!(),
                     };
 
                     let arr = self.stack_peek();
                     if let StackValue::Obj(Object::Arr(mut arr)) = arr {
-                        arr.data.elements[index as usize] = new_value;
+                        arr.data.elements[index] = new_value;
                     }
                 }
 

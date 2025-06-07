@@ -1,11 +1,17 @@
-fn main() {
-    Vec ven = Vec([1, 2, 3]);
-    pr ven.get(1);
-    pr ven.pop();
+fn print_arr(int[] arr) {
+    for i in 0 to len(arr) {
+        print(arr[i]);
+    }
+}
 
-    ven.print();
-    ven.push(4);
-    ven.print();
-    pr ven.len();
+fn main() {
+    int[] x = [1, 2, 3];
+    print_arr(x);
+
+    x[0] = 2;
+    x[1] = 4;
+    x[2] = 8;
+
+    print_arr(x);
 }
 

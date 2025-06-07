@@ -261,21 +261,20 @@ impl<'source> Scanner<'source> {
                     .parse::<f64>()
                     .unwrap(),
             )
+        } else if self.current - self.start > 19 {
+            Literal::U64(
+                self.source[self.start..self.current]
+                    .parse::<u64>()
+                    .unwrap(),
+            )
         } else {
-            if self.current - self.start > 19 {
-                Literal::U64(
-                    self.source[self.start..self.current]
-                        .parse::<u64>()
-                        .unwrap(),
-                )
-            } else {
-                Literal::I64(
-                    self.source[self.start..self.current]
-                        .parse::<i64>()
-                        .unwrap(),
-                )
-            }
+            Literal::I64(
+                self.source[self.start..self.current]
+                    .parse::<i64>()
+                    .unwrap(),
+            )
         };
+
         self.add_lit_token(TokenType::Num, literal)
     }
 

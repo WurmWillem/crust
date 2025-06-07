@@ -24,10 +24,9 @@ pub enum OpCode {
     SetPubField,
     GetSelfField,
     GetSetField,
-    
+
     IndexArr,
     AssignIndex,
-
 
     // literals
     True,

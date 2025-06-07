@@ -49,6 +49,8 @@ macro_rules! add_num_operation {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
                 (StackValue::I64(lhs), StackValue::I64(rhs)) => StackValue::I64(lhs $op rhs),
                 (StackValue::U64(lhs), StackValue::U64(rhs)) => StackValue::U64(lhs $op rhs),
+                (StackValue::U64(lhs), StackValue::I64(rhs)) => StackValue::I64(lhs as i64 $op rhs),
+                (StackValue::I64(lhs), StackValue::U64(rhs)) => StackValue::I64(lhs $op rhs as i64),
                 _ => unreachable!("operation is only available for numbers"),
             }
         }
@@ -59,12 +61,12 @@ macro_rules! add_num_comparison {
     ($fun_name: ident, $op: tt) => {
         #[inline(always)]
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
-        dbg!(self);
-        dbg!(rhs);
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs $op rhs),
                 (StackValue::I64(lhs), StackValue::I64(rhs)) => StackValue::Bool(lhs $op rhs),
                 (StackValue::U64(lhs), StackValue::U64(rhs)) => StackValue::Bool(lhs $op rhs),
+                (StackValue::I64(lhs), StackValue::U64(rhs)) => StackValue::Bool(lhs $op rhs as i64),
+                (StackValue::U64(lhs), StackValue::I64(rhs)) => StackValue::Bool((lhs as i64) $op rhs),
                 _ => unreachable!("$fun_name is only available for numbers"),
             }
         }
@@ -88,6 +90,8 @@ impl StackValue {
             (StackValue::F64(lhs), StackValue::F64(rhs)) => lhs == rhs,
             (StackValue::I64(lhs), StackValue::I64(rhs)) => lhs == rhs,
             (StackValue::U64(lhs), StackValue::U64(rhs)) => lhs == rhs,
+            (StackValue::I64(lhs), StackValue::U64(rhs)) => lhs == rhs as i64,
+            (StackValue::U64(lhs), StackValue::I64(rhs)) => lhs as i64 == rhs,
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs == rhs,
             (StackValue::Null, StackValue::Null) => true,
             (StackValue::Obj(Object::Str(str1)), StackValue::Obj(Object::Str(str2))) => {

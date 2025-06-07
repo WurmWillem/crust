@@ -65,7 +65,7 @@ fn get(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         StackValue::F64(n) => n as usize,
         StackValue::U64(n) => n as usize,
         StackValue::I64(n) => n as usize,
-        _ => unreachable!()
+        _ => unreachable!(),
     };
 
     arr.data.elements[index as usize]
