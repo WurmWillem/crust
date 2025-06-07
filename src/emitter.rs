@@ -362,11 +362,9 @@ impl<'a> Emitter<'a> {
             }
 
             ExprType::MethodCallResolved { inst, index, args } => {
-                dbg!(inst);
                 self.emit_expr(inst)?;
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
-                dbg!(3);
 
                 for var in args {
                     self.emit_expr(var)?;

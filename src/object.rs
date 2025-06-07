@@ -64,7 +64,7 @@ pub enum Object {
     Func(Gc<ObjFunc>),
     Native(Gc<ObjNative>),
     Arr(Gc<ObjArr>),
-    Instance(Gc<ObjInstance>),
+    Inst(Gc<ObjInstance>),
 }
 impl Object {
     pub fn header(&self) -> &GcHeader {
@@ -73,7 +73,7 @@ impl Object {
             Object::Func(obj) => obj.header(),
             Object::Native(obj) => obj.header(),
             Object::Arr(obj) => obj.header(),
-            Object::Instance(obj) => obj.header(),
+            Object::Inst(obj) => obj.header(),
         }
     }
     pub fn header_mut(&mut self) -> &mut GcHeader {
@@ -82,7 +82,7 @@ impl Object {
             Object::Func(obj) => obj.header_mut(),
             Object::Native(obj) => obj.header_mut(),
             Object::Arr(obj) => obj.header_mut(),
-            Object::Instance(obj) => obj.header_mut(),
+            Object::Inst(obj) => obj.header_mut(),
         }
     }
     pub fn is_marked(&self) -> bool {

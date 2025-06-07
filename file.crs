@@ -1,4 +1,8 @@
 fn main() {
-    Vec v = Vec(120, 240);
+    Vec2 v = Vec2(3, 8);
     pr v.product();
+
+    Vec ve = Vec([9, 2, 3]);
+    pr ve.first();
+    pr ve.get(0);
 }

@@ -80,6 +80,7 @@ impl VM {
 
         loop {
             if DEBUG_TRACE_EXECUTION {
+                (*frame).ip = ip;
                 self.debug_trace(frame)
             }
 
@@ -164,7 +165,7 @@ impl VM {
                 OpCode::PushMethod => {
                     let index = read_byte(&mut ip) as usize;
                     let inst_stack = self.stack_pop();
-                    let StackValue::Obj(Object::Instance(inst)) = inst_stack else {
+                    let StackValue::Obj(Object::Inst(inst)) = inst_stack else {
                         unreachable!()
                     };
 
@@ -192,7 +193,7 @@ impl VM {
                     let inst = ObjInstance::new(fields, methods);
                     let (obj, _) =
                         self.heap
-                            .alloc(inst, Object::Instance, &mut self.stack, self.stack_top);
+                            .alloc(inst, Object::Inst, &mut self.stack, self.stack_top);
                     let obj = StackValue::Obj(obj);
                     self.stack_push(obj);
                 }
@@ -202,7 +203,7 @@ impl VM {
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_pop();
 
-                    if let StackValue::Obj(Object::Instance(inst)) = inst {
+                    if let StackValue::Obj(Object::Inst(inst)) = inst {
                         self.stack_push(inst.data.fields[index]);
                     } else {
                         self.stack_push(StackValue::Null);
@@ -212,7 +213,7 @@ impl VM {
                     let new_value = self.stack_pop();
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_peek();
-                    let StackValue::Obj(Object::Instance(mut inst)) = inst else {
+                    let StackValue::Obj(Object::Inst(mut inst)) = inst else {
                         unreachable!()
                     };
                     inst.data.fields[index] = new_value;
@@ -221,7 +222,7 @@ impl VM {
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack[(*frame).slots - 1];
                     // dbg!(inst);
-                    let StackValue::Obj(Object::Instance(inst)) = inst else {
+                    let StackValue::Obj(Object::Inst(inst)) = inst else {
                         unreachable!()
                     };
                     self.stack_push(inst.data.fields[index]);
@@ -230,7 +231,7 @@ impl VM {
                     let new_value = self.stack_pop();
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack[(*frame).slots - 1];
-                    let StackValue::Obj(Object::Instance(mut inst)) = inst else {
+                    let StackValue::Obj(Object::Inst(mut inst)) = inst else {
                         unreachable!()
                     };
                     inst.data.fields[index] = new_value;

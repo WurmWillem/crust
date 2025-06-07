@@ -66,7 +66,7 @@ impl Heap {
             Object::Str(_) => (),
             Object::Func(_) => (),
             Object::Native(_) => (),
-            Object::Instance(_) => todo!(),
+            Object::Inst(_) => todo!(),
             Object::Arr(arr) => {
                 for el in &arr.data.values {
                     if let StackValue::Obj(obj) = el {
@@ -195,7 +195,7 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
-            Object::Instance(ptr) => {
+            Object::Inst(ptr) => {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
@@ -211,7 +211,7 @@ impl Heap {
                 Object::Func(ref ptr) => ptr.header.next,
                 Object::Native(ref ptr) => ptr.header.next,
                 Object::Arr(ref ptr) => ptr.header.next,
-                Object::Instance(ref ptr) => ptr.header.next,
+                Object::Inst(ref ptr) => ptr.header.next,
             };
 
             unsafe {
