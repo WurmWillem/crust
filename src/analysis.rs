@@ -139,9 +139,9 @@ impl<'a> Analyser<'a> {
                         return Err(SemanticErr::new(line, err));
                     }
                 }
-                
+
                 let value_ty = self.analyse_expr(value)?;
-                if value_ty != *ty {
+                if value_ty != *ty && value_ty != ValueType::Null {
                     let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }

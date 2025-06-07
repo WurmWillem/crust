@@ -1,3 +1,4 @@
 fn main() {
-    Vecsdf x;
+    //Vec x;
+    int x;
 }
