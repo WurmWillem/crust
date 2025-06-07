@@ -1,17 +1,10 @@
-fn print_arr(int[] arr) {
-    for i in 0 to len(arr) {
-        print(arr[i]);
-    }
+fn fib(uint n): uint {
+    if n < 2 return n;
+    return fib(n - 1) + fib(n - 2);
 }
 
 fn main() {
-    int[] x = [1, 2, 3];
-    print_arr(x);
-
-    x[0] = 2;
-    x[1] = 4;
-    x[2] = 8;
-
-    print_arr(x);
+    uint result = fib(40);
+    println(result);
 }
 

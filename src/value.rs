@@ -11,7 +11,7 @@ pub enum ValueType {
     Any,  // useful as generic type for functions like println()
     Null,
     Bool,
-    Num,
+    Num, // TODO: split into multiple variants
     Str,
     Arr(Box<ValueType>),
     Struct(String),
