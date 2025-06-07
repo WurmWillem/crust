@@ -40,7 +40,12 @@ impl<'a> Analyser<'a> {
     }
     pub fn analyse_stmts(
         stmts: &mut Vec<Stmt<'a>>,
-    ) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>, NatStructHash<'a>)> {
+    ) -> Option<(
+        FuncHash<'a>,
+        NatFuncHash<'a>,
+        StructHash<'a>,
+        NatStructHash<'a>,
+    )> {
         let mut analyser = Analyser::new();
         if let Err(err) = analyser.init_type_data(stmts) {
             err.print();
@@ -54,7 +59,12 @@ impl<'a> Analyser<'a> {
             }
         }
 
-        Some((analyser.funcs, analyser.nat_funcs, analyser.structs, analyser.nat_structs))
+        Some((
+            analyser.funcs,
+            analyser.nat_funcs,
+            analyser.structs,
+            analyser.nat_structs,
+        ))
     }
 
     fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
@@ -372,20 +382,27 @@ impl<'a> Analyser<'a> {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
             return Err(SemanticErr::new(line, ty));
         };
-        let Some(data) = self.structs.get(&name as &str) else {
-            let ty = SemErrType::UndefinedStruct(name);
-            return Err(SemanticErr::new(line, ty));
-        };
-
-        let (index, return_ty, parameters) =
-            data.get_method_index_and_return_ty(&name, property, line)?;
-
-        self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
         for arg in args.iter_mut() {
             self.analyse_expr(arg)?;
         }
-        Ok((index, return_ty))
+
+        if let Some(data) = self.structs.get(&name as &str) {
+            let (index, return_ty, parameters) =
+                data.get_method_index_and_return_ty(&name, property, line)?;
+            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
+
+            Ok((index, return_ty))
+        } else if let Some(data) = self.nat_structs.get(&name as &str) {
+            let (index, return_ty, parameters) =
+                data.get_method_index_and_return_ty(&name, property, line)?;
+            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
+
+            Ok((index, return_ty))
+        } else {
+            let ty = SemErrType::UndefinedStruct(name);
+            Err(SemanticErr::new(line, ty))
+        }
     }
 
     fn analyse_assign_index(
