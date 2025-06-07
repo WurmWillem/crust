@@ -65,6 +65,7 @@ impl<'a> Parser<'a> {
     fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseErr> {
         let kind = self.previous().ty;
 
+        // dbg!(kind);
         let prefix = self.get_rule(kind).prefix;
         if prefix == FnType::Empty {
             let msg = "Expected expression.";
@@ -106,10 +107,12 @@ impl<'a> Parser<'a> {
     }
 
     fn number(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let Literal::Num(value) = self.previous().literal else {
-            unreachable!();
+        let kind = match self.previous().literal {
+            Literal::F64(n) => ExprType::Lit(Literal::F64(n)),
+            Literal::I64(n) => ExprType::Lit(Literal::I64(n)),
+            Literal::U64(n) => ExprType::Lit(Literal::U64(n)),
+            _ => unreachable!(),
         };
-        let kind = ExprType::Lit(Literal::Num(value));
         Ok(Expr::new(kind, self.previous().line))
     }
 
@@ -147,7 +150,7 @@ impl<'a> Parser<'a> {
             }
 
             self.advance();
-            if self.peek().ty == TokenType::Number {
+            if self.peek().ty == TokenType::Num {
                 self.regress();
                 self.regress();
                 return self.statement();

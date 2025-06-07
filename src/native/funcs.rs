@@ -37,6 +37,7 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
         VT::Null
     );
 }
+// TODO: update these to work with all nums
 
 fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -138,7 +139,7 @@ fn pow(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let arr = args[0];
     match arr {
-        StackValue::Obj(Object::Arr(arr)) => StackValue::F64(arr.data.elements.len() as f64),
+        StackValue::Obj(Object::Arr(arr)) => StackValue::U64(arr.data.elements.len() as u64),
         _ => unreachable!(),
     }
 }

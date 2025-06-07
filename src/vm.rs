@@ -115,7 +115,9 @@ impl VM {
 
                 OpCode::AllocArr => {
                     let len = self.stack_pop();
-                    let len = if let StackValue::F64(len) = len {
+                    let len = if let StackValue::U64(len) = len {
+                        len as usize
+                    } else if let StackValue::I64(len) = len {
                         len as usize
                     } else {
                         unreachable!()
@@ -133,13 +135,15 @@ impl VM {
                     self.stack_push(arr);
                 }
                 OpCode::IndexArr => {
-                    let StackValue::F64(index) = self.stack_pop() else {
-                        unreachable!()
+                    let index = match self.stack_pop() {
+                        StackValue::U64(index) => index as usize,
+                        StackValue::I64(index) => index as usize,
+                        _ => unreachable!(),
                     };
 
                     let arr = self.stack_pop();
                     if let StackValue::Obj(Object::Arr(arr)) = arr {
-                        let value = arr.data.elements[index as usize];
+                        let value = arr.data.elements[index];
                         self.stack_push(value);
                     }
                 }
@@ -286,6 +290,8 @@ impl VM {
 
                     let new_value = match (lhs, rhs) {
                         (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs + rhs),
+                        (StackValue::I64(lhs), StackValue::I64(rhs)) => StackValue::I64(lhs + rhs),
+                        (StackValue::U64(lhs), StackValue::U64(rhs)) => StackValue::U64(lhs + rhs),
                         (StackValue::Obj(lhs), StackValue::Obj(rhs)) => {
                             self.concatenate_strings(lhs, rhs)
                         }

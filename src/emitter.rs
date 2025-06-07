@@ -229,7 +229,7 @@ impl<'a> Emitter<'a> {
                 self.emit_stmt(*body)?;
 
                 self.comps.emit_bytes(OpCode::GetLocal as u8, var_arg, line);
-                self.comps.emit_constant(StackValue::F64(1.), line)?;
+                self.comps.emit_constant(StackValue::I64(1), line)?;
 
                 self.comps.emit_byte(OpCode::Add as u8, line);
                 self.comps.emit_bytes(OpCode::SetLocal as u8, var_arg, line);
@@ -300,11 +300,11 @@ impl<'a> Emitter<'a> {
                 }
             }
             ExprType::Array(arr) => {
-                let arr_len = arr.len() as f64;
+                let arr_len = arr.len() as u64;
                 for value in arr.iter().rev() {
                     self.emit_expr(value)?;
                 }
-                self.comps.emit_constant(StackValue::F64(arr_len), line)?;
+                self.comps.emit_constant(StackValue::U64(arr_len), line)?;
                 self.comps.emit_byte(OpCode::AllocArr as u8, line);
             }
             ExprType::Index { arr, index } => {
@@ -368,7 +368,9 @@ impl<'a> Emitter<'a> {
                     let stack_value = StackValue::Obj(object);
                     self.comps.emit_constant(stack_value, line)?;
                 }
-                Literal::Num(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
+                Literal::F64(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
+                Literal::U64(num) => self.comps.emit_constant(StackValue::U64(*num), line)?,
+                Literal::I64(num) => self.comps.emit_constant(StackValue::I64(*num), line)?,
                 Literal::True => self.comps.emit_byte(OpCode::True as u8, line),
                 Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),

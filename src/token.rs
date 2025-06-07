@@ -4,7 +4,9 @@ use crate::value::ValueType;
 pub enum Literal<'source> {
     None,
     Str(&'source str),
-    Num(f64),
+    F64(f64),
+    I64(i64),
+    U64(u64),
     True,
     False,
     Null,
@@ -14,7 +16,7 @@ impl<'source> Literal<'source> {
         match self {
             Literal::None => unreachable!(),
             Literal::Str(_) => ValueType::Str,
-            Literal::Num(_) => ValueType::Num,
+            Literal::F64(_) | Literal::I64(_) | Literal::U64(_) => ValueType::Num,
             Literal::True | Literal::False => ValueType::Bool,
             Literal::Null => ValueType::Null,
         }
@@ -44,7 +46,7 @@ impl<'source> Token<'source> {
     }
     pub fn as_value_type(&self) -> Option<ValueType> {
         match self.ty {
-            TokenType::F64 => Some(ValueType::Num),
+            TokenType::F64 | TokenType::U64 | TokenType::I64 => Some(ValueType::Num),
             TokenType::Bool => Some(ValueType::Bool),
             TokenType::Str => Some(ValueType::Str),
             TokenType::Identifier => Some(ValueType::Struct(self.lexeme.to_string())),
@@ -90,8 +92,8 @@ pub enum TokenType {
 
     // literals
     Identifier,
-    String,
-    Number,
+    StringLit,
+    Num,
 
     // keywords
     And,
@@ -115,8 +117,10 @@ pub enum TokenType {
     True,
     While,
 
-    // var types
+    // var decl
     F64,
+    I64,
+    U64,
     Bool,
     Str,
 

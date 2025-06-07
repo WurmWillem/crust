@@ -1,25 +1,11 @@
-struct Vec2 {
-    int x;
-    int y;
-
-    fn product(): int {
-        return self.x * self.y;
-        //pr sdf;
-        struct X {
-
-        }
-    }
-    fn increment_x() {
-        self.x = self.x + 1;
-    }
-}
-
 fn main() {
-    Vec2 vec = Vec2(3, 2);
-    pr vec.product();
-    println(vec);
+    Vec ven = Vec([1, 2, 3]);
+    pr ven.get(1);
+    pr ven.pop();
 
-    vec.increment_x();
-    pr vec.x;
+    ven.print();
+    ven.push(4);
+    ven.print();
+    pr ven.len();
 }
 

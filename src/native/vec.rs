@@ -61,8 +61,11 @@ fn get(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         unreachable!()
     };
 
-    let StackValue::F64(index) = args[1] else {
-        unreachable!()
+    let index = match args[1] {
+        StackValue::F64(n) => n as usize,
+        StackValue::U64(n) => n as usize,
+        StackValue::I64(n) => n as usize,
+        _ => unreachable!()
     };
 
     arr.data.elements[index as usize]
@@ -78,7 +81,7 @@ fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         unreachable!()
     };
 
-    StackValue::F64(arr.data.elements.len() as f64)
+    StackValue::U64(arr.data.elements.len() as u64)
 }
 
 fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
