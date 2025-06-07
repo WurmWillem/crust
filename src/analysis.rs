@@ -128,7 +128,7 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Var { name, value, ty } => {
                 if let ValueType::Struct(name) = ty {
-                    if !self.enities.funcs.contains_key(name as &str)
+                    if !self.enities.structs.contains_key(name as &str)
                         && !self.enities.nat_structs.contains_key(name as &str)
                     {
                         let err = SemErrType::UndefinedStruct(name.clone());
