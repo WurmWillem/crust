@@ -1,11 +1,13 @@
+use std::collections::HashMap;
+
 use crate::{
-    analysis_types::{NatFuncData, NatStructData, NatStructHash},
+    analysis_types::{NatFuncData, NatStructData},
     heap::Heap,
     object::Object,
     value::{StackValue, ValueType},
 };
 
-pub fn register<'a>(structs: &mut NatStructHash) {
+pub fn register<'a>(structs: &mut HashMap<&'a str, NatStructData<'a>>) {
     let name = "Vec";
     let field_ty = ValueType::Arr(Box::new(ValueType::Any));
     let fields = vec![(field_ty, "elements")];
@@ -82,7 +84,7 @@ fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 
 fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let StackValue::Obj(Object::Inst(inst)) = args[0] else {
-       unreachable!()
+        unreachable!()
     };
 
     let arr = inst.data.fields[0];
@@ -139,4 +141,3 @@ fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 
     StackValue::Null
 }
-

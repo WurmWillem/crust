@@ -1,11 +1,13 @@
+use std::collections::HashMap;
+
 use crate::{
-    analysis_types::{NatFuncData, NatStructData, NatStructHash},
+    analysis_types::{NatFuncData, NatStructData},
     heap::Heap,
     object::Object,
     value::{StackValue, ValueType},
 };
 
-pub fn register<'a>(structs: &mut NatStructHash) {
+pub fn register<'a>(structs: &mut HashMap<&'a str, NatStructData<'a>>) {
     let name = "Vector2";
     let fields = vec![(ValueType::Num, "x"), (ValueType::Num, "y")];
 

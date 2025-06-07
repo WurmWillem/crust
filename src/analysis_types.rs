@@ -136,10 +136,10 @@ impl<'a> StructData<'a> {
 }
 
 pub struct EnityData<'a> {
-    pub funcs: FuncHash<'a>,
-    pub nat_funcs: NatFuncHash<'a>,
-    pub structs: StructHash<'a>,
-    pub nat_structs: NatStructHash<'a>,
+    pub funcs: HashMap<&'a str, FuncData<'a>>,
+    pub nat_funcs: HashMap<&'a str, NatFuncData>,
+    pub structs: HashMap<&'a str, StructData<'a>>,
+    pub nat_structs: HashMap<&'a str, NatStructData<'a>>,
 }
 impl<'a> EnityData<'a> {
     pub fn new() -> Self {
@@ -151,11 +151,6 @@ impl<'a> EnityData<'a> {
         }
     }
 }
-
-pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
-pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
-pub type StructHash<'a> = HashMap<&'a str, StructData<'a>>;
-pub type NatStructHash<'a> = HashMap<&'a str, NatStructData<'a>>;
 
 #[derive(Debug, Clone)]
 pub struct Symbol<'a> {
