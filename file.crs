@@ -3,6 +3,6 @@ fn main() {
     pr v.product();
 
     Vec ve = Vec([9, 2, 3]);
-    pr ve.first();
-    pr ve.get(0);
+    ve.push(200);
+    pr ve.get(3);
 }

@@ -25,36 +25,22 @@ pub fn register<'a>(structs: &mut NatStructHash) {
     let field_ty = ValueType::Arr(Box::new(ValueType::Any));
     let fields = vec![(field_ty, "elements")];
 
-    let first = NatFuncData {
-        parameters: vec![],
-        func: first,
-        return_ty: ValueType::Num,
-    };
     let get = NatFuncData {
         parameters: vec![ValueType::Num],
         func: get,
         return_ty: ValueType::Num,
     };
+    let push = NatFuncData {
+        parameters: vec![ValueType::Num],
+        func: push,
+        return_ty: ValueType::Null,
+    };
 
     let data = NatStructData {
         fields,
-        methods: vec![("first", first), ("get", get)],
+        methods: vec![("get", get), ("push", push)],
     };
     structs.insert(name, data);
-}
-
-fn first(args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    let StackValue::Obj(Object::Inst(inst)) = args[0] else {
-        unreachable!()
-    };
-
-    let arr = inst.data.fields[0];
-    let StackValue::Obj(Object::Arr(arr)) = arr else {
-        unreachable!()
-    };
-
-    let value = arr.data.values[0];
-    value
 }
 
 fn get(args: &[StackValue], _heap: &mut Heap) -> StackValue {
@@ -73,7 +59,20 @@ fn get(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 
     let value = arr.data.values[index as usize];
     value
-    // StackValue::Null
+}
+
+fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let StackValue::Obj(Object::Inst(inst)) = args[0] else {
+        unreachable!()
+    };
+
+    let arr = inst.data.fields[0];
+    let StackValue::Obj(Object::Arr(mut arr)) = arr else {
+        unreachable!()
+    };
+
+    arr.data.values.push(args[1]);
+    StackValue::Null
 }
 
 fn product(args: &[StackValue], _heap: &mut Heap) -> StackValue {
