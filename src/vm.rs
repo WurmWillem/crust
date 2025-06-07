@@ -163,13 +163,14 @@ impl VM {
                 }
                 OpCode::PushMethod => {
                     let index = read_byte(&mut ip) as usize;
-                    let inst = self.stack_pop();
-                    let StackValue::Obj(Object::Instance(inst)) = inst else {
+                    let inst_stack = self.stack_pop();
+                    let StackValue::Obj(Object::Instance(inst)) = inst_stack else {
                         unreachable!()
                     };
 
                     let method = inst.data.methods[index];
                     self.stack_push(method);
+                    self.stack_push(inst_stack);
                 }
 
                 OpCode::AllocInstance => {
@@ -350,6 +351,7 @@ impl VM {
                 Object::Native(func) => {
                     let args_ptr = self.stack.as_ptr().add(slots + 1);
                     let args = std::slice::from_raw_parts(args_ptr, arg_count);
+                    // dbg!(args);
 
                     let value = (func.data.func)(args, &mut self.heap);
 

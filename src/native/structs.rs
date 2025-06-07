@@ -21,6 +21,12 @@ pub fn register<'a>(structs: &mut NatStructHash) {
     structs.insert(name, data);
 }
 
-fn product(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    StackValue::F64(320.)
+fn product(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    val1
+    // match (val1, val2) {
+    //     (StackValue::F64(val1), StackValue::F64(val2)) => StackValue::F64(val1 * val2),
+    //     _ => unreachable!(),
+    // }
 }

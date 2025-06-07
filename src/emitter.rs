@@ -159,6 +159,7 @@ impl<'a> Emitter<'a> {
     }
 
     fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), EmitErr> {
+        // dbg!(&stmt);
         let line = stmt.line;
         match stmt.stmt {
             StmtType::Expr(expr) => {
@@ -361,16 +362,18 @@ impl<'a> Emitter<'a> {
             }
 
             ExprType::MethodCallResolved { inst, index, args } => {
+                dbg!(inst);
                 self.emit_expr(inst)?;
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
+                dbg!(3);
 
                 for var in args {
                     self.emit_expr(var)?;
                 }
 
                 self.comps
-                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
+                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 2, line);
             }
             ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
