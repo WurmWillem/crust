@@ -58,6 +58,8 @@ pub enum SemErrType {
     InvalidInfix,
     InvalidThis,
     NoMainFunc,
+    FuncDefInFunc(String),
+    StructDefInFunc(String),
     InvalidTypeMethodAccess(ValueType),
     InvalidTypeFieldAccess(ValueType),
     InvalidPubField(String, String),
@@ -85,6 +87,8 @@ impl SemanticErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
+            SemErrType::FuncDefInFunc(name) => format!("You attempted to define the function '{}' inside another function, which is illegal.", name.green()),
+            SemErrType::StructDefInFunc(name) => format!("You attempted to define the struct '{}' inside a function, which is illegal.", name.green()),
             SemErrType::NoMainFunc => {
                 "You have to define a function with the name 'main' as entry point for the program."
                     .to_string()

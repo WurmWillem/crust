@@ -9,7 +9,6 @@ use crate::{
 };
 
 pub struct Analyser<'a> {
-    // TODO: make it illegal to define a function/struct inside a function
     enities: EnityData<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
@@ -74,6 +73,11 @@ impl<'a> Analyser<'a> {
                 methods,
             } = &mut stmt.stmt
             {
+                if self.current_struct.is_some() {
+                    // TODO: this doesn't work for some reason
+                    let ty = SemErrType::StructDefInFunc(name.to_string());
+                    return Err(SemanticErr::new(line, ty));
+                }
                 self.current_struct = Some(name);
                 let struct_data = StructData::new(fields.clone());
                 let mut method_data = vec![];
@@ -295,6 +299,10 @@ impl<'a> Analyser<'a> {
         body: &mut Vec<Stmt<'a>>,
         name: &str,
     ) -> Result<(), SemanticErr> {
+        if self.current_return_ty != ValueType::None {
+            let ty = SemErrType::FuncDefInFunc(name.to_string());
+            return Err(SemanticErr::new(line, ty));
+        }
         let prev_return_ty = self.current_return_ty.clone();
         self.current_return_ty = return_ty.clone();
 

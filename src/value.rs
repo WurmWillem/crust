@@ -139,7 +139,7 @@ impl Display for StackValue {
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
                 Object::Arr(a) => write!(f, "{:?}", a.data.elements),
-                Object::Inst(_) => todo!(),
+                Object::Inst(i) => write!(f, "inst {:?}", i.data.fields),
             },
         }
     }

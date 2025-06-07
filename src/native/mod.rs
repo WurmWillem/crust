@@ -6,7 +6,10 @@ mod funcs;
 mod structs;
 mod vec;
 
-pub fn register<'a>() -> (HashMap<&'a str, NatFuncData>, HashMap<&'a str, NatStructData<'a>>) {
+pub fn register<'a>() -> (
+    HashMap<&'a str, NatFuncData>,
+    HashMap<&'a str, NatStructData<'a>>,
+) {
     let mut funcs = HashMap::new();
     let mut structs = HashMap::new();
 

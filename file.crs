@@ -4,6 +4,10 @@ struct Vec2 {
 
     fn product(): int {
         return self.x * self.y;
+        //pr sdf;
+        struct X {
+
+        }
     }
     fn increment_x() {
         self.x = self.x + 1;
@@ -13,6 +17,7 @@ struct Vec2 {
 fn main() {
     Vec2 vec = Vec2(3, 2);
     pr vec.product();
+    println(vec);
 
     vec.increment_x();
     pr vec.x;

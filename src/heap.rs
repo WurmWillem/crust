@@ -66,7 +66,13 @@ impl Heap {
             Object::Str(_) => (),
             Object::Func(_) => (),
             Object::Native(_) => (),
-            Object::Inst(_) => todo!(),
+            Object::Inst(inst) => {
+                for el in &inst.data.fields {
+                    if let StackValue::Obj(obj) = el {
+                        self.mark_object(*obj, gray_list);
+                    }
+                }
+            }
             Object::Arr(arr) => {
                 for el in &arr.data.elements {
                     if let StackValue::Obj(obj) = el {

@@ -74,8 +74,7 @@ fn main() {
     };
 
     // dbg!(&statements);
-    if let Some((func, heap)) = Emitter::compile(statements, entities)
-    {
+    if let Some((func, heap)) = Emitter::compile(statements, entities) {
         vm::VM::interpret(func, heap);
     }
 }
