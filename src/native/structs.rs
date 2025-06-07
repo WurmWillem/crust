@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn register<'a>(structs: &mut NatStructHash) {
-    let name = "Vec2";
+    let name = "Vector2";
     let fields = vec![(ValueType::Num, "x"), (ValueType::Num, "y")];
 
     let product = NatFuncData {
