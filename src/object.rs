@@ -101,11 +101,11 @@ impl Object {
 
 #[derive(Debug, Clone)]
 pub struct ObjArr {
-    pub values: Vec<StackValue>,
+    pub elements: Vec<StackValue>,
 }
 impl ObjArr {
     pub fn new(values: Vec<StackValue>) -> Self {
-        Self { values }
+        Self { elements: values }
     }
 }
 // impl std::fmt::Display for ObjArr {
@@ -115,7 +115,7 @@ impl ObjArr {
 // }
 impl GcMemSize for ObjArr {
     fn size_of(&self) -> usize {
-        std::mem::size_of::<StackValue>() * self.values.capacity()
+        std::mem::size_of::<StackValue>() * self.elements.capacity()
     }
 }
 

@@ -21,7 +21,7 @@ impl fmt::Display for ValueType {
         match self {
             ValueType::None => unreachable!(),
             ValueType::Arr(ty) => write!(f, "[{}]", ty),
-            ValueType::Any => unreachable!(),
+            ValueType::Any => write!(f, "Any"),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
             ValueType::Num => write!(f, "Number"),
@@ -138,7 +138,7 @@ impl Display for StackValue {
                 Object::Str(s) => write!(f, "{}", s.data),
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
-                Object::Arr(a) => write!(f, "{:?}", a.data.values),
+                Object::Arr(a) => write!(f, "{:?}", a.data.elements),
                 Object::Inst(_) => todo!(),
             },
         }
@@ -154,7 +154,7 @@ impl StackValue {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
-                Object::Arr(a) => format!("arr {:?}", a.data.values),
+                Object::Arr(a) => format!("arr {:?}", a.data.elements),
                 Object::Inst(i) => format!("inst {:?}", i.data.fields),
             },
         }

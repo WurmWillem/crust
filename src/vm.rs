@@ -139,7 +139,7 @@ impl VM {
 
                     let arr = self.stack_pop();
                     if let StackValue::Obj(Object::Arr(arr)) = arr {
-                        let value = arr.data.values[index as usize];
+                        let value = arr.data.elements[index as usize];
                         self.stack_push(value);
                     }
                 }
@@ -151,7 +151,7 @@ impl VM {
 
                     let arr = self.stack_peek();
                     if let StackValue::Obj(Object::Arr(mut arr)) = arr {
-                        arr.data.values[index as usize] = new_value;
+                        arr.data.elements[index as usize] = new_value;
                     }
                 }
 

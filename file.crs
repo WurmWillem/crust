@@ -1,8 +1,9 @@
 fn main() {
-    Vec2 v = Vec2(3, 8);
-    pr v.product();
+    Vec ve = Vec([1, 2, 3]);
 
-    Vec ve = Vec([9, 2, 3]);
     ve.push(200);
-    pr ve.get(3);
+
+    pr ve.get(0);
+
+    ve.print();
 }

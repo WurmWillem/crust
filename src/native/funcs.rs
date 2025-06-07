@@ -136,7 +136,7 @@ fn pow(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let arr = args[0];
     match arr {
-        StackValue::Obj(Object::Arr(arr)) => StackValue::F64(arr.data.values.len() as f64),
+        StackValue::Obj(Object::Arr(arr)) => StackValue::F64(arr.data.elements.len() as f64),
         _ => unreachable!(),
     }
 }
@@ -149,7 +149,7 @@ fn print_heap(_args: &[StackValue], heap: &mut Heap) -> StackValue {
 fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let arr = args[0];
     if let StackValue::Obj(Object::Arr(mut arr)) = arr {
-        arr.data.values.push(args[1]);
+        arr.data.elements.push(args[1]);
     } else {
         unreachable!()
     }

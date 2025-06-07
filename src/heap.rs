@@ -30,7 +30,7 @@ impl Heap {
         while let Some(object) = current {
             if let Object::Arr(arr) = object {
                 print!("HEAP: [");
-                for el in &arr.data.values {
+                for el in &arr.data.elements {
                     print!("{}, ", el.display());
                 }
                 println!("]");
@@ -68,7 +68,7 @@ impl Heap {
             Object::Native(_) => (),
             Object::Inst(_) => todo!(),
             Object::Arr(arr) => {
-                for el in &arr.data.values {
+                for el in &arr.data.elements {
                     if let StackValue::Obj(obj) = el {
                         self.mark_object(*obj, gray_list);
                     }

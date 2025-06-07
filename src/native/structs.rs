@@ -35,10 +35,15 @@ pub fn register<'a>(structs: &mut NatStructHash) {
         func: push,
         return_ty: ValueType::Null,
     };
+    let print = NatFuncData {
+        parameters: vec![],
+        func: print,
+        return_ty: ValueType::Null,
+    };
 
     let data = NatStructData {
         fields,
-        methods: vec![("get", get), ("push", push)],
+        methods: vec![("get", get), ("push", push), ("print", print)],
     };
     structs.insert(name, data);
 }
@@ -57,7 +62,7 @@ fn get(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         unreachable!()
     };
 
-    let value = arr.data.values[index as usize];
+    let value = arr.data.elements[index as usize];
     value
 }
 
@@ -71,7 +76,35 @@ fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         unreachable!()
     };
 
-    arr.data.values.push(args[1]);
+    arr.data.elements.push(args[1]);
+    StackValue::Null
+}
+
+fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    use colored::Colorize;
+
+    let StackValue::Obj(Object::Inst(inst)) = args[0] else {
+        unreachable!()
+    };
+
+    let arr = inst.data.fields[0];
+    let StackValue::Obj(Object::Arr(arr)) = arr else {
+        unreachable!()
+    };
+
+    let els = &arr.data.elements;
+    print!("[");
+    if !els.is_empty() {
+        let string = format!("{}", els[0]).green();
+        print!("{}", string);
+        
+        for el in arr.data.elements.iter().skip(1) {
+            let string = format!(", {}", el).green();
+            print!("{}", string);
+        }
+    }
+    println!("]");
+
     StackValue::Null
 }
 
