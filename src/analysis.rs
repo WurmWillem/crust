@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use crate::{
     analysis_types::{
-        FuncData, FuncHash, NatFuncHash, NatStructHash, Operator, SemanticScope, StructData, StructHash, Symbol
+        FuncData, FuncHash, NatFuncHash, NatStructHash, Operator, SemanticScope, StructData,
+        StructHash, Symbol,
     },
     error::{SemErrType, SemanticErr},
     expression::{Expr, ExprType},
@@ -136,7 +137,9 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Var { name, value, ty } => {
                 if let ValueType::Struct(name) = ty {
-                    if self.structs.get(&**name).is_none() {
+                    if self.structs.get(&**name).is_none()
+                        && self.nat_structs.get(&**name).is_none()
+                    {
                         let err = SemErrType::UndefinedStruct(name.clone());
                         return Err(SemanticErr::new(line, err));
                     }
@@ -582,6 +585,12 @@ impl<'a> Analyser<'a> {
         line: u32,
     ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
         if let Some(data) = self.structs.get(name) {
+            let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
+            let return_ty = ValueType::Struct(name.to_string());
+            return Ok((return_ty, params));
+        }
+
+        if let Some(data) = self.nat_structs.get(name) {
             let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
             let return_ty = ValueType::Struct(name.to_string());
             return Ok((return_ty, params));

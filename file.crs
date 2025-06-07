@@ -1,5 +1,3 @@
 fn main() {
     Vec v = Vec(120, 240);
-    pr v.x;
-    pr v.y;
 }
