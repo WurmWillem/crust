@@ -15,6 +15,7 @@ use crate::{
 
 pub struct Analyser<'a> {
     // TODO: make it illegal to define a function/struct inside a function
+    // TODO: combine the hash fields
     funcs: FuncHash<'a>,
     nat_funcs: NatFuncHash<'a>,
     structs: StructHash<'a>,
@@ -39,7 +40,7 @@ impl<'a> Analyser<'a> {
     }
     pub fn analyse_stmts(
         stmts: &mut Vec<Stmt<'a>>,
-    ) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>)> {
+    ) -> Option<(FuncHash<'a>, NatFuncHash<'a>, StructHash<'a>, NatStructHash<'a>)> {
         let mut analyser = Analyser::new();
         if let Err(err) = analyser.init_type_data(stmts) {
             err.print();
@@ -53,7 +54,7 @@ impl<'a> Analyser<'a> {
             }
         }
 
-        Some((analyser.funcs, analyser.nat_funcs, analyser.structs))
+        Some((analyser.funcs, analyser.nat_funcs, analyser.structs, analyser.nat_structs))
     }
 
     fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemanticErr> {

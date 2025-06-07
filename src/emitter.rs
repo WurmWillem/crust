@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis_types::{FuncData, FuncHash, NatFuncHash, StructHash},
+    analysis_types::{FuncData, FuncHash, NatFuncHash, NatStructHash, StructHash},
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
@@ -33,9 +33,10 @@ impl<'a> Emitter<'a> {
         func_data: FuncHash,
         nat_func_data: NatFuncHash,
         struct_data: StructHash,
+        nat_struct_data: NatStructHash,
     ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        let func = match comp.init_funcs(func_data, nat_func_data, struct_data) {
+        let func = match comp.init_funcs(func_data, nat_func_data, struct_data, nat_struct_data) {
             Ok(func) => func,
             Err(err) => {
                 print_error(err.line, &err.msg);
@@ -58,6 +59,7 @@ impl<'a> Emitter<'a> {
         mut func_data: FuncHash<'a>,
         mut nat_func_data: NatFuncHash<'a>,
         struct_data: StructHash<'a>,
+        nat_struct_data: NatStructHash<'a>,
     ) -> Result<ObjFunc, EmitErr> {
         for (name, data) in nat_func_data.drain() {
             let func = ObjNative::new(name.to_string(), data.func);
@@ -86,6 +88,17 @@ impl<'a> Emitter<'a> {
 
                 methods.push((*name, StackValue::Obj(func_obj)));
                 method_objs.push(func_obj);
+            }
+            self.structs.insert(struct_name, methods);
+        }
+
+        for (struct_name, data) in nat_struct_data {
+            let mut methods = vec![];
+            for (name, data) in &data.methods {
+                let func = ObjNative::new(name.to_string(), data.func);
+                let (func, _) = self.heap.alloc_permanent(func, Object::Native);
+                let value = StackValue::Obj(func);
+                methods.push((*name, value));
             }
             self.structs.insert(struct_name, methods);
         }
