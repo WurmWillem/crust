@@ -12,7 +12,7 @@ pub enum OpCode {
     Print,
 
     FuncCall,
-    MethodCall,
+    PushMethod,
 
     GetLocal,
     SetLocal,
@@ -64,7 +64,7 @@ impl std::convert::From<u8> for OpCode {
             5 => OpCode::Loop,
             6 => OpCode::Print,
             7 => OpCode::FuncCall,
-            8 => OpCode::MethodCall,
+            8 => OpCode::PushMethod,
             9 => OpCode::GetLocal,
             10 => OpCode::SetLocal,
             11 => OpCode::AllocArr,

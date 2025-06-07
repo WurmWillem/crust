@@ -64,6 +64,11 @@ pub struct NatFuncData {
     pub return_ty: ValueType,
 }
 #[derive(Debug)]
+pub struct NatStructData<'a> {
+    pub fields: Vec<(ValueType, &'a str)>,
+    pub methods: Vec<(&'a str, NatFuncData)>,
+}
+#[derive(Debug)]
 pub struct StructData<'a> {
     pub fields: Vec<(ValueType, &'a str)>,
     pub methods: Vec<(&'a str, FuncData<'a>)>,
@@ -116,6 +121,7 @@ impl<'a> StructData<'a> {
 pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
 pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
 pub type StructHash<'a> = HashMap<&'a str, StructData<'a>>;
+pub type NatStructHash<'a> = HashMap<&'a str, NatStructData<'a>>;
 
 #[derive(Debug, Clone)]
 pub struct Symbol<'a> {

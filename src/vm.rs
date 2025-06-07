@@ -161,7 +161,7 @@ impl VM {
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                     ip = (*frame).ip;
                 }
-                OpCode::MethodCall => {
+                OpCode::PushMethod => {
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_pop();
                     let StackValue::Obj(Object::Instance(inst)) = inst else {
@@ -196,12 +196,16 @@ impl VM {
                     self.stack_push(obj);
                 }
                 OpCode::GetPubField => {
+                    // TODO: make it so instances are allocated but initialized to null if no constructor is used
+                    // or make not initializing them illegal
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_pop();
-                    let StackValue::Obj(Object::Instance(inst)) = inst else {
-                        unreachable!()
-                    };
-                    self.stack_push(inst.data.fields[index]);
+
+                    if let StackValue::Obj(Object::Instance(inst)) = inst {
+                        self.stack_push(inst.data.fields[index]);
+                    } else {
+                        self.stack_push(StackValue::Null);
+                    }
                 }
                 OpCode::SetPubField => {
                     let new_value = self.stack_pop();

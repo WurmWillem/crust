@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     analysis_types::{
-        FuncData, FuncHash, NatFuncHash, Operator, SemanticScope, StructData, StructHash, Symbol,
+        FuncData, FuncHash, NatFuncHash, NatStructHash, Operator, SemanticScope, StructData, StructHash, Symbol
     },
     error::{SemErrType, SemanticErr},
     expression::{Expr, ExprType},
@@ -17,6 +17,7 @@ pub struct Analyser<'a> {
     funcs: FuncHash<'a>,
     nat_funcs: NatFuncHash<'a>,
     structs: StructHash<'a>,
+    nat_structs: NatStructHash<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
     return_stmt_found: bool,
@@ -30,6 +31,7 @@ impl<'a> Analyser<'a> {
             symbols: SemanticScope::new(),
             current_return_ty: ValueType::None,
             structs: HashMap::new(),
+            nat_structs: HashMap::new(),
             current_struct: None,
             return_stmt_found: false,
         }
@@ -54,9 +56,9 @@ impl<'a> Analyser<'a> {
     }
 
     fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
-        let (nat_funcs, structs) = crate::native::register();
+        let (nat_funcs, nat_structs) = crate::native::register();
         self.nat_funcs = nat_funcs;
-        self.structs = structs;
+        self.nat_structs = nat_structs;
 
         for stmt in stmts {
             let line = stmt.line;

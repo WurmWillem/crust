@@ -350,7 +350,7 @@ impl<'a> Emitter<'a> {
             ExprType::MethodCallResolved { inst, index, args } => {
                 self.emit_expr(inst)?;
                 self.comps
-                    .emit_bytes(OpCode::MethodCall as u8, *index, line);
+                    .emit_bytes(OpCode::PushMethod as u8, *index, line);
 
                 for var in args {
                     self.emit_expr(var)?;

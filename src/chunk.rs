@@ -67,7 +67,7 @@ impl Chunk {
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 
             OpCode::FuncCall => Self::simple_instruction("OP_CALL", offset),
-            OpCode::MethodCall => Self::simple_instruction("OP_METHOD_CALL", offset),
+            OpCode::PushMethod => Self::simple_instruction("OP_METHOD_CALL", offset),
 
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),

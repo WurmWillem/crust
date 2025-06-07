@@ -1,4 +1,5 @@
 fn main() {
-    //Vec x;
-    int x;
+    Vec v = Vec(120, 240);
+    pr v.x;
+    pr v.y;
 }
