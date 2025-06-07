@@ -37,7 +37,7 @@ pub fn register<'a>(nat_funcs: &mut HashMap<&'a str, NatFuncData>) {
     );
 }
 
-pub fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
@@ -45,7 +45,7 @@ pub fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     StackValue::F64(time.as_secs_f64())
 }
 
-pub fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
     let string = format!("{}", args[0]).green();
@@ -53,7 +53,7 @@ pub fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 
     StackValue::Null
 }
-pub fn println(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn println(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
     let string = format!("{}", args[0]).green();
@@ -62,7 +62,7 @@ pub fn println(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     StackValue::Null
 }
 
-pub fn sin(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn sin(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.sin())
@@ -71,7 +71,7 @@ pub fn sin(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn cos(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn cos(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.cos())
@@ -80,7 +80,7 @@ pub fn cos(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn tan(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn tan(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.tan())
@@ -89,7 +89,7 @@ pub fn tan(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn min(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn min(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -98,7 +98,7 @@ pub fn min(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn max(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn max(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -107,7 +107,7 @@ pub fn max(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn abs(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn abs(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.abs())
@@ -116,7 +116,7 @@ pub fn abs(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn sqrt(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn sqrt(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.sqrt())
@@ -125,7 +125,7 @@ pub fn sqrt(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn pow(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn pow(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -134,7 +134,7 @@ pub fn pow(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let arr = args[0];
     match arr {
         StackValue::Obj(Object::Arr(arr)) => StackValue::F64(arr.data.values.len() as f64),
@@ -142,12 +142,12 @@ pub fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-pub fn print_heap(_args: &[StackValue], heap: &mut Heap) -> StackValue {
+fn print_heap(_args: &[StackValue], heap: &mut Heap) -> StackValue {
     heap.print();
     StackValue::Null
 }
 
-pub fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let arr = args[0];
     if let StackValue::Obj(Object::Arr(mut arr)) = arr {
         arr.data.values.push(args[1]);
