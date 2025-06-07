@@ -23,6 +23,35 @@ pub enum ExprType<'a> {
         name: &'a str,
         args: Vec<Expr<'a>>,
     },
+    MethodCall {
+        inst: Box<Expr<'a>>,
+        property: &'a str,
+        args: Vec<Expr<'a>>,
+    },
+    MethodCallResolved {
+        inst: Box<Expr<'a>>,
+        index: u8,
+        args: Vec<Expr<'a>>,
+    },
+    This,
+    Dot {
+        inst: Box<Expr<'a>>,
+        property: &'a str,
+    },
+    DotResolved {
+        inst: Box<Expr<'a>>,
+        index: u8,
+    },
+    DotAssign {
+        inst: Box<Expr<'a>>,
+        property: &'a str,
+        new_value: Box<Expr<'a>>,
+    },
+    DotAssignResolved {
+        inst: Box<Expr<'a>>,
+        index: u8,
+        new_value: Box<Expr<'a>>,
+    },
     Index {
         arr: Box<Expr<'a>>,
         index: Box<Expr<'a>>,
@@ -30,11 +59,11 @@ pub enum ExprType<'a> {
     AssignIndex {
         arr: Box<Expr<'a>>,
         index: Box<Expr<'a>>,
-        value: Box<Expr<'a>>,
+        new_value: Box<Expr<'a>>,
     },
     Assign {
         name: &'a str,
-        value: Box<Expr<'a>>,
+        new_value: Box<Expr<'a>>,
     },
     Unary {
         prefix: TokenType,

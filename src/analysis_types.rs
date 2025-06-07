@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     error::{SemErrType, SemanticErr},
     object::NativeFunc,
-    statement::{Stmt, StmtType},
+    statement::Stmt,
     value::ValueType,
 };
 
@@ -52,7 +52,6 @@ impl core::fmt::Display for Operator {
 
 #[derive(Debug)]
 pub struct FuncData<'a> {
-    // TODO: check if ty is necessary
     pub parameters: Vec<(ValueType, &'a str)>,
     pub body: Vec<Stmt<'a>>,
     pub return_ty: ValueType,
@@ -64,37 +63,61 @@ pub struct NatFuncData {
     pub func: NativeFunc,
     pub return_ty: ValueType,
 }
-pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
-pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
-
-pub fn get_func_data<'a>(stmts: &Vec<Stmt<'a>>) -> Option<(FuncHash<'a>, NatFuncHash<'a>)> {
-    let nat_funcs = get_nat_func_hash();
-
-    let mut funcs = HashMap::new();
-    for stmt in stmts {
-        if let StmtType::Func {
-            name,
-            parameters,
-            body,
-            return_ty,
-        } = &stmt.stmt
-        {
-            let func_data = FuncData {
-                parameters: parameters.clone(),
-                body: body.clone(),
-                return_ty: return_ty.clone(),
-                line: stmt.line,
-            };
-
-            if funcs.insert(*name, func_data).is_some() {
-                return None;
-            }
+#[derive(Debug)]
+pub struct StructData<'a> {
+    pub fields: Vec<(ValueType, &'a str)>,
+    pub methods: Vec<(&'a str, FuncData<'a>)>,
+}
+impl<'a> StructData<'a> {
+    pub fn new(fields: Vec<(ValueType, &'a str)>) -> Self {
+        Self {
+            fields,
+            methods: vec![],
         }
     }
-    Some((funcs, nat_funcs))
+
+    pub fn get_method_index_and_return_ty(
+        &self,
+        name: &str,
+        property: &str,
+        line: u32,
+    ) -> Result<(u8, ValueType, Vec<ValueType>), SemanticErr> {
+        for (index, (method_name, data)) in self.methods.iter().enumerate() {
+            if *method_name == property {
+                let params = data.parameters.iter().map(|p| p.0.clone()).collect();
+                return Ok((index as u8, data.return_ty.clone(), params));
+            }
+        }
+        let ty = SemErrType::InvalidMethod(name.to_string(), property.to_string());
+        Err(SemanticErr::new(line, ty))
+    }
+
+    pub fn get_field_index(
+        &self,
+        name: String,
+        property: &str,
+        line: u32,
+    ) -> Result<u8, SemanticErr> {
+        let index = match self
+            .fields
+            .iter()
+            .position(|(_, field_name)| *field_name == property)
+        {
+            Some(index) => index as u8,
+            None => {
+                let ty = SemErrType::InvalidPubField(name, property.to_string());
+                return Err(SemanticErr::new(line, ty));
+            }
+        };
+        Ok(index)
+    }
 }
 
-fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
+pub type FuncHash<'a> = HashMap<&'a str, FuncData<'a>>;
+pub type NatFuncHash<'a> = HashMap<&'a str, NatFuncData>;
+pub type StructHash<'a> = HashMap<&'a str, StructData<'a>>;
+
+pub fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
     let mut nat_funcs = HashMap::new();
     macro_rules! add_func {
         ($name: expr, $func: ident, $parameters: expr, $return_ty: expr) => {
@@ -121,6 +144,12 @@ fn get_nat_func_hash<'a>() -> HashMap<&'a str, NatFuncData> {
     add_func!("pow", pow, vec![VT::Num, VT::Num], VT::Num);
     add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::Num);
     add_func!("print_heap", print_heap, vec![], VT::Null);
+    add_func!(
+        "push",
+        push,
+        vec![VT::Arr(Box::new(VT::Any)), VT::Any],
+        VT::Null
+    );
 
     nat_funcs
 }

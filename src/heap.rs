@@ -66,6 +66,7 @@ impl Heap {
             Object::Str(_) => (),
             Object::Func(_) => (),
             Object::Native(_) => (),
+            Object::Instance(_) => todo!(),
             Object::Arr(arr) => {
                 for el in &arr.data.values {
                     if let StackValue::Obj(obj) = el {
@@ -97,9 +98,9 @@ impl Heap {
 
     pub fn collect_garbage(&mut self, stack: &mut [StackValue; STACK_SIZE], stack_top: usize) {
         let mut gray_objects = vec![];
-        for i in 0..stack_top {
-            if let StackValue::Obj(obj) = stack[i] {
-                self.mark_object(obj, &mut gray_objects);
+        for value in stack.iter().take(stack_top) {
+            if let StackValue::Obj(obj) = value {
+                self.mark_object(*obj, &mut gray_objects);
             }
         }
 
@@ -146,7 +147,7 @@ impl Heap {
 
         let object = map(gc);
 
-        self.head = Some(object.clone());
+        self.head = Some(object);
 
         (object, gc)
     }
@@ -155,7 +156,6 @@ impl Heap {
     where
         F: Fn(Gc<T>) -> Object,
     {
-        // TODO: add realloc()
         //self.collect_garbage();
 
         let gc_data = Box::new(GcData {
@@ -172,7 +172,7 @@ impl Heap {
 
         let object = map(gc);
 
-        self.permanent_head = Some(object.clone());
+        self.permanent_head = Some(object);
 
         (object, gc)
     }
@@ -195,6 +195,10 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
+            Object::Instance(ptr) => {
+                let raw = ptr.ptr.as_ptr();
+                drop(Box::from_raw(raw));
+            }
         }
     }
 
@@ -207,6 +211,7 @@ impl Heap {
                 Object::Func(ref ptr) => ptr.header.next,
                 Object::Native(ref ptr) => ptr.header.next,
                 Object::Arr(ref ptr) => ptr.header.next,
+                Object::Instance(ref ptr) => ptr.header.next,
             };
 
             unsafe {

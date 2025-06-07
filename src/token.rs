@@ -23,7 +23,7 @@ impl<'source> Literal<'source> {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Token<'source> {
-    pub kind: TokenType,
+    pub ty: TokenType,
     pub lexeme: &'source str,
     pub literal: Literal<'source>,
     pub line: u32,
@@ -36,10 +36,19 @@ impl<'source> Token<'source> {
         line: u32,
     ) -> Self {
         Self {
-            kind,
+            ty: kind,
             lexeme,
             literal,
             line,
+        }
+    }
+    pub fn as_value_type(&self) -> Option<ValueType> {
+        match self.ty {
+            TokenType::F64 => Some(ValueType::Num),
+            TokenType::Bool => Some(ValueType::Bool),
+            TokenType::Str => Some(ValueType::Str),
+            TokenType::Identifier => Some(ValueType::Struct(self.lexeme.to_string())),
+            _ => None,
         }
     }
 }
@@ -121,12 +130,4 @@ impl TokenType {
     //         _ => false,
     //     }
     // }
-    pub fn as_value_type(&self) -> Option<ValueType> {
-        match self {
-            TokenType::F64 => Some(ValueType::Num),
-            TokenType::Bool => Some(ValueType::Bool),
-            TokenType::Str => Some(ValueType::Str),
-            _ => None,
-        }
-    }
 }

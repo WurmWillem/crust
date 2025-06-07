@@ -14,6 +14,7 @@ pub enum ValueType {
     Num,
     Str,
     Arr(Box<ValueType>),
+    Struct(String),
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -25,6 +26,7 @@ impl fmt::Display for ValueType {
             ValueType::Bool => write!(f, "Bool"),
             ValueType::Num => write!(f, "Number"),
             ValueType::Str => write!(f, "String"),
+            ValueType::Struct(s) => write!(f, "struct {}", s),
         }
     }
 }
@@ -137,6 +139,7 @@ impl Display for StackValue {
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
                 Object::Arr(a) => write!(f, "{:?}", a.data.values),
+                Object::Instance(_) => todo!(),
             },
         }
     }
@@ -151,7 +154,8 @@ impl StackValue {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
-                Object::Arr(a) => format!("{:?}", a.data.values),
+                Object::Arr(a) => format!("arr {:?}", a.data.values),
+                Object::Instance(i) => format!("inst {:?}", i.data.fields),
             },
         }
     }

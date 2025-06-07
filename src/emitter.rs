@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis_types::{FuncData, NatFuncData},
+    analysis_types::{FuncData, FuncHash, NatFuncHash, StructHash},
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
@@ -17,6 +17,7 @@ pub struct Emitter<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
     funcs: HashMap<&'a str, StackValue>,
+    structs: HashMap<&'a str, Vec<(&'a str, StackValue)>>,
 }
 impl<'a> Emitter<'a> {
     fn new() -> Self {
@@ -24,37 +25,40 @@ impl<'a> Emitter<'a> {
             heap: Heap::new(),
             comps: FuncCompilerStack::new(),
             funcs: HashMap::new(),
+            structs: HashMap::new(),
         }
     }
     pub fn compile(
         stmts: Vec<Stmt>,
-        func_data: HashMap<&'a str, FuncData<'a>>,
-        nat_func_data: HashMap<&'a str, NatFuncData>,
+        func_data: FuncHash,
+        nat_func_data: NatFuncHash,
+        struct_data: StructHash,
     ) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        if let Err(err) = comp.init_funcs(func_data, nat_func_data) {
-            print_error(err.line, &err.msg);
-
-            return None;
-        }
+        let func = match comp.init_funcs(func_data, nat_func_data, struct_data) {
+            Ok(func) => func,
+            Err(err) => {
+                print_error(err.line, &err.msg);
+                return None;
+            }
+        };
 
         for stmt in stmts {
             if let Err(err) = comp.emit_stmt(stmt) {
                 print_error(err.line, &err.msg);
-
                 return None;
             }
         }
 
-        let func = comp.comps.end_compiler(69);
         Some((func, comp.heap))
     }
 
     fn init_funcs(
         &mut self,
-        mut func_data: HashMap<&'a str, FuncData<'a>>,
-        mut nat_func_data: HashMap<&'a str, NatFuncData>,
-    ) -> Result<(), EmitErr> {
+        mut func_data: FuncHash<'a>,
+        mut nat_func_data: NatFuncHash<'a>,
+        struct_data: StructHash<'a>,
+    ) -> Result<ObjFunc, EmitErr> {
         for (name, data) in nat_func_data.drain() {
             let func = ObjNative::new(name.to_string(), data.func);
             let (func, _) = self.heap.alloc_permanent(func, Object::Native);
@@ -64,7 +68,8 @@ impl<'a> Emitter<'a> {
 
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
-        for name in func_data.keys() {
+        let func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
+        for (name, _) in func_data.iter() {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
@@ -72,7 +77,21 @@ impl<'a> Emitter<'a> {
             func_objs.push(func_obj);
         }
 
-        for (i, (name, data)) in func_data.drain().enumerate() {
+        let mut method_objs = Vec::new();
+        for (struct_name, data) in &struct_data {
+            let mut methods = vec![];
+            for (name, _) in &data.methods {
+                let dummy = ObjFunc::new(name.to_string());
+                let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
+
+                methods.push((*name, StackValue::Obj(func_obj)));
+                method_objs.push(func_obj);
+            }
+            self.structs.insert(struct_name, methods);
+        }
+
+        let mut main_func_obj = None;
+        for (i, (name, data)) in func_data.into_iter().enumerate() {
             let line = data.line;
 
             self.comps.push(name.to_string());
@@ -89,13 +108,41 @@ impl<'a> Emitter<'a> {
 
             let compiled_func = self.comps.end_compiler(line);
             if let Object::Func(ref mut func) = func_objs[i].borrow_mut() {
-                func.data = compiled_func;
+                if name == "main" {
+                    main_func_obj = Some(compiled_func);
+                } else {
+                    func.data = compiled_func;
+                }
             } else {
                 unreachable!()
             }
         }
 
-        Ok(())
+        for (_, data) in struct_data {
+            for (i, (name, data)) in data.methods.into_iter().enumerate() {
+                let line = data.line;
+
+                self.comps.push(name.to_string());
+                self.comps.begin_scope();
+                for (_, name) in data.parameters {
+                    self.comps.add_local(name, line)?;
+                }
+
+                for stmt in data.body {
+                    self.emit_stmt(stmt)?;
+                }
+
+                self.comps.emit_return(line);
+
+                let compiled_func = self.comps.end_compiler(line);
+                if let Object::Func(ref mut func) = method_objs[i].borrow_mut() {
+                    func.data = compiled_func;
+                } else {
+                    unreachable!()
+                }
+            }
+        }
+        Ok(main_func_obj.unwrap())
     }
 
     fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), EmitErr> {
@@ -213,6 +260,11 @@ impl<'a> Emitter<'a> {
             StmtType::Continue => {
                 self.comps.add_continue(line)?;
             }
+            StmtType::Struct {
+                name: _,
+                fields: _,
+                methods: _,
+            } => (),
         }
         Ok(())
     }
@@ -220,6 +272,93 @@ impl<'a> Emitter<'a> {
     fn emit_expr(&mut self, expr: &Expr<'a>) -> Result<(), EmitErr> {
         let line = expr.line;
         match &expr.expr {
+            ExprType::Call { name, args } => {
+                if let Some(methods) = self.structs.get(name) {
+                    let method_len = methods.len() as u8;
+                    for (_, value) in methods.iter().rev() {
+                        self.comps.emit_constant(*value, line)?;
+                    }
+                    for var in args.iter().rev() {
+                        self.emit_expr(var)?;
+                    }
+
+                    self.comps
+                        .emit_bytes(OpCode::AllocInstance as u8, method_len, line);
+                    self.comps.emit_byte(args.len() as u8, line);
+                } else {
+                    let fn_ptr = *self.funcs.get(name).unwrap();
+                    self.comps.emit_constant(fn_ptr, line)?;
+
+                    for var in args {
+                        self.emit_expr(var)?;
+                    }
+
+                    self.comps
+                        .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
+                }
+            }
+            ExprType::Array(arr) => {
+                let arr_len = arr.len() as f64;
+                for value in arr.iter().rev() {
+                    self.emit_expr(value)?;
+                }
+                self.comps.emit_constant(StackValue::F64(arr_len), line)?;
+                self.comps.emit_byte(OpCode::AllocArr as u8, line);
+            }
+            ExprType::Index { arr, index } => {
+                self.emit_expr(arr)?;
+                self.emit_expr(index)?;
+                self.comps.emit_byte(OpCode::IndexArr as u8, line);
+            }
+            ExprType::AssignIndex {
+                arr,
+                index,
+                new_value,
+            } => {
+                self.emit_expr(arr)?;
+                self.emit_expr(index)?;
+                self.emit_expr(new_value)?;
+                self.comps.emit_byte(OpCode::AssignIndex as u8, line);
+            }
+            ExprType::DotResolved { inst, index } => {
+                if let ExprType::This = inst.expr {
+                    self.comps
+                        .emit_bytes(OpCode::GetSelfField as u8, *index, line);
+                } else {
+                    self.emit_expr(inst)?;
+                    self.comps
+                        .emit_bytes(OpCode::GetPubField as u8, *index, line);
+                }
+            }
+            ExprType::DotAssignResolved {
+                inst,
+                index,
+                new_value,
+            } => {
+                if let ExprType::This = inst.expr {
+                    self.emit_expr(new_value)?;
+                    self.comps
+                        .emit_bytes(OpCode::GetSetField as u8, *index, line);
+                } else {
+                    self.emit_expr(inst)?;
+                    self.emit_expr(new_value)?;
+                    self.comps
+                        .emit_bytes(OpCode::SetPubField as u8, *index, line);
+                }
+            }
+
+            ExprType::MethodCallResolved { inst, index, args } => {
+                self.emit_expr(inst)?;
+                self.comps
+                    .emit_bytes(OpCode::MethodCall as u8, *index, line);
+
+                for var in args {
+                    self.emit_expr(var)?;
+                }
+
+                self.comps
+                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
+            }
             ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
                 Literal::Str(str) => {
@@ -239,11 +378,11 @@ impl<'a> Emitter<'a> {
                     unreachable!()
                 }
             }
-            ExprType::Assign { name, value } => {
+            ExprType::Assign { name, new_value } => {
                 let Some(arg) = self.comps.resolve_local(name) else {
                     unreachable!()
                 };
-                self.emit_expr(value)?;
+                self.emit_expr(new_value)?;
                 self.comps.emit_bytes(OpCode::SetLocal as u8, arg, line);
             }
             ExprType::Unary {
@@ -263,35 +402,21 @@ impl<'a> Emitter<'a> {
                 let op_code = op.to_op_code();
                 self.comps.emit_byte(op_code as u8, line);
             }
-            ExprType::Call { name, args } => {
-                let fn_ptr = *self.funcs.get(name).unwrap();
-                self.comps.emit_constant(fn_ptr, line)?;
-
-                for var in args.clone() {
-                    self.emit_expr(&var)?;
-                }
-                self.comps
-                    .emit_bytes(OpCode::Call as u8, args.len() as u8 + 1, line);
-            }
-            ExprType::Array(arr) => {
-                let arr_len = arr.len() as f64;
-                for value in arr.iter().rev() {
-                    self.emit_expr(value)?;
-                }
-                self.comps.emit_constant(StackValue::F64(arr_len), line)?;
-                self.comps.emit_byte(OpCode::AllocArr as u8, line);
-            }
-            ExprType::Index { arr, index } => {
-                self.emit_expr(arr)?;
-                self.emit_expr(index)?;
-                self.comps.emit_byte(OpCode::IndexArr as u8, line);
-            }
-            ExprType::AssignIndex { arr, index, value } => {
-                self.emit_expr(arr)?;
-                self.emit_expr(index)?;
-                self.emit_expr(value)?;
-                self.comps.emit_byte(OpCode::AssignIndex as u8, line);
-            }
+            ExprType::Dot {
+                inst: _,
+                property: _,
+            } => unreachable!(),
+            ExprType::DotAssign {
+                inst: _,
+                property: _,
+                new_value: _,
+            } => unreachable!(),
+            ExprType::MethodCall {
+                inst: _,
+                property: _,
+                args: _,
+            } => unreachable!(),
+            ExprType::This => unreachable!(),
         };
         Ok(())
     }

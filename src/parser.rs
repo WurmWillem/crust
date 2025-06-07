@@ -52,18 +52,18 @@ impl<'a> Parser<'a> {
         self.advance();
         let (can_assign, mut expr) = self.parse_prefix(precedence)?;
 
-        while self.peek().kind != TokenType::Eof
-            && precedence <= self.get_rule(self.peek().kind).precedence
+        while self.peek().ty != TokenType::Eof
+            && precedence <= self.get_rule(self.peek().ty).precedence
         {
             self.advance();
-            let infix = self.get_rule(self.previous().kind).infix;
+            let infix = self.get_rule(self.previous().ty).infix;
             expr = self.execute_infix(expr, infix, can_assign)?;
         }
         Ok(expr)
     }
 
     fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseErr> {
-        let kind = self.previous().kind;
+        let kind = self.previous().ty;
 
         let prefix = self.get_rule(kind).prefix;
         if prefix == FnType::Empty {
@@ -79,7 +79,7 @@ impl<'a> Parser<'a> {
 
     fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         let left = Box::new(left);
-        let op = BinaryOp::from_token_type(self.previous().kind);
+        let op = BinaryOp::from_token_type(self.previous().ty);
 
         let precedence = op.get_precedency();
         let right = Box::new(self.parse_precedence(precedence)?);
@@ -114,7 +114,7 @@ impl<'a> Parser<'a> {
     }
 
     fn unary(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let prefix = self.previous().kind;
+        let prefix = self.previous().ty;
         let value = Box::new(self.parse_precedence(Precedence::Unary)?);
 
         let line = self.previous().line;
@@ -124,7 +124,7 @@ impl<'a> Parser<'a> {
     }
 
     fn literal(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let literal = match self.previous().kind {
+        let literal = match self.previous().ty {
             TokenType::True => Literal::True,
             TokenType::False => Literal::False,
             TokenType::Null => Literal::Null,
@@ -139,14 +139,74 @@ impl<'a> Parser<'a> {
     }
 
     fn declaration(&mut self) -> Result<Stmt<'a>, ParseErr> {
-        if let Some(var_type) = self.peek().kind.as_value_type() {
+        if let Some(var_type) = self.peek().as_value_type() {
             self.advance();
+            if self.peek().ty != TokenType::Identifier && self.peek().ty != TokenType::LeftBracket {
+                self.regress();
+                return self.statement();
+            }
+
+            self.advance();
+            if self.peek().ty == TokenType::Number {
+                self.regress();
+                self.regress();
+                return self.statement();
+            }
+            self.regress();
             self.var_decl(var_type)
         } else if self.matches(TokenType::Fn) {
             self.func_decl()
+        } else if self.matches(TokenType::Struct) {
+            self.struct_decl()
         } else {
             self.statement()
         }
+    }
+
+    fn struct_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
+        self.consume(
+            TokenType::Identifier,
+            "Expected struct name after 'struct' keyword.",
+        )?;
+        let name = self.previous().lexeme;
+        let line = self.previous().line;
+
+        self.consume(TokenType::LeftBrace, "Expected '{' after struct name.")?;
+
+        let mut fields = Vec::new();
+        while !self.check(TokenType::RightBrace) && !self.check(TokenType::Fn) {
+            let mut field_ty = match self.advance().as_value_type() {
+                Some(ty) => ty,
+                None => {
+                    let msg = "Expected type for field declaration in struct body.";
+                    return Err(ParseErr::new(line, msg));
+                }
+            };
+            while self.matches(TokenType::LeftBracket) {
+                self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
+                field_ty = ValueType::Arr(Box::new(field_ty));
+            }
+
+            self.consume(TokenType::Identifier, "Expected variable name after type.")?;
+            let field_name = self.previous().lexeme;
+
+            fields.push((field_ty, field_name));
+
+            self.consume(TokenType::Semicolon, EXPECTED_SEMICOLON_MSG)?;
+        }
+        let mut methods = vec![];
+        while self.matches(TokenType::Fn) {
+            methods.push(self.func_decl()?);
+        }
+
+        self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
+
+        let ty = StmtType::Struct {
+            name,
+            fields,
+            methods,
+        };
+        Ok(Stmt::new(ty, line))
     }
 
     fn func_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
@@ -171,7 +231,7 @@ impl<'a> Parser<'a> {
 
         let mut return_ty = ValueType::Null;
         if self.matches(TokenType::Colon) {
-            return_ty = match self.advance().kind.as_value_type() {
+            return_ty = match self.advance().as_value_type() {
                 Some(return_ty) => return_ty,
                 _ => {
                     return Err(ParseErr::new(
@@ -192,7 +252,7 @@ impl<'a> Parser<'a> {
             body.push(self.declaration()?);
         }
 
-        if self.peek().kind != TokenType::Eof {
+        if self.peek().ty != TokenType::Eof {
             self.consume(
                 TokenType::RightBrace,
                 "Expected '}' at end of function body.",
@@ -209,7 +269,7 @@ impl<'a> Parser<'a> {
         Ok(func)
     }
     fn parse_parameter(&mut self) -> Result<(ValueType, &'a str), ParseErr> {
-        let var_ty = match self.advance().kind.as_value_type() {
+        let var_ty = match self.advance().as_value_type() {
             Some(mut var_type) => {
                 while self.matches(TokenType::LeftBracket) {
                     self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
@@ -386,19 +446,17 @@ impl<'a> Parser<'a> {
     }
 
     fn synchronize(&mut self) {
-        self.advance();
-        // dbg!(self.peek().kind);
+        // self.advance();
 
-        while self.peek().kind != TokenType::Eof {
+        while self.peek().ty != TokenType::Eof {
             // if we just consumed a semicolon, we probably ended a statement
-            if self.previous().kind == TokenType::Semicolon
-                && self.peek().kind != TokenType::RightBrace
+            if self.previous().ty == TokenType::Semicolon && self.peek().ty != TokenType::RightBrace
             {
                 return;
             }
 
             // check if next token looks like the start of a new statement
-            match self.peek().kind {
+            match self.peek().ty {
                 TokenType::Struct
                 | TokenType::Fn
                 | TokenType::F64
@@ -431,13 +489,20 @@ impl<'a> Parser<'a> {
         Ok(block)
     }
 
+    fn this(&mut self) -> Result<Expr<'a>, ParseErr> {
+        Ok(Expr::new(ExprType::This, self.previous().line))
+    }
+
     fn var(&mut self, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         let name = self.previous().lexeme;
         let line = self.previous().line;
 
         let ty = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
-            ExprType::Assign { name, value }
+            ExprType::Assign {
+                name,
+                new_value: value,
+            }
         } else {
             ExprType::Var(name)
         };
@@ -468,10 +533,31 @@ impl<'a> Parser<'a> {
             FnType::String => self.string(),
             FnType::Literal => self.literal(),
             FnType::Var => self.var(can_assign),
+            FnType::This => self.this(),
             _ => unreachable!(),
         }
     }
 
+    fn dot(&mut self, inst: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
+        self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
+        let property = self.previous();
+
+        let ty = if self.matches(TokenType::Equal) && can_assign {
+            let value = Box::new(self.expression()?);
+            ExprType::DotAssign {
+                inst: Box::new(inst),
+                property: property.lexeme,
+                new_value: value,
+            }
+        } else {
+            ExprType::Dot {
+                inst: Box::new(inst),
+                property: property.lexeme,
+            }
+        };
+
+        Ok(Expr::new(ty, property.line))
+    }
     fn index(&mut self, arr: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         let index = Box::new(self.expression()?);
         self.consume(TokenType::RightBracket, "Expected ']' after index.")?;
@@ -479,7 +565,11 @@ impl<'a> Parser<'a> {
         let arr = Box::new(arr);
         let ty = if can_assign && self.matches(TokenType::Equal) {
             let value = Box::new(self.expression()?);
-            ExprType::AssignIndex { arr, index, value }
+            ExprType::AssignIndex {
+                arr,
+                index,
+                new_value: value,
+            }
         } else {
             ExprType::Index { arr, index }
         };
@@ -496,10 +586,21 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        self.consume(TokenType::RightParen, "Expected ')' after function call.")?;
+        self.consume(
+            TokenType::RightParen,
+            "Expected ')' after function/constructor call.",
+        )?;
 
         if let ExprType::Var(name) = name.expr {
             let ty = ExprType::Call { name, args };
+            let expr = Expr::new(ty, self.previous().line);
+            Ok(expr)
+        } else if let ExprType::Dot { inst, property } = name.expr {
+            let ty = ExprType::MethodCall {
+                inst,
+                property,
+                args,
+            };
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
         } else {
@@ -517,6 +618,7 @@ impl<'a> Parser<'a> {
             FnType::Binary => self.binary(left),
             FnType::Call => self.call(left),
             FnType::Index => self.index(left, can_assign),
+            FnType::Dot => self.dot(left, can_assign),
             _ => unreachable!(),
         }
     }
@@ -547,14 +649,18 @@ impl<'a> Parser<'a> {
     }
 
     fn check(&self, kind: TokenType) -> bool {
-        self.peek().kind == kind
+        self.peek().ty == kind
     }
 
     fn advance(&mut self) -> Token<'a> {
-        if self.peek().kind != TokenType::Eof {
+        if self.peek().ty != TokenType::Eof {
             self.current_token += 1;
         }
         self.previous()
+    }
+
+    fn regress(&mut self) {
+        self.current_token -= 1;
     }
 
     fn peek(&self) -> Token<'a> {

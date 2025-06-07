@@ -64,6 +64,7 @@ pub enum Object {
     Func(Gc<ObjFunc>),
     Native(Gc<ObjNative>),
     Arr(Gc<ObjArr>),
+    Instance(Gc<ObjInstance>),
 }
 impl Object {
     pub fn header(&self) -> &GcHeader {
@@ -72,6 +73,7 @@ impl Object {
             Object::Func(obj) => obj.header(),
             Object::Native(obj) => obj.header(),
             Object::Arr(obj) => obj.header(),
+            Object::Instance(obj) => obj.header(),
         }
     }
     pub fn header_mut(&mut self) -> &mut GcHeader {
@@ -80,6 +82,7 @@ impl Object {
             Object::Func(obj) => obj.header_mut(),
             Object::Native(obj) => obj.header_mut(),
             Object::Arr(obj) => obj.header_mut(),
+            Object::Instance(obj) => obj.header_mut(),
         }
     }
     pub fn is_marked(&self) -> bool {
@@ -110,9 +113,26 @@ impl ObjArr {
 //         write!(f, "{:?}", self.values)
 //     }
 // }
-impl GcMemSize for ObjArr{
+impl GcMemSize for ObjArr {
     fn size_of(&self) -> usize {
         std::mem::size_of::<StackValue>() * self.values.capacity()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjInstance {
+    pub fields: Vec<StackValue>,
+    pub methods: Vec<StackValue>,
+}
+impl ObjInstance {
+    pub fn new(fields: Vec<StackValue>, methods: Vec<StackValue>) -> Self {
+        Self { fields, methods }
+    }
+}
+impl GcMemSize for ObjInstance {
+    fn size_of(&self) -> usize {
+        std::mem::size_of::<StackValue>() * self.fields.capacity()
+            + std::mem::size_of::<StackValue>() * self.methods.capacity()
     }
 }
 
@@ -142,7 +162,6 @@ pub type NativeFunc = fn(&[StackValue], &mut Heap) -> StackValue;
 
 #[derive(Debug, Clone)]
 pub struct ObjNative {
-    // TODO: maybe this name actually isn't necessary, cuz DeclaredFunc has it too
     name: String,
     pub func: NativeFunc,
 }

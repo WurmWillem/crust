@@ -7,9 +7,8 @@ pub struct FuncCompilerStack<'a> {
 }
 impl<'a> FuncCompilerStack<'a> {
     pub fn new() -> Self {
-        let root = FuncCompiler::new("".to_string());
         Self {
-            comps: vec![root],
+            comps: vec![],
             current: 0,
         }
     }
@@ -177,7 +176,6 @@ impl<'a> FuncCompilerStack<'a> {
         let continues = self.comps[self.current].continue_stack.pop().unwrap();
         for from in continues {
             self.patch_jump_to(from, loop_start, line)?;
-            //self.patch_jump_to(from, loop_start, line)?;
         }
         Ok(())
     }

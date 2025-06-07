@@ -51,29 +51,31 @@ fn main() {
 
     if PRINT_TOKENS {
         for token in &tokens {
-            println!("{:?} type: {:?}", token, token.kind as u8);
+            println!("{:?} type: {:?}", token, token.ty as u8);
         }
         println!();
     }
 
-    let statements = match parser::Parser::compile(tokens) {
+    let mut statements = match parser::Parser::compile(tokens) {
         Some(statements) => statements,
         None => {
             println!(
                 "{}",
-                "Compile error(s) detected, terminating program.".purple()
+                "Parse error(s) detected, terminating program.".purple()
             );
             return;
         }
     };
+    // dbg!(&statements);
 
-    let (func_data, nat_func_data) = match Analyser::analyse_stmts(&statements) {
+    let (func_data, nat_func_data, struct_data) = match Analyser::analyse_stmts(&mut statements) {
         Some(func_data) => func_data,
         None => return,
     };
 
     // dbg!(&statements);
-    if let Some((func, heap)) = Emitter::compile(statements, func_data, nat_func_data) {
+    if let Some((func, heap)) = Emitter::compile(statements, func_data, nat_func_data, struct_data)
+    {
         vm::VM::interpret(func, heap);
     }
 }

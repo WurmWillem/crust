@@ -1,0 +1,12 @@
+fn print_arr(int[][] arr) {
+    for j in 0 to len(arr) {
+        for i in 0 to len(arr[j]) {
+            print(arr[j][i]);
+        }
+    }
+}
+
+fn main() {
+    int[][] x = [[1, 2], [3, 4]];
+    print_arr(x);
+}
