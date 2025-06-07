@@ -433,6 +433,9 @@ impl<'a> Analyser<'a> {
         values: &mut Vec<Expr<'a>>,
         line: u32,
     ) -> Result<ValueType, SemanticErr> {
+        if values.is_empty() {
+            return Ok(ValueType::Arr(Box::new(ValueType::Any)));
+        }
         let el_ty = self.analyse_expr(&mut values[0])?;
         for el in values.iter_mut().skip(1) {
             let next_el_ty = self.analyse_expr(el)?;

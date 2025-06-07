@@ -1,4 +1,4 @@
-use crate::analysis_types::{NatFuncData, NatFuncHash, NatStructHash, StructHash};
+use crate::analysis_types::{NatFuncHash, NatStructHash};
 
 use std::collections::HashMap;
 

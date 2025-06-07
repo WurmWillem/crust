@@ -1,9 +1,9 @@
 fn main() {
-    Vec ve = Vec([1, 2, 3]);
-
-    ve.push(200);
-
-    pr ve.get(0);
+    Vec ve = Vec([1]);
 
     ve.print();
+    ve.pop();
+    ve.print();
+
+
 }
