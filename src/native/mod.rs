@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 mod funcs;
 mod structs;
+mod vec;
 
 pub fn register<'a>() -> (NatFuncHash<'a>, NatStructHash<'a>) {
     let mut funcs = HashMap::new();
