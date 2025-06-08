@@ -61,3 +61,22 @@ struct Vector2D {
     }
 }
 ```
+
+<H2>Roadmap</H2>
+
+- Expand standard library
+- Add enums
+- ✅ Add casting operations with 'as' keyword
+- ✅ Add more integer types such as i64 and u64
+- ✅ Add dynamic arrays to the standard library (Vec)
+- ✅ Add the ability to add structs to the standard library
+- ✅ Add methods
+- ✅ Add structs
+- ✅ Add arrays
+- ✅ Add some syntactic sugar for mutating variables (+=, -=, *=, /=, ++, --, ..)
+- ✅ Add functions
+- ✅ Add break and continue statements
+- ✅ Add loops
+- ✅ Add if statements
+- ✅ Add variable scope
+- ✅ Add variables
