@@ -1,5 +1,5 @@
 fn main() {
     uint x = 3;
-    int y = x;
+    int y = true as int;
 }
 

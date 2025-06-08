@@ -100,6 +100,7 @@ pub enum TokenType {
     Num,
 
     // keywords
+    As,
     And,
     Struct,
     Else,
@@ -114,7 +115,6 @@ pub enum TokenType {
     Null,
     Or,
     Print,
-    // Println,
     Return,
     Super,
     This,

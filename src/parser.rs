@@ -580,6 +580,23 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    fn cast(&mut self, value: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+        let line = self.previous().line;
+
+        if let Some(target) = self.peek().as_value_type() {
+            self.advance();
+            let value = Box::new(value);
+            let ty = ExprType::Cast { value, target };
+
+            Ok(Expr::new(ty, line))
+        } else {
+            Err(ParseErr {
+                line,
+                msg: "Expected type after 'as' keyword.".to_string(),
+            })
+        }
+    }
+
     fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         let mut args = Vec::new();
         while !self.check(TokenType::RightParen) {
@@ -595,7 +612,11 @@ impl<'a> Parser<'a> {
         )?;
 
         if let ExprType::Var(name) = name.expr {
-            let ty = ExprType::Call { name, args, index: None };
+            let ty = ExprType::Call {
+                name,
+                args,
+                index: None,
+            };
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
         } else if let ExprType::Dot { inst, property } = name.expr {
@@ -622,6 +643,7 @@ impl<'a> Parser<'a> {
             FnType::Call => self.call(left),
             FnType::Index => self.index(left, can_assign),
             FnType::Dot => self.dot(left, can_assign),
+            FnType::Cast => self.cast(left),
             _ => unreachable!(),
         }
     }

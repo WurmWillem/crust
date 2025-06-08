@@ -64,6 +64,7 @@ pub enum SemErrType {
     InvalidTypeFieldAccess(ValueType),
     InvalidPubField(String, String),
     InvalidMethod(String, String),
+    InvalidCast(ValueType, ValueType),
     IndexNonArr(ValueType),
     AssignArrTypeMismatch(ValueType, ValueType),
     UndefinedFunc(String),
@@ -89,6 +90,7 @@ impl SemanticErr {
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
             SemErrType::FuncDefInFunc(name) => format!("You attempted to define the function '{}' inside another function, which is illegal.", name.green()),
             SemErrType::StructDefInFunc(name) => format!("You attempted to define the struct '{}' inside a function, which is illegal.", name.green()),
+            SemErrType::InvalidCast(expected, found) => format!("You can't cast an expression of type '{}' to type '{}'.", found, expected),
             SemErrType::NoMainFunc => {
                 "You have to define a function with the name 'main' as entry point for the program."
                     .to_string()

@@ -305,6 +305,14 @@ impl<'a> Analyser<'a> {
                 };
                 return_ty
             }
+            ExprType::Cast { value, target } => {
+                let value_ty = self.analyse_expr(value)?;
+                if !value_ty.is_num() || !target.is_num() {
+                    let ty = SemErrType::InvalidCast(target.clone(), value_ty);
+                    return Err(SemanticErr::new(line, ty));
+                }
+                target.clone()
+            }
             ExprType::This => unreachable!(),
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
             ExprType::MethodCallResolved {
@@ -316,10 +324,6 @@ impl<'a> Analyser<'a> {
                 inst: _,
                 index: _,
                 new_value: _,
-            } => unreachable!(),
-            ExprType::Cast {
-                value: _,
-                target: _,
             } => unreachable!(),
         };
         Ok(result)
@@ -376,7 +380,7 @@ impl<'a> Analyser<'a> {
             Some(symbol) => {
                 let value_ty = self.analyse_expr(value)?;
                 if symbol.ty != value_ty && symbol.ty != ValueType::Any {
-                    if value_ty.is_num() && symbol.ty.is_num() && is_coercible(&value.expr)  {
+                    if value_ty.is_num() && symbol.ty.is_num() && is_coercible(&value.expr) {
                         let target = symbol.ty.clone();
                         let new_value = value.clone();
 
