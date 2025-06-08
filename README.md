@@ -1,4 +1,14 @@
-<H2> Crust: One of the programming languages of all time </H2>
+<H2> Introducing Crust: One of the crustiest languages of all time </H2>
+This is Crust, a statically and strongly typed programming language written in Rust 🦀. Crust intends to be a simple yet powerful language, which should be easy to pick up without compromising features. You could think of it as a mix between Rust and C, as it takes many of the good parts of Rust, and combines them with the simplicity of C.
+
+<H2>Why should you use Crust?</H2>
+
+- 🚀 Blazingly fast and written in Rust
+- 😃 Because you are a masochist
+- 🥰 You want to support me
+- 🇳🇱 Je bent een Nederlander in hart en nieren
+
+<H3>Sneak Peek</H3>
 
 ```c
 fn factorial(int n): int {
