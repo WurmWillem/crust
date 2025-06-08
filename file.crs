@@ -1,14 +1,5 @@
-fn print_arr(int[][] arr) {
-    // TODO: update this to use len()
-    for j in 0 to 2 {
-        for i in 0 to 2 {
-            print(arr[j][i]);
-        }
-    }
-}
-
 fn main() {
-    int[][] x = [[1, 2], [3, 4]];
-    print_arr(x);
+    uint x = to_uint(3);
+    //uint y = to_uint(3.3);
 }
 

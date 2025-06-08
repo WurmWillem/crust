@@ -137,7 +137,7 @@ impl<'a> StructData<'a> {
 
 pub struct EnityData<'a> {
     pub funcs: HashMap<&'a str, FuncData<'a>>,
-    pub nat_funcs: HashMap<&'a str, NatFuncData>,
+    pub nat_funcs: HashMap<&'a str, Vec<NatFuncData>>,
     pub structs: HashMap<&'a str, StructData<'a>>,
     pub nat_structs: HashMap<&'a str, NatStructData<'a>>,
 }

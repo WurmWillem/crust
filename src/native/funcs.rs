@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{analysis_types::NatFuncData, heap::Heap, object::Object, value::StackValue};
 
-pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
+pub fn register(nat_funcs: &mut HashMap<&str, Vec<NatFuncData>>) {
     use crate::value::ValueType;
 
     macro_rules! add_func {
@@ -12,7 +12,10 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
                 func: $func,
                 return_ty: $return_ty,
             };
-            nat_funcs.insert($name, nat_func);
+            nat_funcs
+                .entry($name)
+                .or_insert_with(Vec::new)
+                .push(nat_func);
         };
     }
 
@@ -20,7 +23,10 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
     add_func!("clock", clock, vec![], VT::F64);
     add_func!("print", print, vec![VT::Any], VT::Null);
     add_func!("println", println, vec![VT::Any], VT::Null);
-    add_func!("to_uint", uint, vec![VT::F64], VT::U64);
+
+    add_func!("to_uint", uint_f64, vec![VT::F64], VT::U64);
+    add_func!("to_uint", uint_i64, vec![VT::I64], VT::U64);
+
     add_func!("sin", sin, vec![VT::F64], VT::F64);
     add_func!("cos", cos, vec![VT::F64], VT::F64);
     add_func!("tan", tan, vec![VT::F64], VT::F64);
@@ -40,13 +46,21 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
 }
 // TODO: update these to work with all nums
 
-fn uint(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn uint_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     if let StackValue::F64(val) = args[0] {
         StackValue::U64(val as u64)
     } else {
         unreachable!()
     }
 }
+fn uint_i64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    if let StackValue::I64(val) = args[0] {
+        StackValue::U64(val as u64)
+    } else {
+        unreachable!()
+    }
+}
+
 fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
 

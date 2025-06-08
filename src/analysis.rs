@@ -4,7 +4,7 @@ use crate::{
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
-    token::{Literal, TokenType},
+    token::TokenType,
     value::ValueType,
 };
 
@@ -227,6 +227,21 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::Call { name, args } => {
+                // TODO: implement this
+                if let Some(data) = self.enities.nat_funcs.remove(name) {
+                    for func in &data {
+                        let parameters = func.parameters.clone();
+                        let return_ty = func.return_ty.clone();
+                        // data_for_check.push((parameters, return_ty));
+                        //
+                        if let Ok(()) = self.check_if_params_and_args_correspond(args, parameters, name.to_string(), line)  {
+                            return Ok(return_ty);
+                        }
+                        // return Ok((return_ty, parameters));
+                    }
+                    self.enities.nat_funcs.insert(name, data);
+                };
+
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
                 self.check_if_params_and_args_correspond(args, parameters, name.to_string(), line)?;
                 return_ty
@@ -616,12 +631,6 @@ impl<'a> Analyser<'a> {
             return Ok((return_ty, parameters));
         };
 
-        if let Some(data) = self.enities.nat_funcs.get(name) {
-            let parameters = data.parameters.clone();
-            let return_ty = data.return_ty.clone();
-
-            return Ok((return_ty, parameters));
-        };
         let ty = SemErrType::UndefinedFunc(name.to_string());
         Err(SemanticErr::new(line, ty))
     }
