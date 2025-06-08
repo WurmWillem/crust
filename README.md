@@ -4,9 +4,8 @@ This is Crust, a statically and strongly typed programming language written in R
 <H2>Why should you use Crust?</H2>
 
 - 🚀 Blazingly fast and written in Rust
-- 😃 Because you are a masochist
+- 😃 You are looking for a language that balances simplicity and features
 - 🥰 You want to support me
-- 🇳🇱 Je bent een Nederlander in hart en nieren
 
 <H3>Sneak Peek</H3>
 
@@ -33,6 +32,7 @@ fn main() {
 
     // create instances with 'struct_name(fields)' syntax
     Vector2D vec = Vector2D(3., 2.);
+    println(vec.x); // prints '3.'
     // call methods with the syntax 'struct_name.method_name(arguments)'
     double product = vec.product(); // holds '6.'
 
