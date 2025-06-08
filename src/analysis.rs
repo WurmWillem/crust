@@ -4,7 +4,7 @@ use crate::{
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
-    token::{Literal, TokenType},
+    token::TokenType,
     value::ValueType,
 };
 
@@ -136,25 +136,20 @@ impl<'a> Analyser<'a> {
                     }
                 }
 
-                // if *ty == ValueType::U64 {
-                //     if let ExprType::Lit(lit) = &mut value.expr {
-                //         if let Literal::I64(num) = lit {
-                //             *lit = Literal::U64(*num as u64)
-                //         }
-                //     }
-                // }
-                // if *ty == ValueType::I64 {
-                //     if let ExprType::Lit(lit) = &mut value.expr {
-                //         if let Literal::U64(num) = lit {
-                //             *lit = Literal::I64(*num as i64)
-                //         }
-                //     }
-                // }
-
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty && value_ty != ValueType::Null {
-                    let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    if value_ty.is_num() && ty.is_num() {
+                        let target = ty.clone();
+                        let new_value = Box::new(value.clone());
+
+                        value.expr = ExprType::Cast {
+                            value: new_value,
+                            target,
+                        };
+                    } else {
+                        let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
+                        return Err(SemanticErr::new(line, err_ty));
+                    }
                 }
                 self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
             }
@@ -322,7 +317,10 @@ impl<'a> Analyser<'a> {
                 index: _,
                 new_value: _,
             } => unreachable!(),
-            ExprType::Cast { value: _, target: _ } => unreachable!(),
+            ExprType::Cast {
+                value: _,
+                target: _,
+            } => unreachable!(),
         };
         Ok(result)
     }
@@ -378,8 +376,18 @@ impl<'a> Analyser<'a> {
             Some(symbol) => {
                 let value_ty = self.analyse_expr(value)?;
                 if symbol.ty != value_ty && symbol.ty != ValueType::Any {
-                    let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    if value_ty.is_num() && symbol.ty.is_num() {
+                        let target = symbol.ty.clone();
+                        let new_value = value.clone();
+
+                        value.expr = ExprType::Cast {
+                            value: new_value,
+                            target,
+                        };
+                    } else {
+                        let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
+                        return Err(SemanticErr::new(line, err_ty));
+                    }
                 }
                 Ok(symbol.ty)
             }
