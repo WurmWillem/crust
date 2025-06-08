@@ -1,6 +1,7 @@
 use crate::{
     parse_types::BinaryOp,
-    token::{Literal, TokenType}, value::ValueType,
+    token::{Literal, TokenType},
+    value::ValueType,
 };
 
 #[derive(Debug, Clone)]

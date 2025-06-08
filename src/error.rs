@@ -78,7 +78,8 @@ pub enum SemErrType {
     AlreadyDefinedStruct(String),
     OpTypeMismatch(ValueType, Operator, ValueType),
     VarDeclTypeMismatch(ValueType, ValueType),
-    ParamTypeMismatch(ValueType, ValueType),
+    ParamTypeMismatch(String, ValueType, ValueType),
+    NatParamTypeMismatch(String),
     FieldTypeMismatch(ValueType, ValueType),
     ArrElTypeMismatch(ValueType, ValueType),
 }
@@ -191,11 +192,18 @@ impl SemanticErr {
                     expected, found
                 )
             }
-            SemErrType::ParamTypeMismatch(expected, found) => {
+            SemErrType::ParamTypeMismatch(name, expected, found) => {
                 // TODO: update error msg to use function name and maybe param name
                 format!(
-                    "Parameter has type '{}', but found type '{}'.",
-                    expected, found
+                    "Parameter of function '{}' has type '{}', but found type '{}'.",
+                    name, expected, found
+                )
+            }
+            SemErrType::NatParamTypeMismatch(name) => {
+                // TODO: update error msg to use function name and maybe param name
+                format!(
+                    "The types of the parameters of function '{}' and the types of the given arguments don't match.",
+                    name.green()
                 )
             }
             SemErrType::FieldTypeMismatch(expected, found) => {

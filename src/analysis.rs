@@ -247,6 +247,9 @@ impl<'a> Analyser<'a> {
                         }
                     }
                     self.enities.nat_funcs.insert(name, data);
+
+                    let err_ty = SemErrType::NatParamTypeMismatch(name.to_string());
+                    return Err(SemanticErr::new(line, err_ty));
                 };
 
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
@@ -574,7 +577,7 @@ impl<'a> Analyser<'a> {
                 && matches!(arg_ty, ValueType::Arr(_));
 
             if !is_exact_match && !is_any && !is_array_match {
-                let err_ty = SemErrType::ParamTypeMismatch(param_ty.clone(), arg_ty);
+                let err_ty = SemErrType::ParamTypeMismatch(name.to_string(), param_ty.clone(), arg_ty);
                 return Err(SemanticErr::new(line, err_ty));
             }
         }

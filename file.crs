@@ -1,5 +1,19 @@
-fn main() {
-    uint x = 3;
-    int y = true as int;
+struct Vec2 {
+    int x;
+    int y;
+
+    fn product(uint b): int {
+        return self.x * self.y;
+    }
+    fn increment_x() {
+        self.x = self.x + 1;
+    }
 }
 
+fn main() {
+    Vec2 vec = Vec2(3, 2);
+    pr vec.product(3);
+
+    vec.increment_x();
+    pr vec.x;
+}
