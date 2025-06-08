@@ -48,7 +48,7 @@ fn factorial(uint n): uint {
     return n * factorial(n - 1);
 }
 
-// define a struct named 'Vec2'
+// define a struct named 'Vector2D'
 struct Vector2D {
     // declare the fields
     double x;
