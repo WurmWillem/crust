@@ -154,7 +154,10 @@ impl<'a> Analyser<'a> {
                 self.return_stmt_found = true;
                 let return_ty = self.analyse_expr(expr)?;
 
-                if return_ty != self.current_return_ty && return_ty != ValueType::Null {
+                if return_ty != self.current_return_ty
+                    && return_ty != ValueType::Null
+                    && !try_coerce(&mut expr.expr, &self.current_return_ty)
+                {
                     let err_ty =
                         SemErrType::IncorrectReturnTy(self.current_return_ty.clone(), return_ty);
                     return Err(SemanticErr::new(line, err_ty));
