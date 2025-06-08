@@ -30,7 +30,7 @@ impl Heap {
         while let Some(object) = current {
             if let Object::Arr(arr) = object {
                 print!("HEAP: [");
-                for el in &arr.data.values {
+                for el in &arr.data.elements {
                     print!("{}, ", el.display());
                 }
                 println!("]");
@@ -66,9 +66,15 @@ impl Heap {
             Object::Str(_) => (),
             Object::Func(_) => (),
             Object::Native(_) => (),
-            Object::Instance(_) => todo!(),
+            Object::Inst(inst) => {
+                for el in &inst.data.fields {
+                    if let StackValue::Obj(obj) = el {
+                        self.mark_object(*obj, gray_list);
+                    }
+                }
+            }
             Object::Arr(arr) => {
-                for el in &arr.data.values {
+                for el in &arr.data.elements {
                     if let StackValue::Obj(obj) = el {
                         self.mark_object(*obj, gray_list);
                     }
@@ -195,7 +201,7 @@ impl Heap {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
-            Object::Instance(ptr) => {
+            Object::Inst(ptr) => {
                 let raw = ptr.ptr.as_ptr();
                 drop(Box::from_raw(raw));
             }
@@ -211,7 +217,7 @@ impl Heap {
                 Object::Func(ref ptr) => ptr.header.next,
                 Object::Native(ref ptr) => ptr.header.next,
                 Object::Arr(ref ptr) => ptr.header.next,
-                Object::Instance(ref ptr) => ptr.header.next,
+                Object::Inst(ref ptr) => ptr.header.next,
             };
 
             unsafe {

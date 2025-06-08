@@ -11,20 +11,29 @@ pub enum ValueType {
     Any,  // useful as generic type for functions like println()
     Null,
     Bool,
-    Num,
+    F64,
+    I64,
+    U64,
     Str,
     Arr(Box<ValueType>),
     Struct(String),
+}
+impl ValueType {
+    pub fn is_num(&self) -> bool {
+        matches!(self, ValueType::F64 | ValueType::I64 | ValueType::U64)
+    }
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ValueType::None => unreachable!(),
             ValueType::Arr(ty) => write!(f, "[{}]", ty),
-            ValueType::Any => unreachable!(),
+            ValueType::Any => write!(f, "Any"),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
-            ValueType::Num => write!(f, "Number"),
+            ValueType::F64 => write!(f, "Double"),
+            ValueType::I64 => write!(f, "Int"),
+            ValueType::U64 => write!(f, "Uint"),
             ValueType::Str => write!(f, "String"),
             ValueType::Struct(s) => write!(f, "struct {}", s),
         }
@@ -36,6 +45,8 @@ pub enum StackValue {
     Null,
     Bool(bool),
     F64(f64),
+    U64(u64),
+    I64(i64),
     Obj(Object),
 }
 
@@ -45,6 +56,10 @@ macro_rules! add_num_operation {
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs $op rhs),
+                (StackValue::I64(lhs), StackValue::I64(rhs)) => StackValue::I64(lhs $op rhs),
+                (StackValue::U64(lhs), StackValue::U64(rhs)) => StackValue::U64(lhs $op rhs),
+                (StackValue::U64(lhs), StackValue::I64(rhs)) => StackValue::I64(lhs as i64 $op rhs),
+                (StackValue::I64(lhs), StackValue::U64(rhs)) => StackValue::I64(lhs $op rhs as i64),
                 _ => unreachable!("operation is only available for numbers"),
             }
         }
@@ -57,6 +72,10 @@ macro_rules! add_num_comparison {
         pub fn $fun_name(self, rhs: StackValue) -> StackValue {
             match (self, rhs) {
                 (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::Bool(lhs $op rhs),
+                (StackValue::I64(lhs), StackValue::I64(rhs)) => StackValue::Bool(lhs $op rhs),
+                (StackValue::U64(lhs), StackValue::U64(rhs)) => StackValue::Bool(lhs $op rhs),
+                (StackValue::I64(lhs), StackValue::U64(rhs)) => StackValue::Bool(lhs $op rhs as i64),
+                (StackValue::U64(lhs), StackValue::I64(rhs)) => StackValue::Bool((lhs as i64) $op rhs),
                 _ => unreachable!("$fun_name is only available for numbers"),
             }
         }
@@ -78,6 +97,10 @@ impl StackValue {
     pub fn equals(self, rhs: StackValue) -> bool {
         match (self, rhs) {
             (StackValue::F64(lhs), StackValue::F64(rhs)) => lhs == rhs,
+            (StackValue::I64(lhs), StackValue::I64(rhs)) => lhs == rhs,
+            (StackValue::U64(lhs), StackValue::U64(rhs)) => lhs == rhs,
+            (StackValue::I64(lhs), StackValue::U64(rhs)) => lhs == rhs as i64,
+            (StackValue::U64(lhs), StackValue::I64(rhs)) => lhs as i64 == rhs,
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs == rhs,
             (StackValue::Null, StackValue::Null) => true,
             (StackValue::Obj(Object::Str(str1)), StackValue::Obj(Object::Str(str2))) => {
@@ -109,6 +132,8 @@ impl Neg for StackValue {
     fn neg(self) -> Self::Output {
         match self {
             StackValue::F64(value) => StackValue::F64(-value),
+            StackValue::I64(value) => StackValue::I64(-value),
+            StackValue::U64(_) => panic!("attempted to use minus on unsigned int."),
             _ => {
                 unreachable!("Attempted to use operation that is not defined for this type.")
             }
@@ -134,12 +159,14 @@ impl Display for StackValue {
             StackValue::Null => write!(f, "null"),
             StackValue::Bool(b) => write!(f, "{}", b),
             StackValue::F64(num) => write!(f, "{}", num),
+            StackValue::U64(num) => write!(f, "{}", num),
+            StackValue::I64(num) => write!(f, "{}", num),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => write!(f, "{}", s.data),
                 Object::Func(_) => unreachable!(),
                 Object::Native(_) => unreachable!(),
-                Object::Arr(a) => write!(f, "{:?}", a.data.values),
-                Object::Instance(_) => todo!(),
+                Object::Arr(a) => write!(f, "{:?}", a.data.elements),
+                Object::Inst(i) => write!(f, "inst {:?}", i.data.fields),
             },
         }
     }
@@ -150,12 +177,14 @@ impl StackValue {
             StackValue::Null => "null".to_string(),
             StackValue::Bool(b) => b.to_string(),
             StackValue::F64(f) => f.to_string(),
+            StackValue::U64(f) => f.to_string(),
+            StackValue::I64(f) => f.to_string(),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => format!("{:?}", s.data),
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
-                Object::Arr(a) => format!("arr {:?}", a.data.values),
-                Object::Instance(i) => format!("inst {:?}", i.data.fields),
+                Object::Arr(a) => format!("arr {:?}", a.data.elements),
+                Object::Inst(i) => format!("inst {:?}", i.data.fields),
             },
         }
     }

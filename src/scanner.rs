@@ -26,10 +26,10 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "if",If "else",Else "while",While "for",For
+            "if",If "else",Else "while",While "for",For "as",As
             "true",True "false",False "null",Null "self",This "parent",Super
-            "struct",Struct "fn",Fn "return",Return "pr",Print
-            "int",F64 "bool",Bool "str",Str "in",In "to",To "break",Break "continue",Continue
+            "struct",Struct "fn",Fn "return",Return "pr",Print "double",F64 "uint",U64
+            "int",I64 "bool",Bool "str",Str "in",In "to",To "break",Break "continue",Continue
         );
 
         let source_len = source_file.len();
@@ -151,7 +151,7 @@ impl<'source> Scanner<'source> {
                 }
 
                 let str = &self.source[(self.start + 1)..self.current];
-                self.add_lit_token(TokenType::String, Literal::Str(str));
+                self.add_lit_token(TokenType::StringLit, Literal::Str(str));
 
                 self.current += 1;
             }
@@ -241,18 +241,42 @@ impl<'source> Scanner<'source> {
             self.current += 1;
         }
 
-        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
-            self.current += 1;
+        let mut is_double = false;
+        if self.peek() == '.' {
+            is_double = true;
 
-            while self.peek().is_ascii_digit() {
+            if self.peek_next().is_ascii_digit() {
+                self.current += 1;
+
+                while self.peek().is_ascii_digit() {
+                    self.current += 1;
+                }
+            } else {
                 self.current += 1;
             }
         }
 
-        let num = self.source[self.start..self.current]
-            .parse::<f64>()
-            .unwrap();
-        self.add_lit_token(TokenType::Number, Literal::Num(num))
+        let literal = if is_double {
+            Literal::F64(
+                self.source[self.start..self.current]
+                    .parse::<f64>()
+                    .unwrap(),
+            )
+        } else if self.current - self.start > 19 {
+            Literal::U64(
+                self.source[self.start..self.current]
+                    .parse::<u64>()
+                    .unwrap(),
+            )
+        } else {
+            Literal::I64(
+                self.source[self.start..self.current]
+                    .parse::<i64>()
+                    .unwrap(),
+            )
+        };
+
+        self.add_lit_token(TokenType::Num, literal)
     }
 
     fn peek_next(&self) -> char {

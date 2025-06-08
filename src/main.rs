@@ -15,7 +15,7 @@ mod error;
 mod expression;
 mod func_compiler;
 mod heap;
-mod native_funcs;
+mod native;
 mod object;
 mod op_code;
 mod parse_types;
@@ -68,14 +68,13 @@ fn main() {
     };
     // dbg!(&statements);
 
-    let (func_data, nat_func_data, struct_data) = match Analyser::analyse_stmts(&mut statements) {
+    let entities = match Analyser::analyse_stmts(&mut statements) {
         Some(func_data) => func_data,
         None => return,
     };
 
     // dbg!(&statements);
-    if let Some((func, heap)) = Emitter::compile(statements, func_data, nat_func_data, struct_data)
-    {
+    if let Some((func, heap)) = Emitter::compile(statements, entities) {
         vm::VM::interpret(func, heap);
     }
 }

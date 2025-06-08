@@ -13,7 +13,6 @@ pub enum Precedence {
     Factor,     // * /
     Unary,      // ! -
     Call,       // . ()
-    Primary,
 }
 impl std::convert::From<u8> for Precedence {
     fn from(value: u8) -> Self {
@@ -28,7 +27,6 @@ impl std::convert::From<u8> for Precedence {
             7 => Self::Factor,
             8 => Self::Unary,
             9 => Self::Call,
-            10 => Self::Primary,
             _ => panic!("Not a valid value for Precedence."),
         }
     }
@@ -41,6 +39,7 @@ pub enum FnType {
     Array,
     Unary,
     Binary,
+    Cast,
     Number,
     String,
     Literal,
@@ -59,7 +58,7 @@ pub struct ParseRule {
 }
 
 #[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 49] = {
+pub const PARSE_RULES: [ParseRule; 55] = {
     use FnType::*;
     use Precedence as P;
 
@@ -102,6 +101,7 @@ pub const PARSE_RULES: [ParseRule; 49] = {
         ParseRule { prefix: Var, infix: Empty, precedence: P::None, }, // identifier
         ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
         ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
+        ParseRule { prefix: Empty, infix: Cast, precedence: P::Call, }, // as
         ParseRule { prefix: Empty, infix: Binary, precedence: P::And, }, // and
         none!(), // class
         none!(), // else
@@ -121,6 +121,11 @@ pub const PARSE_RULES: [ParseRule; 49] = {
         ParseRule { prefix: This, infix: Empty, precedence: P::None, }, // self
         ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // true
         none!(), // while
+        none!(), // f64
+        none!(), // i64
+        none!(), // u64
+        none!(), // bool
+        none!(), // str
         none!(), // EOF
     ]
 };

@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap};
 
 use crate::{
-    analysis_types::{FuncData, FuncHash, NatFuncHash, StructHash},
+    analysis_types::{EnityData, FuncData},
     error::{print_error, EmitErr},
     expression::{Expr, ExprType},
     func_compiler::FuncCompilerStack,
@@ -10,13 +10,13 @@ use crate::{
     op_code::OpCode,
     statement::{Stmt, StmtType},
     token::{Literal, TokenType},
-    value::StackValue,
+    value::{StackValue, ValueType},
 };
 
 pub struct Emitter<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
-    funcs: HashMap<&'a str, StackValue>,
+    funcs: HashMap<&'a str, Vec<StackValue>>,
     structs: HashMap<&'a str, Vec<(&'a str, StackValue)>>,
 }
 impl<'a> Emitter<'a> {
@@ -28,14 +28,9 @@ impl<'a> Emitter<'a> {
             structs: HashMap::new(),
         }
     }
-    pub fn compile(
-        stmts: Vec<Stmt>,
-        func_data: FuncHash,
-        nat_func_data: NatFuncHash,
-        struct_data: StructHash,
-    ) -> Option<(ObjFunc, Heap)> {
+    pub fn compile(stmts: Vec<Stmt>, entities: EnityData) -> Option<(ObjFunc, Heap)> {
         let mut comp = Emitter::new();
-        let func = match comp.init_funcs(func_data, nat_func_data, struct_data) {
+        let func = match comp.init_funcs(entities) {
             Ok(func) => func,
             Err(err) => {
                 print_error(err.line, &err.msg);
@@ -53,32 +48,31 @@ impl<'a> Emitter<'a> {
         Some((func, comp.heap))
     }
 
-    fn init_funcs(
-        &mut self,
-        mut func_data: FuncHash<'a>,
-        mut nat_func_data: NatFuncHash<'a>,
-        struct_data: StructHash<'a>,
-    ) -> Result<ObjFunc, EmitErr> {
-        for (name, data) in nat_func_data.drain() {
-            let func = ObjNative::new(name.to_string(), data.func);
-            let (func, _) = self.heap.alloc_permanent(func, Object::Native);
-            let value = StackValue::Obj(func);
-            self.funcs.insert(name, value);
+    fn init_funcs(&mut self, mut entities: EnityData<'a>) -> Result<ObjFunc, EmitErr> {
+        for (name, data) in entities.nat_funcs.drain() {
+            let mut values = vec![];
+            for data in data {
+                let func = ObjNative::new(name.to_string(), data.func);
+                let (func, _) = self.heap.alloc_permanent(func, Object::Native);
+                let value = StackValue::Obj(func);
+                values.push(value);
+            }
+            self.funcs.insert(name, values);
         }
 
         // insert dummy function objects for recursion
         let mut func_objs = Vec::new();
-        let func_data: Vec<(&'a str, FuncData<'a>)> = func_data.drain().collect();
+        let func_data: Vec<(&'a str, FuncData<'a>)> = entities.funcs.drain().collect();
         for (name, _) in func_data.iter() {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
-            self.funcs.insert(name, StackValue::Obj(func_obj));
+            self.funcs.insert(name, vec![StackValue::Obj(func_obj)]);
             func_objs.push(func_obj);
         }
 
         let mut method_objs = Vec::new();
-        for (struct_name, data) in &struct_data {
+        for (struct_name, data) in &entities.structs {
             let mut methods = vec![];
             for (name, _) in &data.methods {
                 let dummy = ObjFunc::new(name.to_string());
@@ -86,6 +80,17 @@ impl<'a> Emitter<'a> {
 
                 methods.push((*name, StackValue::Obj(func_obj)));
                 method_objs.push(func_obj);
+            }
+            self.structs.insert(struct_name, methods);
+        }
+
+        for (struct_name, data) in entities.nat_structs {
+            let mut methods = vec![];
+            for (name, data) in &data.methods {
+                let func = ObjNative::new(name.to_string(), data.func);
+                let (func, _) = self.heap.alloc_permanent(func, Object::Native);
+                let value = StackValue::Obj(func);
+                methods.push((*name, value));
             }
             self.structs.insert(struct_name, methods);
         }
@@ -118,7 +123,7 @@ impl<'a> Emitter<'a> {
             }
         }
 
-        for (_, data) in struct_data {
+        for (_, data) in entities.structs {
             for (i, (name, data)) in data.methods.into_iter().enumerate() {
                 let line = data.line;
 
@@ -146,6 +151,7 @@ impl<'a> Emitter<'a> {
     }
 
     fn emit_stmt(&mut self, stmt: Stmt<'a>) -> Result<(), EmitErr> {
+        // dbg!(&stmt);
         let line = stmt.line;
         match stmt.stmt {
             StmtType::Expr(expr) => {
@@ -227,7 +233,7 @@ impl<'a> Emitter<'a> {
                 self.emit_stmt(*body)?;
 
                 self.comps.emit_bytes(OpCode::GetLocal as u8, var_arg, line);
-                self.comps.emit_constant(StackValue::F64(1.), line)?;
+                self.comps.emit_constant(StackValue::I64(1), line)?;
 
                 self.comps.emit_byte(OpCode::Add as u8, line);
                 self.comps.emit_bytes(OpCode::SetLocal as u8, var_arg, line);
@@ -272,7 +278,7 @@ impl<'a> Emitter<'a> {
     fn emit_expr(&mut self, expr: &Expr<'a>) -> Result<(), EmitErr> {
         let line = expr.line;
         match &expr.expr {
-            ExprType::Call { name, args } => {
+            ExprType::Call { name, args, index } => {
                 if let Some(methods) = self.structs.get(name) {
                     let method_len = methods.len() as u8;
                     for (_, value) in methods.iter().rev() {
@@ -286,8 +292,8 @@ impl<'a> Emitter<'a> {
                         .emit_bytes(OpCode::AllocInstance as u8, method_len, line);
                     self.comps.emit_byte(args.len() as u8, line);
                 } else {
-                    let fn_ptr = *self.funcs.get(name).unwrap();
-                    self.comps.emit_constant(fn_ptr, line)?;
+                    let fn_ptr = self.funcs.get(name).unwrap();
+                    self.comps.emit_constant(fn_ptr[index.unwrap()], line)?;
 
                     for var in args {
                         self.emit_expr(var)?;
@@ -298,11 +304,11 @@ impl<'a> Emitter<'a> {
                 }
             }
             ExprType::Array(arr) => {
-                let arr_len = arr.len() as f64;
+                let arr_len = arr.len() as u64;
                 for value in arr.iter().rev() {
                     self.emit_expr(value)?;
                 }
-                self.comps.emit_constant(StackValue::F64(arr_len), line)?;
+                self.comps.emit_constant(StackValue::U64(arr_len), line)?;
                 self.comps.emit_byte(OpCode::AllocArr as u8, line);
             }
             ExprType::Index { arr, index } => {
@@ -350,14 +356,14 @@ impl<'a> Emitter<'a> {
             ExprType::MethodCallResolved { inst, index, args } => {
                 self.emit_expr(inst)?;
                 self.comps
-                    .emit_bytes(OpCode::MethodCall as u8, *index, line);
+                    .emit_bytes(OpCode::PushMethod as u8, *index, line);
 
                 for var in args {
                     self.emit_expr(var)?;
                 }
 
                 self.comps
-                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 1, line);
+                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 2, line);
             }
             ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
@@ -366,7 +372,10 @@ impl<'a> Emitter<'a> {
                     let stack_value = StackValue::Obj(object);
                     self.comps.emit_constant(stack_value, line)?;
                 }
-                Literal::Num(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
+                Literal::F64(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
+                Literal::U64(num) => self.comps.emit_constant(StackValue::U64(*num), line)?,
+                Literal::I64(num) => self.comps.emit_constant(StackValue::I64(*num), line)?,
+
                 Literal::True => self.comps.emit_byte(OpCode::True as u8, line),
                 Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),
@@ -401,6 +410,15 @@ impl<'a> Emitter<'a> {
                 self.emit_expr(right)?;
                 let op_code = op.to_op_code();
                 self.comps.emit_byte(op_code as u8, line);
+            }
+            ExprType::Cast { value, target } => {
+                self.emit_expr(value)?;
+                match target {
+                    ValueType::F64 => self.comps.emit_byte(OpCode::CastToF64 as u8, line),
+                    ValueType::I64 => self.comps.emit_byte(OpCode::CastToI64 as u8, line),
+                    ValueType::U64 => self.comps.emit_byte(OpCode::CastToU64 as u8, line),
+                    _ => unreachable!(),
+                }
             }
             ExprType::Dot {
                 inst: _,

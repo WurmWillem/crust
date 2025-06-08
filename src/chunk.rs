@@ -67,12 +67,16 @@ impl Chunk {
             OpCode::Print => Self::simple_instruction("OP_PRINT", offset),
 
             OpCode::FuncCall => Self::simple_instruction("OP_CALL", offset),
-            OpCode::MethodCall => Self::simple_instruction("OP_METHOD_CALL", offset),
+            OpCode::PushMethod => Self::simple_instruction("OP_METHOD_CALL", offset),
 
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),
             OpCode::GetSelfField => self.constant_instruction("OP_GET_FIELD", offset),
             OpCode::GetSetField => self.constant_instruction("OP_SET_FIELD", offset),
+
+            OpCode::CastToF64 => self.constant_instruction("OP_CAST_TO_F64", offset),
+            OpCode::CastToU64 => self.constant_instruction("OP_CAST_TO_U64", offset),
+            OpCode::CastToI64 => self.constant_instruction("OP_CAST_TO_I64", offset),
 
             OpCode::Null => Self::simple_instruction("OP_NULL", offset),
             OpCode::True => Self::simple_instruction("OP_TRUE", offset),

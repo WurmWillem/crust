@@ -65,6 +65,7 @@ impl<'a> Parser<'a> {
     fn parse_prefix(&mut self, precedence: Precedence) -> Result<(bool, Expr<'a>), ParseErr> {
         let kind = self.previous().ty;
 
+        // dbg!(kind);
         let prefix = self.get_rule(kind).prefix;
         if prefix == FnType::Empty {
             let msg = "Expected expression.";
@@ -106,10 +107,12 @@ impl<'a> Parser<'a> {
     }
 
     fn number(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let Literal::Num(value) = self.previous().literal else {
-            unreachable!();
+        let kind = match self.previous().literal {
+            Literal::F64(n) => ExprType::Lit(Literal::F64(n)),
+            Literal::I64(n) => ExprType::Lit(Literal::I64(n)),
+            Literal::U64(n) => ExprType::Lit(Literal::U64(n)),
+            _ => unreachable!(),
         };
-        let kind = ExprType::Lit(Literal::Num(value));
         Ok(Expr::new(kind, self.previous().line))
     }
 
@@ -147,7 +150,7 @@ impl<'a> Parser<'a> {
             }
 
             self.advance();
-            if self.peek().ty == TokenType::Number {
+            if self.peek().ty == TokenType::Num {
                 self.regress();
                 self.regress();
                 return self.statement();
@@ -374,19 +377,25 @@ impl<'a> Parser<'a> {
 
         // declare var
         let value = self.expression()?;
-        let ty = ValueType::Num;
+        let ty = ValueType::I64;
         let kind = StmtType::Var { name, value, ty };
         let var = Box::new(Stmt::new(kind, line));
 
         // condition
         self.consume(TokenType::To, "Expected 'to' after 'for identifier'.")?;
         let end = Box::new(self.expression()?);
+        let cast = ExprType::Cast {
+            value: end,
+            target: ValueType::I64,
+        };
+        let cast = Expr::new(cast, line);
+
         let get_var_ty = ExprType::Var(name);
         let get_var = Box::new(Expr::new(get_var_ty, line));
         let condition_ty = ExprType::Binary {
             left: get_var,
             op: BinaryOp::Less,
-            right: end,
+            right: Box::new(cast),
         };
         let condition = Expr::new(condition_ty, line);
 
@@ -577,6 +586,23 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    fn cast(&mut self, value: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+        let line = self.previous().line;
+
+        if let Some(target) = self.peek().as_value_type() {
+            self.advance();
+            let value = Box::new(value);
+            let ty = ExprType::Cast { value, target };
+
+            Ok(Expr::new(ty, line))
+        } else {
+            Err(ParseErr {
+                line,
+                msg: "Expected type after 'as' keyword.".to_string(),
+            })
+        }
+    }
+
     fn call(&mut self, name: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         let mut args = Vec::new();
         while !self.check(TokenType::RightParen) {
@@ -592,7 +618,11 @@ impl<'a> Parser<'a> {
         )?;
 
         if let ExprType::Var(name) = name.expr {
-            let ty = ExprType::Call { name, args };
+            let ty = ExprType::Call {
+                name,
+                args,
+                index: None,
+            };
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
         } else if let ExprType::Dot { inst, property } = name.expr {
@@ -619,6 +649,7 @@ impl<'a> Parser<'a> {
             FnType::Call => self.call(left),
             FnType::Index => self.index(left, can_assign),
             FnType::Dot => self.dot(left, can_assign),
+            FnType::Cast => self.cast(left),
             _ => unreachable!(),
         }
     }

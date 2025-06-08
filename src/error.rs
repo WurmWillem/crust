@@ -54,30 +54,34 @@ impl SemanticErr {
 }
 #[derive(Debug)]
 pub enum SemErrType {
-    InvalidPrefix,
-    InvalidInfix,
-    InvalidThis,
     NoMainFunc,
-    InvalidTypeMethodAccess(ValueType),
-    InvalidTypeFieldAccess(ValueType),
-    InvalidPubField(String, String),
-    InvalidMethod(String, String),
-    IndexNonArr(ValueType),
-    AssignArrTypeMismatch(ValueType, ValueType),
-    UndefinedFunc(String),
-    UndefinedStruct(String),
-    IncorrectArity(String, u8, u8),
-    IncorrectReturnTy(ValueType, ValueType),
-    NoReturnTy(String, ValueType),
+    InvalidThis,
+    InvalidInfix,
+    InvalidPrefix,
     UndefinedVar(String),
+    FuncDefInFunc(String),
+    UndefinedFunc(String),
+    IndexNonArr(ValueType),
+    StructDefInFunc(String),
+    UndefinedStruct(String),
     AlreadyDefinedVar(String),
     AlreadyDefinedFunc(String),
     AlreadyDefinedStruct(String),
-    OpTypeMismatch(ValueType, Operator, ValueType),
-    VarDeclTypeMismatch(ValueType, ValueType),
-    ParamTypeMismatch(ValueType, ValueType),
+    NatParamTypeMismatch(String),
+    InvalidTypeFieldAccess(ValueType),
+    InvalidTypeMethodAccess(ValueType),
+    NoReturnTy(String, ValueType),
+    InvalidMethod(String, String),
+    InvalidPubField(String, String),
+    InvalidCast(ValueType, ValueType),
+    IncorrectReturnTy(ValueType, ValueType),
     FieldTypeMismatch(ValueType, ValueType),
     ArrElTypeMismatch(ValueType, ValueType),
+    VarDeclTypeMismatch(ValueType, ValueType),
+    AssignArrTypeMismatch(ValueType, ValueType),
+    IncorrectArity(String, u8, u8),
+    OpTypeMismatch(ValueType, Operator, ValueType),
+    ParamTypeMismatch(String, ValueType, ValueType),
 }
 impl SemanticErr {
     pub fn print(&self) {
@@ -85,6 +89,9 @@ impl SemanticErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
+            SemErrType::FuncDefInFunc(name) => format!("You attempted to define the function '{}' inside another function, which is illegal.", name.green()),
+            SemErrType::StructDefInFunc(name) => format!("You attempted to define the struct '{}' inside a function, which is illegal.", name.green()),
+            SemErrType::InvalidCast(expected, found) => format!("You can't cast an expression of type '{}' to type '{}'.", found, expected),
             SemErrType::NoMainFunc => {
                 "You have to define a function with the name 'main' as entry point for the program."
                     .to_string()
@@ -185,10 +192,16 @@ impl SemanticErr {
                     expected, found
                 )
             }
-            SemErrType::ParamTypeMismatch(expected, found) => {
+            SemErrType::ParamTypeMismatch(name, expected, found) => {
                 format!(
-                    "Parameter has type '{}', but found type '{}'.",
-                    expected, found
+                    "Parameter of function '{}' has type '{}', but found type '{}'.",
+                    name, expected, found
+                )
+            }
+            SemErrType::NatParamTypeMismatch(name) => {
+                format!(
+                    "The types of the parameters of function '{}' and the types of the given arguments don't match.",
+                    name.green()
                 )
             }
             SemErrType::FieldTypeMismatch(expected, found) => {

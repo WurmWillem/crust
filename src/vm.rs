@@ -80,6 +80,7 @@ impl VM {
 
         loop {
             if DEBUG_TRACE_EXECUTION {
+                (*frame).ip = ip;
                 self.debug_trace(frame)
             }
 
@@ -114,12 +115,14 @@ impl VM {
 
                 OpCode::AllocArr => {
                     let len = self.stack_pop();
-                    let len = if let StackValue::F64(len) = len {
+                    let len = if let StackValue::U64(len) = len {
+                        len as usize
+                    } else if let StackValue::I64(len) = len {
                         len as usize
                     } else {
                         unreachable!()
                     };
-                    let mut values = Vec::new();
+                    let mut values = Vec::with_capacity(len);
                     for _ in 0..len {
                         values.push(self.stack_pop());
                     }
@@ -132,25 +135,29 @@ impl VM {
                     self.stack_push(arr);
                 }
                 OpCode::IndexArr => {
-                    let StackValue::F64(index) = self.stack_pop() else {
-                        unreachable!()
+                    let index = match self.stack_pop() {
+                        StackValue::U64(index) => index as usize,
+                        StackValue::I64(index) => index as usize,
+                        _ => unreachable!(),
                     };
 
                     let arr = self.stack_pop();
                     if let StackValue::Obj(Object::Arr(arr)) = arr {
-                        let value = arr.data.values[index as usize];
+                        let value = arr.data.elements[index];
                         self.stack_push(value);
                     }
                 }
                 OpCode::AssignIndex => {
                     let new_value = self.stack_pop();
-                    let StackValue::F64(index) = self.stack_pop() else {
-                        unreachable!()
+                    let index = match self.stack_pop() {
+                        StackValue::U64(index) => index as usize,
+                        StackValue::I64(index) => index as usize,
+                        _ => unreachable!(),
                     };
 
                     let arr = self.stack_peek();
                     if let StackValue::Obj(Object::Arr(mut arr)) = arr {
-                        arr.data.values[index as usize] = new_value;
+                        arr.data.elements[index] = new_value;
                     }
                 }
 
@@ -161,28 +168,29 @@ impl VM {
                     frame = self.frames.as_mut_ptr().add(self.frame_count - 1);
                     ip = (*frame).ip;
                 }
-                OpCode::MethodCall => {
+                OpCode::PushMethod => {
                     let index = read_byte(&mut ip) as usize;
-                    let inst = self.stack_pop();
-                    let StackValue::Obj(Object::Instance(inst)) = inst else {
+                    let inst_stack = self.stack_pop();
+                    let StackValue::Obj(Object::Inst(inst)) = inst_stack else {
                         unreachable!()
                     };
 
                     let method = inst.data.methods[index];
                     self.stack_push(method);
+                    self.stack_push(inst_stack);
                 }
 
                 OpCode::AllocInstance => {
                     let methods_len = read_byte(&mut ip) as usize;
                     let fields_len = read_byte(&mut ip) as usize;
 
-                    let mut fields = Vec::new();
+                    let mut fields = Vec::with_capacity(fields_len);
                     for _ in 0..fields_len {
                         fields.push(self.stack_pop());
                     }
                     // dbg!(&fields);
 
-                    let mut methods = Vec::new();
+                    let mut methods = Vec::with_capacity(methods_len);
                     for _ in 0..methods_len {
                         methods.push(self.stack_pop());
                     }
@@ -191,23 +199,27 @@ impl VM {
                     let inst = ObjInstance::new(fields, methods);
                     let (obj, _) =
                         self.heap
-                            .alloc(inst, Object::Instance, &mut self.stack, self.stack_top);
+                            .alloc(inst, Object::Inst, &mut self.stack, self.stack_top);
                     let obj = StackValue::Obj(obj);
                     self.stack_push(obj);
                 }
                 OpCode::GetPubField => {
+                    // TODO: make it so instances are allocated but initialized to null if no constructor is used
+                    // or make not initializing them illegal
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_pop();
-                    let StackValue::Obj(Object::Instance(inst)) = inst else {
-                        unreachable!()
-                    };
-                    self.stack_push(inst.data.fields[index]);
+
+                    if let StackValue::Obj(Object::Inst(inst)) = inst {
+                        self.stack_push(inst.data.fields[index]);
+                    } else {
+                        self.stack_push(StackValue::Null);
+                    }
                 }
                 OpCode::SetPubField => {
                     let new_value = self.stack_pop();
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_peek();
-                    let StackValue::Obj(Object::Instance(mut inst)) = inst else {
+                    let StackValue::Obj(Object::Inst(mut inst)) = inst else {
                         unreachable!()
                     };
                     inst.data.fields[index] = new_value;
@@ -216,7 +228,7 @@ impl VM {
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack[(*frame).slots - 1];
                     // dbg!(inst);
-                    let StackValue::Obj(Object::Instance(inst)) = inst else {
+                    let StackValue::Obj(Object::Inst(inst)) = inst else {
                         unreachable!()
                     };
                     self.stack_push(inst.data.fields[index]);
@@ -225,7 +237,7 @@ impl VM {
                     let new_value = self.stack_pop();
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack[(*frame).slots - 1];
-                    let StackValue::Obj(Object::Instance(mut inst)) = inst else {
+                    let StackValue::Obj(Object::Inst(mut inst)) = inst else {
                         unreachable!()
                     };
                     inst.data.fields[index] = new_value;
@@ -261,6 +273,34 @@ impl VM {
                     ip = ip.sub(offset);
                 }
 
+                OpCode::CastToF64 => {
+                    let new_value = match self.stack_pop() {
+                        StackValue::U64(n) => StackValue::F64(n as f64),
+                        StackValue::I64(n) => StackValue::F64(n as f64),
+                        StackValue::F64(n) => StackValue::F64(n),
+                        _ => unreachable!(),
+                    };
+                    self.stack_push(new_value);
+                }
+                OpCode::CastToU64 => {
+                    let new_value = match self.stack_pop() {
+                        StackValue::F64(n) => StackValue::U64(n as u64),
+                        StackValue::I64(n) => StackValue::U64(n as u64),
+                        StackValue::U64(n) => StackValue::U64(n),
+                        _ => unreachable!(),
+                    };
+                    self.stack_push(new_value);
+                }
+                OpCode::CastToI64 => {
+                    let new_value = match self.stack_pop() {
+                        StackValue::F64(n) => StackValue::I64(n as i64),
+                        StackValue::U64(n) => StackValue::I64(n as i64),
+                        StackValue::I64(n) => StackValue::I64(n),
+                        _ => unreachable!(),
+                    };
+                    self.stack_push(new_value);
+                }
+
                 OpCode::True => self.stack_push(StackValue::Bool(true)),
                 OpCode::False => self.stack_push(StackValue::Bool(false)),
                 OpCode::Null => self.stack_push(StackValue::Null),
@@ -280,6 +320,8 @@ impl VM {
 
                     let new_value = match (lhs, rhs) {
                         (StackValue::F64(lhs), StackValue::F64(rhs)) => StackValue::F64(lhs + rhs),
+                        (StackValue::I64(lhs), StackValue::I64(rhs)) => StackValue::I64(lhs + rhs),
+                        (StackValue::U64(lhs), StackValue::U64(rhs)) => StackValue::U64(lhs + rhs),
                         (StackValue::Obj(lhs), StackValue::Obj(rhs)) => {
                             self.concatenate_strings(lhs, rhs)
                         }
@@ -346,6 +388,7 @@ impl VM {
                 Object::Native(func) => {
                     let args_ptr = self.stack.as_ptr().add(slots + 1);
                     let args = std::slice::from_raw_parts(args_ptr, arg_count);
+                    // dbg!(args);
 
                     let value = (func.data.func)(args, &mut self.heap);
 
