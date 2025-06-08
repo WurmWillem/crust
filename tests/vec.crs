@@ -1,6 +1,7 @@
 fn main() {
     Vec ven = Vec([1, 2, 3]);
-    pr ven.get(1);
+    // TODO: update this
+    pr ven.get(to_uint(1.));
     pr ven.pop();
 
     ven.print();
