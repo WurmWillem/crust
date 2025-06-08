@@ -251,11 +251,12 @@ impl<'source> Scanner<'source> {
                 while self.peek().is_ascii_digit() {
                     self.current += 1;
                 }
+            } else {
+                self.current += 1;
             }
         }
 
         let literal = if is_double {
-            self.current += 1;
             Literal::F64(
                 self.source[self.start..self.current]
                     .parse::<f64>()

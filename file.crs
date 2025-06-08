@@ -1,10 +1,6 @@
-fn fib(uint n): uint {
-    if n < 2 return n;
-    return fib(n - 1) + fib(n - 2);
-}
-
 fn main() {
-    uint result = fib(40);
-    println(result);
+    3;
+    //uint x = to_uint(3);
+    //uint y = to_uint(3.3);
 }
 

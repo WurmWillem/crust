@@ -370,7 +370,10 @@ impl<'a> Emitter<'a> {
                 }
                 Literal::F64(num) => self.comps.emit_constant(StackValue::F64(*num), line)?,
                 Literal::U64(num) => self.comps.emit_constant(StackValue::U64(*num), line)?,
-                Literal::I64(num) => self.comps.emit_constant(StackValue::I64(*num), line)?,
+                Literal::I64(num) => {
+                    // TODO: var decl lits don't actually get converted to correct type
+                    self.comps.emit_constant(StackValue::I64(*num), line)?
+                },
                 Literal::True => self.comps.emit_byte(OpCode::True as u8, line),
                 Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),

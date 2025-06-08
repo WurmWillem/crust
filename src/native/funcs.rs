@@ -20,6 +20,7 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
     add_func!("clock", clock, vec![], VT::Num);
     add_func!("print", print, vec![VT::Any], VT::Null);
     add_func!("println", println, vec![VT::Any], VT::Null);
+    add_func!("to_uint", uint, vec![VT::Num], VT::Num);
     add_func!("sin", sin, vec![VT::Num], VT::Num);
     add_func!("cos", cos, vec![VT::Num], VT::Num);
     add_func!("tan", tan, vec![VT::Num], VT::Num);
@@ -39,6 +40,13 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
 }
 // TODO: update these to work with all nums
 
+fn uint(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    if let StackValue::I64(val) = args[0] {
+        StackValue::U64(val as u64)
+    } else {
+        unreachable!()
+    }
+}
 fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
 

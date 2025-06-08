@@ -4,7 +4,7 @@ use crate::{
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
-    token::TokenType,
+    token::{Literal, TokenType},
     value::ValueType,
 };
 
@@ -135,6 +135,13 @@ impl<'a> Analyser<'a> {
                         return Err(SemanticErr::new(line, err));
                     }
                 }
+                // if *ty == ValueType::Num {
+                //
+                // }
+                // if let ExprType::Lit(Literal::I64()) =  {
+                //
+                // }
+                dbg!(&value);
 
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty && value_ty != ValueType::Null {
