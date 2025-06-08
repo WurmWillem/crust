@@ -1,14 +1,6 @@
-fn print_arr(int[][] arr) {
-    // TODO: update this to use len()
-    for j in 0 to len(arr) {
-        for i in 0 to len(arr[j]) {
-            print(arr[j][i]);
-        }
-    }
-}
-
 fn main() {
-    int[][] x = [[1, 2], [3, 4]];
-    print_arr(x);
+    pr max(1, 2);
+    pr max(1.2, 2.3);
+    pr min(1.2, 2.3);
+    pr min(3, 2);
 }
-

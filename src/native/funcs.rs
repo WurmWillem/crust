@@ -24,59 +24,29 @@ pub fn register(nat_funcs: &mut HashMap<&str, Vec<NatFuncData>>) {
     add_func!("print", print, vec![VT::Any], VT::Null);
     add_func!("println", println, vec![VT::Any], VT::Null);
 
-    add_func!("to_uint", uint_f64, vec![VT::F64], VT::U64);
-    add_func!("to_uint", uint_i64, vec![VT::I64], VT::U64);
-
-    add_func!("to_int", int_f64, vec![VT::F64], VT::I64);
-    add_func!("to_int", int_u64, vec![VT::U64], VT::I64);
-
     add_func!("sin", sin, vec![VT::F64], VT::F64);
     add_func!("cos", cos, vec![VT::F64], VT::F64);
     add_func!("tan", tan, vec![VT::F64], VT::F64);
-    add_func!("min", min, vec![VT::F64, VT::F64], VT::F64);
-    add_func!("max", max, vec![VT::F64, VT::F64], VT::F64);
-    add_func!("abs", abs, vec![VT::F64], VT::F64);
+
+    add_func!("min", min_f64, vec![VT::F64, VT::F64], VT::F64);
+    add_func!("min", min_i64, vec![VT::I64, VT::I64], VT::I64);
+    add_func!("min", min_u64, vec![VT::U64, VT::U64], VT::U64);
+
+    add_func!("max", max_f64, vec![VT::F64, VT::F64], VT::F64);
+    add_func!("max", max_i64, vec![VT::I64, VT::I64], VT::I64);
+    add_func!("max", max_u64, vec![VT::U64, VT::U64], VT::U64);
+
+    add_func!("abs", abs_f64, vec![VT::F64], VT::F64);
+    add_func!("abs", abs_i64, vec![VT::I64], VT::I64);
+
     add_func!("sqrt", sqrt, vec![VT::F64], VT::F64);
+
     add_func!("pow", pow, vec![VT::F64, VT::F64], VT::F64);
+
     add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::U64);
     add_func!("print_heap", print_heap, vec![], VT::Null);
-    add_func!(
-        "push",
-        push,
-        vec![VT::Arr(Box::new(VT::Any)), VT::Any],
-        VT::Null
-    );
 }
 // TODO: update these to work with all nums
-
-fn uint_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    if let StackValue::F64(val) = args[0] {
-        StackValue::U64(val as u64)
-    } else {
-        unreachable!()
-    }
-}
-fn uint_i64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    if let StackValue::I64(val) = args[0] {
-        StackValue::U64(val as u64)
-    } else {
-        unreachable!()
-    }
-}
-fn int_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    if let StackValue::F64(val) = args[0] {
-        StackValue::I64(val as i64)
-    } else {
-        unreachable!()
-    }
-}
-fn int_u64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    if let StackValue::U64(val) = args[0] {
-        StackValue::I64(val as i64)
-    } else {
-        unreachable!()
-    }
-}
 
 fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -130,7 +100,7 @@ fn tan(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     }
 }
 
-fn min(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn min_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -138,8 +108,23 @@ fn min(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         _ => unreachable!(),
     }
 }
-
-fn max(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn min_u64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    match (val1, val2) {
+        (StackValue::U64(val1), StackValue::U64(val2)) => StackValue::U64(val1.min(val2)),
+        _ => unreachable!(),
+    }
+}
+fn min_i64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    match (val1, val2) {
+        (StackValue::I64(val1), StackValue::I64(val2)) => StackValue::I64(val1.min(val2)),
+        _ => unreachable!(),
+    }
+}
+fn max_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val1 = args[0];
     let val2 = args[1];
     match (val1, val2) {
@@ -147,11 +132,35 @@ fn max(args: &[StackValue], _heap: &mut Heap) -> StackValue {
         _ => unreachable!(),
     }
 }
+fn max_u64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    match (val1, val2) {
+        (StackValue::U64(val1), StackValue::U64(val2)) => StackValue::U64(val1.max(val2)),
+        _ => unreachable!(),
+    }
+}
+fn max_i64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let val1 = args[0];
+    let val2 = args[1];
+    match (val1, val2) {
+        (StackValue::I64(val1), StackValue::I64(val2)) => StackValue::I64(val1.max(val2)),
+        _ => unreachable!(),
+    }
+}
 
-fn abs(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+fn abs_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     let val = args[0];
     if let StackValue::F64(val) = val {
         StackValue::F64(val.abs())
+    } else {
+        unreachable!()
+    }
+}
+fn abs_i64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    let val = args[0];
+    if let StackValue::I64(val) = val {
+        StackValue::I64(val.abs())
     } else {
         unreachable!()
     }
@@ -185,15 +194,5 @@ fn len(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 
 fn print_heap(_args: &[StackValue], heap: &mut Heap) -> StackValue {
     heap.print();
-    StackValue::Null
-}
-
-fn push(args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    let arr = args[0];
-    if let StackValue::Obj(Object::Arr(mut arr)) = arr {
-        arr.data.elements.push(args[1]);
-    } else {
-        unreachable!()
-    }
     StackValue::Null
 }
