@@ -1,5 +1,5 @@
 fn main() {
-    uint x = 3 + 2;
-    x = 2;
+    uint x = 3;
+    int y = x;
 }
 

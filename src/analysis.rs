@@ -4,7 +4,7 @@ use crate::{
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
-    token::TokenType,
+    token::{Literal, TokenType},
     value::ValueType,
 };
 
@@ -138,7 +138,7 @@ impl<'a> Analyser<'a> {
 
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty && value_ty != ValueType::Null {
-                    if value_ty.is_num() && ty.is_num() {
+                    if value_ty.is_num() && ty.is_num() && is_coercible(&value.expr) {
                         let target = ty.clone();
                         let new_value = Box::new(value.clone());
 
@@ -376,7 +376,7 @@ impl<'a> Analyser<'a> {
             Some(symbol) => {
                 let value_ty = self.analyse_expr(value)?;
                 if symbol.ty != value_ty && symbol.ty != ValueType::Any {
-                    if value_ty.is_num() && symbol.ty.is_num() {
+                    if value_ty.is_num() && symbol.ty.is_num() && is_coercible(&value.expr)  {
                         let target = symbol.ty.clone();
                         let new_value = value.clone();
 
@@ -655,5 +655,19 @@ impl<'a> Analyser<'a> {
 
         let ty = SemErrType::UndefinedFunc(name.to_string());
         Err(SemanticErr::new(line, ty))
+    }
+}
+
+fn is_coercible(expr: &ExprType) -> bool {
+    match expr {
+        ExprType::Lit(Literal::I64(_))
+        | ExprType::Lit(Literal::F64(_))
+        | ExprType::Lit(Literal::U64(_)) => true,
+
+        ExprType::Binary { left, right, .. } => {
+            is_coercible(&left.expr) && is_coercible(&right.expr)
+        }
+
+        _ => false,
     }
 }
