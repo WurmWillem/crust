@@ -480,7 +480,10 @@ impl<'a> Analyser<'a> {
         let left_ty = self.analyse_expr(left)?;
         let right_ty = self.analyse_expr(right)?;
 
-        if left_ty != right_ty {
+        if left_ty != right_ty
+            && !try_coerce(&mut right.expr, &left_ty)
+            && !try_coerce(&mut left.expr, &right_ty)
+        {
             let op = op.to_operator();
             let err_ty = SemErrType::OpTypeMismatch(left_ty, op, right_ty);
             return Err(SemanticErr::new(line, err_ty));

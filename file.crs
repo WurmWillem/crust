@@ -1,6 +1,16 @@
+fn fibf(double n): double {
+    if n < 2. return n;
+    return fibf(n - 1.) + fibf(n - 2.);
+}
+fn fibu(uint n): uint {
+    if n < 2 return n;
+    return fibu(n - 1) + fibu(n - 2);
+}
+fn fibi(int n): int {
+    if n < 2 return n;
+    return fibi(n - 1) + fibi(n - 2);
+}
+
 fn main() {
-    pr max(1, 2);
-    pr max(1.2, 2.3);
-    pr min(1.2, 2.3);
-    pr min(3, 2);
+    pr fibu(20);
 }
