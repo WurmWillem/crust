@@ -73,6 +73,7 @@ struct Vector2D {
 - ✅ Add dynamic arrays to the standard library (Vec)
 - ✅ Add methods
 - ✅ Add structs
+- ✅ Add garbage collection
 - ✅ Add arrays
 - ✅ Add functions
 - ✅ Add break and continue statements
