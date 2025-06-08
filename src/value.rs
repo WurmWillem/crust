@@ -20,10 +20,7 @@ pub enum ValueType {
 }
 impl ValueType {
     pub fn is_num(&self) -> bool {
-        match self {
-            ValueType::F64 | ValueType::I64 | ValueType::U64 => true,
-            _ => false,
-        }
+        matches!(self, ValueType::F64 | ValueType::I64 | ValueType::U64)
     }
 }
 impl fmt::Display for ValueType {

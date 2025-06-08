@@ -139,7 +139,7 @@ impl<'a> Analyser<'a> {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty
                     && value_ty != ValueType::Null
-                    && !try_coerce(&mut value.expr, &ty)
+                    && !try_coerce(&mut value.expr, ty)
                 {
                     let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
                     return Err(SemanticErr::new(line, err_ty));
@@ -462,7 +462,7 @@ impl<'a> Analyser<'a> {
         for el in values.iter_mut().skip(1) {
             let next_el_ty = self.analyse_expr(el)?;
 
-            if next_el_ty != el_ty {
+            if next_el_ty != el_ty && !try_coerce(&mut el.expr, &el_ty) {
                 let err_ty = SemErrType::ArrElTypeMismatch(el_ty, next_el_ty);
                 return Err(SemanticErr::new(line, err_ty));
             }
@@ -563,7 +563,8 @@ impl<'a> Analyser<'a> {
             let is_array_match = matches!(param_ty, ValueType::Arr(inner) if **inner == ValueType::Any)
                 && matches!(arg_ty, ValueType::Arr(_));
 
-            if !is_exact_match && !is_any && !is_array_match {
+            if !is_exact_match && !is_any && !is_array_match && !try_coerce(&mut arg.expr, param_ty)
+            {
                 let err_ty =
                     SemErrType::ParamTypeMismatch(name.to_string(), param_ty.clone(), arg_ty);
                 return Err(SemanticErr::new(line, err_ty));
@@ -605,7 +606,7 @@ impl<'a> Analyser<'a> {
 
         let expr = if let Some(new_value) = new_value {
             let new_value_ty = self.analyse_expr(new_value)?;
-            if new_value_ty != field_ty {
+            if new_value_ty != field_ty && !try_coerce(&mut new_value.expr, &field_ty) {
                 let err_ty = SemErrType::FieldTypeMismatch(field_ty, new_value_ty);
                 return Err(SemanticErr::new(line, err_ty));
             }
