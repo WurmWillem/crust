@@ -1,6 +1,12 @@
 fn main() {
-    3;
-    //uint x = to_uint(3);
-    //uint y = to_uint(3.3);
+    Vec ven = Vec([1, 2, 3]);
+    pr ven.get(to_uint(1.));
+    pr ven.pop();
+
+    ven.print();
+    ven.push(4);
+    ven.print();
+    pr ven.len();
 }
+
 

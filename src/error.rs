@@ -3,7 +3,7 @@ use colored::Colorize;
 use crate::{analysis_types::Operator, value::ValueType};
 
 pub const PRINT_TOKENS: bool = false;
-pub const DEBUG_TRACE_EXECUTION: bool = true;
+pub const DEBUG_TRACE_EXECUTION: bool = false;
 pub const PRINT_HEAP: bool = false;
 
 pub fn print_error(line: u32, msg: &str) {
@@ -190,6 +190,7 @@ impl SemanticErr {
                 )
             }
             SemErrType::ParamTypeMismatch(expected, found) => {
+                // TODO: update error msg to use function name and maybe param name
                 format!(
                     "Parameter has type '{}', but found type '{}'.",
                     expected, found

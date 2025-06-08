@@ -377,7 +377,7 @@ impl<'a> Parser<'a> {
 
         // declare var
         let value = self.expression()?;
-        let ty = ValueType::Num;
+        let ty = ValueType::I64;
         let kind = StmtType::Var { name, value, ty };
         let var = Box::new(Stmt::new(kind, line));
 

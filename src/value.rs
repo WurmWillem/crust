@@ -11,10 +11,20 @@ pub enum ValueType {
     Any,  // useful as generic type for functions like println()
     Null,
     Bool,
-    Num, // TODO: split into multiple variants
+    F64,
+    I64,
+    U64,
     Str,
     Arr(Box<ValueType>),
     Struct(String),
+}
+impl ValueType {
+    pub fn is_num(&self) -> bool {
+        match self {
+            ValueType::F64 | ValueType::I64 | ValueType::U64 => true,
+            _ => false,
+        }
+    }
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -24,7 +34,9 @@ impl fmt::Display for ValueType {
             ValueType::Any => write!(f, "Any"),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
-            ValueType::Num => write!(f, "Number"),
+            ValueType::F64 => write!(f, "Double"),
+            ValueType::I64 => write!(f, "Int"),
+            ValueType::U64 => write!(f, "Uint"),
             ValueType::Str => write!(f, "String"),
             ValueType::Struct(s) => write!(f, "struct {}", s),
         }

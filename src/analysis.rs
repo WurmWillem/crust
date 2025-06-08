@@ -141,7 +141,7 @@ impl<'a> Analyser<'a> {
                 // if let ExprType::Lit(Literal::I64()) =  {
                 //
                 // }
-                dbg!(&value);
+                // dbg!(&value);
 
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty && value_ty != ValueType::Null {
@@ -456,12 +456,12 @@ impl<'a> Analyser<'a> {
         }
 
         use BinaryOp as BO;
-        let x = match op {
-            BO::Add => left_ty == ValueType::Num || left_ty == ValueType::Str,
-            BO::Sub | BO::Mul | BO::Div => left_ty == ValueType::Num,
+        let is_valid = match op {
+            BO::Add => left_ty.is_num() || left_ty == ValueType::Str,
+            BO::Sub | BO::Mul | BO::Div => left_ty.is_num(),
             BO::Equal | BO::NotEqual => return Ok(ValueType::Bool),
             BO::Less | BO::LessEqual | BO::Greater | BO::GreaterEqual => {
-                if left_ty == ValueType::Num {
+                if left_ty.is_num() {
                     return Ok(ValueType::Bool);
                 }
                 false
@@ -469,7 +469,7 @@ impl<'a> Analyser<'a> {
             BO::And | BO::Or => left_ty == ValueType::Bool,
         };
 
-        if x {
+        if is_valid {
             Ok(left_ty)
         } else {
             Err(SemanticErr::new(line, SemErrType::InvalidInfix))
@@ -486,9 +486,10 @@ impl<'a> Analyser<'a> {
 
         match prefix {
             TokenType::Minus => {
-                if value_ty != ValueType::Num {
+                if value_ty != ValueType::I64 && value_ty != ValueType::F64 {
+                    // TODO: update error msg
                     let err_ty =
-                        SemErrType::OpTypeMismatch(ValueType::Num, Operator::Minus, value_ty);
+                        SemErrType::OpTypeMismatch(value_ty.clone(), Operator::Minus, value_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
                 Ok(value_ty)

@@ -17,19 +17,19 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
     }
 
     use ValueType as VT;
-    add_func!("clock", clock, vec![], VT::Num);
+    add_func!("clock", clock, vec![], VT::F64);
     add_func!("print", print, vec![VT::Any], VT::Null);
     add_func!("println", println, vec![VT::Any], VT::Null);
-    add_func!("to_uint", uint, vec![VT::Num], VT::Num);
-    add_func!("sin", sin, vec![VT::Num], VT::Num);
-    add_func!("cos", cos, vec![VT::Num], VT::Num);
-    add_func!("tan", tan, vec![VT::Num], VT::Num);
-    add_func!("min", min, vec![VT::Num, VT::Num], VT::Num);
-    add_func!("max", max, vec![VT::Num, VT::Num], VT::Num);
-    add_func!("abs", abs, vec![VT::Num], VT::Num);
-    add_func!("sqrt", sqrt, vec![VT::Num], VT::Num);
-    add_func!("pow", pow, vec![VT::Num, VT::Num], VT::Num);
-    add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::Num);
+    add_func!("to_uint", uint, vec![VT::F64], VT::U64);
+    add_func!("sin", sin, vec![VT::F64], VT::F64);
+    add_func!("cos", cos, vec![VT::F64], VT::F64);
+    add_func!("tan", tan, vec![VT::F64], VT::F64);
+    add_func!("min", min, vec![VT::F64, VT::F64], VT::F64);
+    add_func!("max", max, vec![VT::F64, VT::F64], VT::F64);
+    add_func!("abs", abs, vec![VT::F64], VT::F64);
+    add_func!("sqrt", sqrt, vec![VT::F64], VT::F64);
+    add_func!("pow", pow, vec![VT::F64, VT::F64], VT::F64);
+    add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::U64);
     add_func!("print_heap", print_heap, vec![], VT::Null);
     add_func!(
         "push",
@@ -41,7 +41,7 @@ pub fn register(nat_funcs: &mut HashMap<&str, NatFuncData>) {
 // TODO: update these to work with all nums
 
 fn uint(args: &[StackValue], _heap: &mut Heap) -> StackValue {
-    if let StackValue::I64(val) = args[0] {
+    if let StackValue::F64(val) = args[0] {
         StackValue::U64(val as u64)
     } else {
         unreachable!()

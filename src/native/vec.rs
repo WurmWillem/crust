@@ -13,12 +13,12 @@ pub fn register<'a>(structs: &mut HashMap<&'a str, NatStructData<'a>>) {
     let fields = vec![(field_ty, "elements")];
 
     let get = NatFuncData {
-        parameters: vec![ValueType::Num],
+        parameters: vec![ValueType::U64],
         func: get,
-        return_ty: ValueType::Num,
+        return_ty: ValueType::Any,
     };
     let push = NatFuncData {
-        parameters: vec![ValueType::Num],
+        parameters: vec![ValueType::Any],
         func: push,
         return_ty: ValueType::Null,
     };
@@ -35,7 +35,7 @@ pub fn register<'a>(structs: &mut HashMap<&'a str, NatStructData<'a>>) {
     let len = NatFuncData {
         parameters: vec![],
         func: len,
-        return_ty: ValueType::Num,
+        return_ty: ValueType::U64,
     };
 
     let data = NatStructData {

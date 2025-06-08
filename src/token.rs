@@ -16,7 +16,9 @@ impl<'source> Literal<'source> {
         match self {
             Literal::None => unreachable!(),
             Literal::Str(_) => ValueType::Str,
-            Literal::F64(_) | Literal::I64(_) | Literal::U64(_) => ValueType::Num,
+            Literal::F64(_) => ValueType::F64,
+            Literal::U64(_) => ValueType::U64,
+            Literal::I64(_) => ValueType::I64,
             Literal::True | Literal::False => ValueType::Bool,
             Literal::Null => ValueType::Null,
         }
@@ -46,7 +48,9 @@ impl<'source> Token<'source> {
     }
     pub fn as_value_type(&self) -> Option<ValueType> {
         match self.ty {
-            TokenType::F64 | TokenType::U64 | TokenType::I64 => Some(ValueType::Num),
+            TokenType::F64 => Some(ValueType::F64),
+            TokenType::I64 => Some(ValueType::I64),
+            TokenType::U64 => Some(ValueType::U64),
             TokenType::Bool => Some(ValueType::Bool),
             TokenType::Str => Some(ValueType::Str),
             TokenType::Identifier => Some(ValueType::Struct(self.lexeme.to_string())),
