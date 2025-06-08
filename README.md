@@ -35,6 +35,11 @@ fn main() {
     Vec2 vec = Vec2(3., 2.);
     // call methods with 'struct_name.method_name(arguments)'
     double product = vec.product(); // holds '6.'
+
+    // use structs from the standard library such as Vec (dynamic array)
+    Vec vec = Vec([1, 2, 3]);
+    vec.push(4);
+    println(vec.get(3)); // prints '4'
 }
 
 // define a function named 'factorial' that takes and returns a uint
