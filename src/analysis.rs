@@ -4,7 +4,7 @@ use crate::{
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
-    token::TokenType,
+    token::{Literal, TokenType},
     value::ValueType,
 };
 
@@ -135,13 +135,21 @@ impl<'a> Analyser<'a> {
                         return Err(SemanticErr::new(line, err));
                     }
                 }
-                // if *ty == ValueType::Num {
-                //
+
+                // if *ty == ValueType::U64 {
+                //     if let ExprType::Lit(lit) = &mut value.expr {
+                //         if let Literal::I64(num) = lit {
+                //             *lit = Literal::U64(*num as u64)
+                //         }
+                //     }
                 // }
-                // if let ExprType::Lit(Literal::I64()) =  {
-                //
+                // if *ty == ValueType::I64 {
+                //     if let ExprType::Lit(lit) = &mut value.expr {
+                //         if let Literal::U64(num) = lit {
+                //             *lit = Literal::I64(*num as i64)
+                //         }
+                //     }
                 // }
-                // dbg!(&value);
 
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty && value_ty != ValueType::Null {
@@ -227,13 +235,11 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::Call { name, args, index } => {
-                // TODO: implement this
                 if let Some(data) = self.enities.nat_funcs.remove(name) {
                     for (i, func) in data.iter().enumerate() {
                         let parameters = func.parameters.clone();
                         let return_ty = func.return_ty.clone();
-                        // data_for_check.push((parameters, return_ty));
-                        //
+
                         if let Ok(()) = self.check_if_params_and_args_correspond(
                             args,
                             parameters,

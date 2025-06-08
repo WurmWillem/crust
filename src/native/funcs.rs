@@ -27,6 +27,9 @@ pub fn register(nat_funcs: &mut HashMap<&str, Vec<NatFuncData>>) {
     add_func!("to_uint", uint_f64, vec![VT::F64], VT::U64);
     add_func!("to_uint", uint_i64, vec![VT::I64], VT::U64);
 
+    add_func!("to_int", int_f64, vec![VT::F64], VT::I64);
+    add_func!("to_int", int_u64, vec![VT::U64], VT::I64);
+
     add_func!("sin", sin, vec![VT::F64], VT::F64);
     add_func!("cos", cos, vec![VT::F64], VT::F64);
     add_func!("tan", tan, vec![VT::F64], VT::F64);
@@ -56,6 +59,20 @@ fn uint_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
 fn uint_i64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     if let StackValue::I64(val) = args[0] {
         StackValue::U64(val as u64)
+    } else {
+        unreachable!()
+    }
+}
+fn int_f64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    if let StackValue::F64(val) = args[0] {
+        StackValue::I64(val as i64)
+    } else {
+        unreachable!()
+    }
+}
+fn int_u64(args: &[StackValue], _heap: &mut Heap) -> StackValue {
+    if let StackValue::U64(val) = args[0] {
+        StackValue::I64(val as i64)
     } else {
         unreachable!()
     }

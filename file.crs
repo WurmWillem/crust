@@ -1,5 +1,4 @@
 fn main() {
-    uint x = to_uint(3);
-    uint y = to_uint(3.3);
+    uint x = 3 + 2;
 }
 
