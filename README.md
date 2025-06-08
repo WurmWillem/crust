@@ -1,12 +1,11 @@
-<H2> Introducing Crust: One Of The Crustiest Languages Of All Time </H2>
+<H1> Introducing Crust: One Of The Crustiest Languages Of All Time </H1>
 This is Crust, a statically and strongly typed programming language written in Rust 🦀. Crust intends to be a simple yet powerful language, which should be easy to pick up without compromising features. You could think of it as a mix between Rust and C, as it takes many of the good parts of Rust, and combines them with the simplicity of C.
 
 <H2>Why should you use Crust?</H2>
 
 - 🚀 Blazingly fast and written in Rust
-- 😃 Because you are a masochist
+- 😃 You are looking for a language that balances simplicity and features
 - 🥰 You want to support me
-- 🇳🇱 Je bent een Nederlander in hart en nieren
 
 <H3>Sneak Peek</H3>
 
@@ -32,9 +31,15 @@ fn main() {
     println(array[0]);  // prints 1
 
     // create instances with 'struct_name(fields)' syntax
-    Vec2 vec = Vec2(3., 2.);
-    // call methods with 'struct_name.method_name(arguments)'
+    Vector2D vec = Vector2D(3., 2.);
+    println(vec.x); // prints '3.'
+    // call methods with the syntax 'struct_name.method_name(arguments)'
     double product = vec.product(); // holds '6.'
+
+    // use structs from the standard library such as Vec (dynamic array)
+    Vec vec = Vec([1, 2, 3]);
+    vec.push(4);
+    println(vec.get(3)); // prints '4'
 }
 
 // define a function named 'factorial' that takes and returns a uint
@@ -43,8 +48,8 @@ fn factorial(uint n): uint {
     return n * factorial(n - 1);
 }
 
-// define a struct named 'Vec2'
-struct Vec2 {
+// define a struct named 'Vector2D'
+struct Vector2D {
     // declare the fields
     double x;
     double y;
@@ -56,3 +61,21 @@ struct Vec2 {
     }
 }
 ```
+
+<H2>Roadmap</H2>
+
+- Expand standard library
+- Add modules
+- Add enums
+- ✅ Add some syntactic sugar for mutating variables (+=, -=, *=, /=)
+- ✅ Add casting operations with 'as' keyword
+- ✅ Add more integer types such as i64 and u64
+- ✅ Add dynamic arrays to the standard library (Vec)
+- ✅ Add methods
+- ✅ Add structs
+- ✅ Add garbage collection
+- ✅ Add arrays
+- ✅ Add functions
+- ✅ Add loops
+- ✅ Add if statements
+- ✅ Add variables
