@@ -11,9 +11,12 @@ struct Vec2 {
 }
 
 fn main() {
-    Vec2 vec = Vec2(3, 2);
-    pr vec.product(3);
+    uint x = 3 + 2;
+    x = 2;
 
-    vec.increment_x();
-    pr vec.x;
+    //Vec2 vec = Vec2(3, 2);
+    //pr vec.product(3);
+
+    //vec.increment_x();
+    //pr vec.x;
 }

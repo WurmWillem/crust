@@ -137,20 +137,14 @@ impl<'a> Analyser<'a> {
                 }
 
                 let value_ty = self.analyse_expr(value)?;
-                if value_ty != *ty && value_ty != ValueType::Null {
-                    if value_ty.is_num() && ty.is_num() && is_coercible(&value.expr) {
-                        let target = ty.clone();
-                        let new_value = Box::new(value.clone());
-
-                        value.expr = ExprType::Cast {
-                            value: new_value,
-                            target,
-                        };
-                    } else {
-                        let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
-                        return Err(SemanticErr::new(line, err_ty));
-                    }
+                if value_ty != *ty
+                    && value_ty != ValueType::Null
+                    && !try_coerce(&mut value.expr, &ty)
+                {
+                    let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
+                    return Err(SemanticErr::new(line, err_ty));
                 }
+
                 self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
             }
             StmtType::Println(expr) => {
@@ -382,19 +376,12 @@ impl<'a> Analyser<'a> {
         match self.symbols.resolve(name) {
             Some(symbol) => {
                 let value_ty = self.analyse_expr(value)?;
-                if symbol.ty != value_ty && symbol.ty != ValueType::Any {
-                    if value_ty.is_num() && symbol.ty.is_num() && is_coercible(&value.expr) {
-                        let target = symbol.ty.clone();
-                        let new_value = value.clone();
-
-                        value.expr = ExprType::Cast {
-                            value: new_value,
-                            target,
-                        };
-                    } else {
-                        let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
-                        return Err(SemanticErr::new(line, err_ty));
-                    }
+                if symbol.ty != value_ty
+                    && symbol.ty != ValueType::Any
+                    && !try_coerce(&mut value.expr, &symbol.ty)
+                {
+                    let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
+                    return Err(SemanticErr::new(line, err_ty));
                 }
                 Ok(symbol.ty)
             }
@@ -577,7 +564,8 @@ impl<'a> Analyser<'a> {
                 && matches!(arg_ty, ValueType::Arr(_));
 
             if !is_exact_match && !is_any && !is_array_match {
-                let err_ty = SemErrType::ParamTypeMismatch(name.to_string(), param_ty.clone(), arg_ty);
+                let err_ty =
+                    SemErrType::ParamTypeMismatch(name.to_string(), param_ty.clone(), arg_ty);
                 return Err(SemanticErr::new(line, err_ty));
             }
         }
@@ -665,16 +653,18 @@ impl<'a> Analyser<'a> {
     }
 }
 
-fn is_coercible(expr: &ExprType) -> bool {
+fn try_coerce(expr: &mut ExprType, target: &ValueType) -> bool {
     match expr {
-        ExprType::Lit(Literal::I64(_))
-        | ExprType::Lit(Literal::F64(_))
-        | ExprType::Lit(Literal::U64(_)) => true,
-
+        ExprType::Lit(lit) => match (&lit, target) {
+            (Literal::I64(n), ValueType::U64) => {
+                *lit = Literal::U64(*n as u64);
+                true
+            }
+            _ => false,
+        },
         ExprType::Binary { left, right, .. } => {
-            is_coercible(&left.expr) && is_coercible(&right.expr)
+            try_coerce(&mut left.expr, target) && try_coerce(&mut right.expr, target)
         }
-
         _ => false,
     }
 }
