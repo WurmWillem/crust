@@ -512,11 +512,33 @@ impl<'a> Parser<'a> {
                 name,
                 new_value: value,
             }
+        } else if can_assign && self.matches(TokenType::PlusEqual) {
+            self.get_assign_shorthand(name, line, BinaryOp::Add)?
+        } else if can_assign && self.matches(TokenType::MinEqual) {
+            self.get_assign_shorthand(name, line, BinaryOp::Sub)?
+        } else if can_assign && self.matches(TokenType::MulEqual) {
+            self.get_assign_shorthand(name, line, BinaryOp::Mul)?
+        } else if can_assign && self.matches(TokenType::DivEqual) {
+            self.get_assign_shorthand(name, line, BinaryOp::Div)?
         } else {
             ExprType::Var(name)
         };
         let var = Expr::new(ty, line);
         Ok(var)
+    }
+    fn get_assign_shorthand(&mut self, name: &'a str, line: u32, op: BinaryOp) -> Result<ExprType<'a>, ParseErr> {
+        let var_ty = ExprType::Var(name);
+        let var = Box::new(Expr::new(var_ty, line));
+
+        let operand = Box::new(self.expression()?);
+        let ty = ExprType::Binary {
+            left: var,
+            op,
+            right: operand,
+        };
+
+        let new_value = Box::new(Expr::new(ty, line));
+            Ok(ExprType::Assign { name, new_value })
     }
 
     fn string(&mut self) -> Result<Expr<'a>, ParseErr> {

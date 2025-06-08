@@ -1,44 +1,5 @@
-// every program has an entry point called 'main'
 fn main() {
-    // print values with newline with the function 'println'
-    println("Hello World!");
-
-    // create variables with C-like syntax
-    int variable = 3;
-
-    // use functions defined later in the file, no forward declaration necessary
-    factorial(5); // evaluates to 120
-
-    // for loops (and there are while loops as well)
-    for i in 0 to 10 {
-        println(i); // prints the numbers 1 up to and including 9
-    }
-
-    // create arrays with the following syntax
-    int[] array = [1, 2, 3];
-    println(array[0]);  // prints 1
-
-    // create instances with 'struct_name(fields)' syntax
-    Vec2 vec = Vec2(3., 2.);
-    // call methods with 'struct_name.method_name(arguments)'
-    double product = vec.product(); // holds '6.'
-}
-
-// define a function named 'factorial' that takes and returns a uint
-fn factorial(uint n): uint {
-    if n <= 1 return 1;
-    return n * factorial(n - 1);
-}
-
-// define a struct named 'Vec2'
-struct Vec2 {
-    // declare the fields
-    double x;
-    double y;
-
-    // define the functions
-    fn product(): double {
-        // use 'self.property_name' to access fields and methods
-        return self.x * self.y;
-    }
+    int x = 3;
+    x /= 3;
+    pr x;
 }
