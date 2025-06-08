@@ -32,8 +32,8 @@ fn main() {
     println(array[0]);  // prints 1
 
     // create instances with 'struct_name(fields)' syntax
-    Vec2 vec = Vec2(3., 2.);
-    // call methods with 'struct_name.method_name(arguments)'
+    Vector2D vec = Vector2D(3., 2.);
+    // call methods with the syntax 'struct_name.method_name(arguments)'
     double product = vec.product(); // holds '6.'
 
     // use structs from the standard library such as Vec (dynamic array)
@@ -49,7 +49,7 @@ fn factorial(uint n): uint {
 }
 
 // define a struct named 'Vec2'
-struct Vec2 {
+struct Vector2D {
     // declare the fields
     double x;
     double y;
