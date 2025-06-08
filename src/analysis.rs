@@ -226,24 +226,31 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticErr::new(line, ty));
                 }
             },
-            ExprType::Call { name, args } => {
+            ExprType::Call { name, args, index } => {
                 // TODO: implement this
                 if let Some(data) = self.enities.nat_funcs.remove(name) {
-                    for func in &data {
+                    for (i, func) in data.iter().enumerate() {
                         let parameters = func.parameters.clone();
                         let return_ty = func.return_ty.clone();
                         // data_for_check.push((parameters, return_ty));
                         //
-                        if let Ok(()) = self.check_if_params_and_args_correspond(args, parameters, name.to_string(), line)  {
+                        if let Ok(()) = self.check_if_params_and_args_correspond(
+                            args,
+                            parameters,
+                            name.to_string(),
+                            line,
+                        ) {
+                            self.enities.nat_funcs.insert(name, data);
+                            *index = Some(i);
                             return Ok(return_ty);
                         }
-                        // return Ok((return_ty, parameters));
                     }
                     self.enities.nat_funcs.insert(name, data);
                 };
 
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
                 self.check_if_params_and_args_correspond(args, parameters, name.to_string(), line)?;
+                *index = Some(0);
                 return_ty
             }
             ExprType::Assign {

@@ -595,7 +595,7 @@ impl<'a> Parser<'a> {
         )?;
 
         if let ExprType::Var(name) = name.expr {
-            let ty = ExprType::Call { name, args };
+            let ty = ExprType::Call { name, args, index: None };
             let expr = Expr::new(ty, self.previous().line);
             Ok(expr)
         } else if let ExprType::Dot { inst, property } = name.expr {

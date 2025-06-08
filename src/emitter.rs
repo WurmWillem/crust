@@ -16,7 +16,7 @@ use crate::{
 pub struct Emitter<'a> {
     heap: Heap,
     comps: FuncCompilerStack<'a>,
-    funcs: HashMap<&'a str, StackValue>,
+    funcs: HashMap<&'a str, Vec<StackValue>>,
     structs: HashMap<&'a str, Vec<(&'a str, StackValue)>>,
 }
 impl<'a> Emitter<'a> {
@@ -50,10 +50,14 @@ impl<'a> Emitter<'a> {
 
     fn init_funcs(&mut self, mut entities: EnityData<'a>) -> Result<ObjFunc, EmitErr> {
         for (name, data) in entities.nat_funcs.drain() {
-            let func = ObjNative::new(name.to_string(), data.func);
-            let (func, _) = self.heap.alloc_permanent(func, Object::Native);
-            let value = StackValue::Obj(func);
-            self.funcs.insert(name, value);
+            let mut values = vec![];
+            for data in data {
+                let func = ObjNative::new(name.to_string(), data.func);
+                let (func, _) = self.heap.alloc_permanent(func, Object::Native);
+                let value = StackValue::Obj(func);
+                values.push(value);
+            }
+            self.funcs.insert(name, values);
         }
 
         // insert dummy function objects for recursion
@@ -63,7 +67,7 @@ impl<'a> Emitter<'a> {
             let dummy = ObjFunc::new(name.to_string());
             let (func_obj, _) = self.heap.alloc_permanent(dummy, Object::Func);
 
-            self.funcs.insert(name, StackValue::Obj(func_obj));
+            self.funcs.insert(name, vec![StackValue::Obj(func_obj)]);
             func_objs.push(func_obj);
         }
 
@@ -274,7 +278,7 @@ impl<'a> Emitter<'a> {
     fn emit_expr(&mut self, expr: &Expr<'a>) -> Result<(), EmitErr> {
         let line = expr.line;
         match &expr.expr {
-            ExprType::Call { name, args } => {
+            ExprType::Call { name, args, index } => {
                 if let Some(methods) = self.structs.get(name) {
                     let method_len = methods.len() as u8;
                     for (_, value) in methods.iter().rev() {
@@ -288,8 +292,8 @@ impl<'a> Emitter<'a> {
                         .emit_bytes(OpCode::AllocInstance as u8, method_len, line);
                     self.comps.emit_byte(args.len() as u8, line);
                 } else {
-                    let fn_ptr = *self.funcs.get(name).unwrap();
-                    self.comps.emit_constant(fn_ptr, line)?;
+                    let fn_ptr = self.funcs.get(name).unwrap();
+                    self.comps.emit_constant(fn_ptr[index.unwrap()], line)?;
 
                     for var in args {
                         self.emit_expr(var)?;

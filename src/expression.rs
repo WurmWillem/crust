@@ -22,6 +22,7 @@ pub enum ExprType<'a> {
     Call {
         name: &'a str,
         args: Vec<Expr<'a>>,
+        index: Option<usize>,
     },
     MethodCall {
         inst: Box<Expr<'a>>,
