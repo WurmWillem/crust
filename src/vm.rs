@@ -277,6 +277,7 @@ impl VM {
                     let new_value = match self.stack_pop() {
                         StackValue::U64(n) => StackValue::F64(n as f64),
                         StackValue::I64(n) => StackValue::F64(n as f64),
+                        StackValue::F64(n) => StackValue::F64(n),
                         _ => unreachable!(),
                     };
                     self.stack_push(new_value);
@@ -285,6 +286,7 @@ impl VM {
                     let new_value = match self.stack_pop() {
                         StackValue::F64(n) => StackValue::U64(n as u64),
                         StackValue::I64(n) => StackValue::U64(n as u64),
+                        StackValue::U64(n) => StackValue::U64(n),
                         _ => unreachable!(),
                     };
                     self.stack_push(new_value);
@@ -293,6 +295,7 @@ impl VM {
                     let new_value = match self.stack_pop() {
                         StackValue::F64(n) => StackValue::I64(n as i64),
                         StackValue::U64(n) => StackValue::I64(n as i64),
+                        StackValue::I64(n) => StackValue::I64(n),
                         _ => unreachable!(),
                     };
                     self.stack_push(new_value);

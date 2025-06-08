@@ -1,6 +1,5 @@
 fn print_arr(int[] arr) {
-    // TODO: update this to use len()
-    for i in 0 to 3 {
+    for i in 0 to len(arr) {
         print(arr[i]);
     }
 }

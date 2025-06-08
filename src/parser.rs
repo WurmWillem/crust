@@ -384,12 +384,18 @@ impl<'a> Parser<'a> {
         // condition
         self.consume(TokenType::To, "Expected 'to' after 'for identifier'.")?;
         let end = Box::new(self.expression()?);
+        let cast = ExprType::Cast {
+            value: end,
+            target: ValueType::I64,
+        };
+        let cast = Expr::new(cast, line);
+
         let get_var_ty = ExprType::Var(name);
         let get_var = Box::new(Expr::new(get_var_ty, line));
         let condition_ty = ExprType::Binary {
             left: get_var,
             op: BinaryOp::Less,
-            right: end,
+            right: Box::new(cast),
         };
         let condition = Expr::new(condition_ty, line);
 

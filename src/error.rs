@@ -54,34 +54,34 @@ impl SemanticErr {
 }
 #[derive(Debug)]
 pub enum SemErrType {
-    InvalidPrefix,
-    InvalidInfix,
-    InvalidThis,
     NoMainFunc,
-    FuncDefInFunc(String),
-    StructDefInFunc(String),
-    InvalidTypeMethodAccess(ValueType),
-    InvalidTypeFieldAccess(ValueType),
-    InvalidPubField(String, String),
-    InvalidMethod(String, String),
-    InvalidCast(ValueType, ValueType),
-    IndexNonArr(ValueType),
-    AssignArrTypeMismatch(ValueType, ValueType),
-    UndefinedFunc(String),
-    UndefinedStruct(String),
-    IncorrectArity(String, u8, u8),
-    IncorrectReturnTy(ValueType, ValueType),
-    NoReturnTy(String, ValueType),
+    InvalidThis,
+    InvalidInfix,
+    InvalidPrefix,
     UndefinedVar(String),
+    FuncDefInFunc(String),
+    UndefinedFunc(String),
+    IndexNonArr(ValueType),
+    StructDefInFunc(String),
+    UndefinedStruct(String),
     AlreadyDefinedVar(String),
     AlreadyDefinedFunc(String),
     AlreadyDefinedStruct(String),
-    OpTypeMismatch(ValueType, Operator, ValueType),
-    VarDeclTypeMismatch(ValueType, ValueType),
-    ParamTypeMismatch(String, ValueType, ValueType),
     NatParamTypeMismatch(String),
+    InvalidTypeFieldAccess(ValueType),
+    InvalidTypeMethodAccess(ValueType),
+    NoReturnTy(String, ValueType),
+    InvalidMethod(String, String),
+    InvalidPubField(String, String),
+    InvalidCast(ValueType, ValueType),
+    IncorrectReturnTy(ValueType, ValueType),
     FieldTypeMismatch(ValueType, ValueType),
     ArrElTypeMismatch(ValueType, ValueType),
+    VarDeclTypeMismatch(ValueType, ValueType),
+    AssignArrTypeMismatch(ValueType, ValueType),
+    IncorrectArity(String, u8, u8),
+    OpTypeMismatch(ValueType, Operator, ValueType),
+    ParamTypeMismatch(String, ValueType, ValueType),
 }
 impl SemanticErr {
     pub fn print(&self) {
@@ -193,14 +193,12 @@ impl SemanticErr {
                 )
             }
             SemErrType::ParamTypeMismatch(name, expected, found) => {
-                // TODO: update error msg to use function name and maybe param name
                 format!(
                     "Parameter of function '{}' has type '{}', but found type '{}'.",
                     name, expected, found
                 )
             }
             SemErrType::NatParamTypeMismatch(name) => {
-                // TODO: update error msg to use function name and maybe param name
                 format!(
                     "The types of the parameters of function '{}' and the types of the given arguments don't match.",
                     name.green()

@@ -518,9 +518,8 @@ impl<'a> Analyser<'a> {
         match prefix {
             TokenType::Minus => {
                 if value_ty != ValueType::I64 && value_ty != ValueType::F64 {
-                    // TODO: update error msg
                     let err_ty =
-                        SemErrType::OpTypeMismatch(value_ty.clone(), Operator::Minus, value_ty);
+                        SemErrType::OpTypeMismatch(ValueType::I64, Operator::Minus, value_ty);
                     return Err(SemanticErr::new(line, err_ty));
                 }
                 Ok(value_ty)
