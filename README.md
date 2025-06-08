@@ -1,4 +1,4 @@
-<H2> Introducing Crust: One Of The Crustiest Languages Of All Time </H2>
+<H1> Introducing Crust: One Of The Crustiest Languages Of All Time </H1>
 This is Crust, a statically and strongly typed programming language written in Rust 🦀. Crust intends to be a simple yet powerful language, which should be easy to pick up without compromising features. You could think of it as a mix between Rust and C, as it takes many of the good parts of Rust, and combines them with the simplicity of C.
 
 <H2>Why should you use Crust?</H2>
