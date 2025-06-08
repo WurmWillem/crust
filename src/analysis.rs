@@ -322,6 +322,7 @@ impl<'a> Analyser<'a> {
                 index: _,
                 new_value: _,
             } => unreachable!(),
+            ExprType::Cast { value: _, target: _ } => unreachable!(),
         };
         Ok(result)
     }

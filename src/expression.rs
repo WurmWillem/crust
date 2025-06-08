@@ -1,6 +1,6 @@
 use crate::{
     parse_types::BinaryOp,
-    token::{Literal, TokenType},
+    token::{Literal, TokenType}, value::ValueType,
 };
 
 #[derive(Debug, Clone)]
@@ -23,6 +23,10 @@ pub enum ExprType<'a> {
         name: &'a str,
         args: Vec<Expr<'a>>,
         index: Option<usize>,
+    },
+    Cast {
+        value: Box<Expr<'a>>,
+        target: ValueType,
     },
     MethodCall {
         inst: Box<Expr<'a>>,

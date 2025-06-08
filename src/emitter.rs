@@ -10,7 +10,7 @@ use crate::{
     op_code::OpCode,
     statement::{Stmt, StmtType},
     token::{Literal, TokenType},
-    value::StackValue,
+    value::{StackValue, ValueType},
 };
 
 pub struct Emitter<'a> {
@@ -377,7 +377,7 @@ impl<'a> Emitter<'a> {
                 Literal::I64(num) => {
                     // TODO: var decl lits don't actually get converted to correct type
                     self.comps.emit_constant(StackValue::I64(*num), line)?
-                },
+                }
                 Literal::True => self.comps.emit_byte(OpCode::True as u8, line),
                 Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),
@@ -412,6 +412,15 @@ impl<'a> Emitter<'a> {
                 self.emit_expr(right)?;
                 let op_code = op.to_op_code();
                 self.comps.emit_byte(op_code as u8, line);
+            }
+            ExprType::Cast { value, target } => {
+                self.emit_expr(value)?;
+                match target {
+                    ValueType::F64 => self.comps.emit_byte(OpCode::CastToF64 as u8, line),
+                    ValueType::I64 => self.comps.emit_byte(OpCode::CastToI64 as u8, line),
+                    ValueType::U64 => self.comps.emit_byte(OpCode::CastToU64 as u8, line),
+                    _ => unreachable!(),
+                }
             }
             ExprType::Dot {
                 inst: _,

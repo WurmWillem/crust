@@ -273,6 +273,31 @@ impl VM {
                     ip = ip.sub(offset);
                 }
 
+                OpCode::CastToF64 => {
+                    let new_value = match self.stack_pop() {
+                        StackValue::U64(n) => StackValue::F64(n as f64),
+                        StackValue::I64(n) => StackValue::F64(n as f64),
+                        _ => unreachable!(),
+                    };
+                    self.stack_push(new_value);
+                }
+                OpCode::CastToU64 => {
+                    let new_value = match self.stack_pop() {
+                        StackValue::F64(n) => StackValue::U64(n as u64),
+                        StackValue::I64(n) => StackValue::U64(n as u64),
+                        _ => unreachable!(),
+                    };
+                    self.stack_push(new_value);
+                }
+                OpCode::CastToI64 => {
+                    let new_value = match self.stack_pop() {
+                        StackValue::F64(n) => StackValue::I64(n as i64),
+                        StackValue::U64(n) => StackValue::I64(n as i64),
+                        _ => unreachable!(),
+                    };
+                    self.stack_push(new_value);
+                }
+
                 OpCode::True => self.stack_push(StackValue::Bool(true)),
                 OpCode::False => self.stack_push(StackValue::Bool(false)),
                 OpCode::Null => self.stack_push(StackValue::Null),
