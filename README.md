@@ -67,8 +67,9 @@ struct Vector2D {
 - Expand standard library
 - Add modules
 - Add enums
+- Add encapsulation
 - ✅ Add some syntactic sugar for mutating variables (+=, -=, *=, /=)
-- ✅ Add casting operations with 'as' keyword
+- ✅ Add casting operations with the 'as' keyword
 - ✅ Add more integer types such as i64 and u64
 - ✅ Add dynamic arrays to the standard library (Vec)
 - ✅ Add methods
