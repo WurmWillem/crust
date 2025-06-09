@@ -66,6 +66,7 @@ struct Vector2D {
 
 - Expand standard library
 - Add modules
+- Add pattern matching (match/switch)
 - Add enums
 - Add encapsulation
 - ✅ Add some syntactic sugar for mutating variables (+=, -=, *=, /=)
