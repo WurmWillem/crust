@@ -344,7 +344,7 @@ impl<'a> Emitter<'a> {
                 if let ExprType::This = inst.expr {
                     self.emit_expr(new_value)?;
                     self.comps
-                        .emit_bytes(OpCode::GetSetField as u8, *index, line);
+                        .emit_bytes(OpCode::SetSelfField as u8, *index, line);
                 } else {
                     self.emit_expr(inst)?;
                     self.emit_expr(new_value)?;
@@ -354,9 +354,10 @@ impl<'a> Emitter<'a> {
             }
 
             ExprType::MethodCallResolved { inst, index, args } => {
-                self.emit_expr(inst)?;
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
+
+                self.emit_expr(inst)?;
 
                 for var in args {
                     self.emit_expr(var)?;
@@ -364,6 +365,9 @@ impl<'a> Emitter<'a> {
 
                 self.comps
                     .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 2, line);
+
+
+                //self.comps.emit_byte(OpCode::Pop as u8, line);
             }
             ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),

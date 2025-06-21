@@ -1,5 +1,37 @@
 fn main() {
-    int x = 3;
-    x /= 3;
-    pr x;
+    Foo a = Foo(0, "a");
+    Foo b = Foo(10, "b");
+
+    pr a.x;
+    pr b.x;
+    //int hoi = 2;
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    a.inc_x();
+    //b.inc_x();
+    pr a.x;
+    pr b.x;
 }
+
+struct Foo {
+    int x;
+    str name;
+
+    fn inc_x() {
+        self.x = self.x + 1;
+        //pr 3;
+        
+    }
+}
+// make += work for self

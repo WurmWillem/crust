@@ -526,7 +526,12 @@ impl<'a> Parser<'a> {
         let var = Expr::new(ty, line);
         Ok(var)
     }
-    fn get_assign_shorthand(&mut self, name: &'a str, line: u32, op: BinaryOp) -> Result<ExprType<'a>, ParseErr> {
+    fn get_assign_shorthand(
+        &mut self,
+        name: &'a str,
+        line: u32,
+        op: BinaryOp,
+    ) -> Result<ExprType<'a>, ParseErr> {
         let var_ty = ExprType::Var(name);
         let var = Box::new(Expr::new(var_ty, line));
 
@@ -538,7 +543,7 @@ impl<'a> Parser<'a> {
         };
 
         let new_value = Box::new(Expr::new(ty, line));
-            Ok(ExprType::Assign { name, new_value })
+        Ok(ExprType::Assign { name, new_value })
     }
 
     fn string(&mut self) -> Result<Expr<'a>, ParseErr> {
