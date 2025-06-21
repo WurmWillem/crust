@@ -546,6 +546,32 @@ impl<'a> Parser<'a> {
         Ok(ExprType::Assign { name, new_value })
     }
 
+    fn get_assign_shorthand_field(
+        &mut self,
+        field_name: &'a str,
+        line: u32,
+        op: BinaryOp,
+        inst: Expr<'a>,
+    ) -> Result<ExprType<'a>, ParseErr> {
+        let ty = ExprType::Dot { inst: Box::new(inst.clone()), property: field_name };
+        let left = Box::new(Expr::new(ty, line));
+
+        let operand = Box::new(self.expression()?);
+        let ty = ExprType::Binary {
+            left,
+            op,
+            right: operand,
+        };
+
+        let new_value = Box::new(Expr::new(ty, line));
+        let ty = ExprType::DotAssign {
+            inst: Box::new(inst),
+            property: field_name,
+            new_value,
+        };
+        Ok(ty)
+    }
+
     fn string(&mut self) -> Result<Expr<'a>, ParseErr> {
         let Literal::Str(value) = self.previous().literal else {
             unreachable!();
@@ -577,6 +603,7 @@ impl<'a> Parser<'a> {
     fn dot(&mut self, inst: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
         let property = self.previous();
+        let line = property.line;
 
         let ty = if self.matches(TokenType::Equal) && can_assign {
             let value = Box::new(self.expression()?);
@@ -585,6 +612,14 @@ impl<'a> Parser<'a> {
                 property: property.lexeme,
                 new_value: value,
             }
+        } else if can_assign && self.matches(TokenType::PlusEqual) {
+            self.get_assign_shorthand_field(property.lexeme, line, BinaryOp::Add, inst)?
+        } else if can_assign && self.matches(TokenType::MinEqual) {
+            self.get_assign_shorthand_field(property.lexeme, line, BinaryOp::Sub, inst)?
+        } else if can_assign && self.matches(TokenType::MulEqual) {
+            self.get_assign_shorthand_field(property.lexeme, line, BinaryOp::Mul, inst)?
+        } else if can_assign && self.matches(TokenType::DivEqual) {
+            self.get_assign_shorthand_field(property.lexeme, line, BinaryOp::Div, inst)?
         } else {
             ExprType::Dot {
                 inst: Box::new(inst),
