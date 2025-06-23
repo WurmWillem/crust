@@ -1,6 +1,7 @@
 fn main() {
     Foo a = Foo(0, "a");
     a.hi();
+    a.inc_x();
     pr a.x;
 }
 
@@ -11,7 +12,7 @@ struct Foo {
     fn hi() {
        pr "hoi"; 
     }
-    fn inc_x() {
+    fn inc_x(self) {
         self.x += 3;
     }
 }

@@ -351,7 +351,7 @@ impl<'a> Emitter<'a> {
                 let mut args_len = args.len() as u8 + 1;
                 if *use_self {
                     self.emit_expr(inst)?;
-                    args_len = args.len() as u8 + 2;
+                    args_len += 1;
                 }
 
                 for var in args {

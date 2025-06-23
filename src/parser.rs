@@ -225,11 +225,15 @@ impl<'a> Parser<'a> {
         let mut parameters = Vec::new();
         let mut use_self = false;
         if !self.check(TokenType::RightParen) {
-            use_self = self.matches(TokenType::This);
-
-            parameters.push(self.parse_parameter()?);
-            while self.matches(TokenType::Comma) {
+            if self.matches(TokenType::This) {
+                use_self = true;
+            }
+            
+            if !self.check(TokenType::RightParen) {
                 parameters.push(self.parse_parameter()?);
+                while self.matches(TokenType::Comma) {
+                    parameters.push(self.parse_parameter()?);
+                }
             }
         }
 
