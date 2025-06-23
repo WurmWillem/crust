@@ -112,12 +112,8 @@ impl<'a> Analyser<'a> {
                         unreachable!()
                     }
                 }
-                // let mut methods_self = 
-                self.enities.structs.get_mut(name).unwrap().methods = method_data.clone();
 
-                // for method in methods {
-                //     self.analyse_stmt(method)?;
-                // }
+                self.enities.structs.get_mut(name).unwrap().methods = method_data.clone();
 
                 for (i, method) in methods.iter_mut().enumerate() {
                     self.analyse_stmt(method)?;
@@ -128,9 +124,8 @@ impl<'a> Analyser<'a> {
                         unreachable!()
                     }
                 }
-                self.enities.structs.get_mut(name).unwrap().methods = method_data;
 
-                // self.enities.structs.get_mut(name).unwrap().methods = method_data;
+                self.enities.structs.get_mut(name).unwrap().methods = method_data;
                 self.current_struct = None;
             }
         }
@@ -229,11 +224,7 @@ impl<'a> Analyser<'a> {
             }
             StmtType::Break => (),
             StmtType::Continue => (),
-            StmtType::Struct {
-                name: _,
-                fields: _,
-                methods: _,
-            } => (),
+            StmtType::Struct { .. } => (),
         };
         Ok(())
     }
@@ -339,14 +330,9 @@ impl<'a> Analyser<'a> {
                 target.clone()
             }
             ExprType::This => unreachable!(),
-            ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
+            ExprType::DotResolved { .. } => unreachable!(),
             ExprType::MethodCallResolved { .. } => unreachable!(),
-            ExprType::DotAssignResolved {
-                // TODO: use .. instead
-                inst: _,
-                index: _,
-                new_value: _,
-            } => unreachable!(),
+            ExprType::DotAssignResolved { .. } => unreachable!(),
         };
         Ok(result)
     }
