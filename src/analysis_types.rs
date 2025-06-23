@@ -112,7 +112,6 @@ impl<'a> StructData<'a> {
                 return Ok((index as u8, data.return_ty.clone(), data.use_self, params));
             }
         }
-        panic!("hoi");
         let ty = SemErrType::InvalidMethod(name.to_string(), property.to_string());
         Err(SemErr::new(line, ty))
     }

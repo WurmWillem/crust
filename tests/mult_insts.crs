@@ -14,7 +14,7 @@ struct Foo {
     int x;
     str name;
 
-    fn inc_x() {
+    fn inc_x(self) {
         self.x = self.x + 1;
     }
 }
