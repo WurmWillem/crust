@@ -269,7 +269,7 @@ impl<'a> Emitter<'a> {
     fn emit_expr(&mut self, expr: &Expr<'a>) -> Result<(), EmitErr> {
         let line = expr.line;
         match &expr.expr {
-            ExprType::Call { name, args, index } => {
+            ExprType::FuncCall { name, args, index } => {
                 if let Some(methods) = self.structs.get(name) {
                     let method_len = methods.len() as u8;
                     for (_, value) in methods.iter().rev() {

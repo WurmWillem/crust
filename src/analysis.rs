@@ -12,6 +12,7 @@ pub struct Analyser<'a> {
     enities: EnityData<'a>,
     symbols: SemanticScope<'a>,
     current_return_ty: ValueType,
+    current_use_self: bool,
     return_stmt_found: bool,
     current_struct: Option<&'a str>,
 }
@@ -23,6 +24,7 @@ impl<'a> Analyser<'a> {
             enities: EnityData::new(),
             current_struct: None,
             return_stmt_found: false,
+            current_use_self: false,
         }
     }
     pub fn analyse_stmts(stmts: &mut Vec<Stmt<'a>>) -> Option<EnityData<'a>> {
@@ -231,7 +233,7 @@ impl<'a> Analyser<'a> {
                     return Err(SemanticErr::new(line, ty));
                 }
             },
-            ExprType::Call { name, args, index } => {
+            ExprType::FuncCall { name, args, index } => {
                 if let Some(data) = self.enities.nat_funcs.remove(name) {
                     for (i, func) in data.iter().enumerate() {
                         let parameters = func.parameters.clone();
@@ -347,7 +349,9 @@ impl<'a> Analyser<'a> {
             return Err(SemanticErr::new(line, ty));
         }
         let prev_return_ty = self.current_return_ty.clone();
+        let prev_use_self = self.current_use_self;
         self.current_return_ty = return_ty.clone();
+        self.current_use_self = use_self;
 
         self.symbols.begin_scope();
 
@@ -371,6 +375,7 @@ impl<'a> Analyser<'a> {
 
         self.symbols.end_scope();
         self.current_return_ty = prev_return_ty;
+        self.current_use_self = prev_use_self;
 
         Ok(())
     }
@@ -591,13 +596,15 @@ impl<'a> Analyser<'a> {
         property: &str,
     ) -> Result<(ValueType, ExprType<'a>), SemanticErr> {
         let name = if let ExprType::This = inst.expr {
-            match self.current_struct {
-                Some(name) => name.to_string(),
-                None => {
-                    let ty = SemErrType::InvalidThis;
-                    return Err(SemanticErr::new(line, ty));
-                }
+            let Some(name) = self.current_struct else {
+                let ty = SemErrType::SelfOutsideStruct;
+                return Err(SemanticErr::new(line, ty));
+            };
+            if !self.current_use_self {
+                let ty = SemErrType::SelfInMethodWithoutSelfParam;
+                return Err(SemanticErr::new(line, ty));
             }
+            name.to_string()
         } else {
             let inst_ty = self.analyse_expr(inst)?;
             let ValueType::Struct(name) = inst_ty else {

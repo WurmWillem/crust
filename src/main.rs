@@ -1,6 +1,6 @@
 use analysis::Analyser;
 use emitter::Emitter;
-use error::PRINT_TOKENS;
+use error::{PRINT_PARSE_TREE, PRINT_TOKENS};
 use op_code::OpCode;
 use scanner::Scanner;
 use value::StackValue;
@@ -66,7 +66,9 @@ fn main() {
             return;
         }
     };
-    // dbg!(&statements);
+    if PRINT_PARSE_TREE {
+        dbg!(&statements);
+    }
 
     let entities = match Analyser::analyse_stmts(&mut statements) {
         Some(func_data) => func_data,

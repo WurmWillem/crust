@@ -13,6 +13,6 @@ struct Foo {
        pr "hoi"; 
     }
     fn inc_x(self) {
-        self.x += 3;
+        self.hi();
     }
 }

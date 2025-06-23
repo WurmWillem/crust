@@ -228,7 +228,7 @@ impl<'a> Parser<'a> {
             if self.matches(TokenType::This) {
                 use_self = true;
             }
-            
+
             if !self.check(TokenType::RightParen) {
                 parameters.push(self.parse_parameter()?);
                 while self.matches(TokenType::Comma) {
@@ -691,7 +691,7 @@ impl<'a> Parser<'a> {
         )?;
 
         if let ExprType::Var(name) = name.expr {
-            let ty = ExprType::Call {
+            let ty = ExprType::FuncCall {
                 name,
                 args,
                 index: None,
