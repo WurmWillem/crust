@@ -1,6 +1,6 @@
 use crate::{
     analysis_types::{EnityData, FuncData, Operator, SemanticScope, StructData, Symbol},
-    error::{SemErrType, SemanticErr},
+    error::{SemErr, SemErrType},
     expression::{Expr, ExprType},
     parse_types::BinaryOp,
     statement::{Stmt, StmtType},
@@ -44,7 +44,7 @@ impl<'a> Analyser<'a> {
         Some(analyser.enities)
     }
 
-    fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemanticErr> {
+    fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemErr> {
         let (nat_funcs, nat_structs) = crate::native::register();
         self.enities.nat_funcs = nat_funcs;
         self.enities.nat_structs = nat_structs;
@@ -69,7 +69,7 @@ impl<'a> Analyser<'a> {
 
                 if self.enities.funcs.insert(*name, func_data).is_some() {
                     let err_ty = SemErrType::AlreadyDefinedFunc(name.to_string());
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 }
             } else if let StmtType::Struct {
                 name,
@@ -80,7 +80,7 @@ impl<'a> Analyser<'a> {
                 if self.current_struct.is_some() {
                     // TODO: this doesn't work for some reason
                     let ty = SemErrType::StructDefInFunc(name.to_string());
-                    return Err(SemanticErr::new(line, ty));
+                    return Err(SemErr::new(line, ty));
                 }
                 self.current_struct = Some(name);
                 let struct_data = StructData::new(fields.clone());
@@ -88,22 +88,21 @@ impl<'a> Analyser<'a> {
 
                 if self.enities.structs.insert(*name, struct_data).is_some() {
                     let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 }
 
-                for method in methods {
-                    self.analyse_stmt(method)?;
+                for method in methods.iter() {
                     if let StmtType::Func {
                         name,
                         parameters,
-                        body,
+                        body: _,
                         return_ty,
                         use_self,
                     } = &method.stmt
                     {
                         let func_data = FuncData {
                             parameters: parameters.clone(),
-                            body: body.clone(),
+                            body: vec![],
                             return_ty: return_ty.clone(),
                             line: stmt.line,
                             use_self: *use_self,
@@ -113,20 +112,37 @@ impl<'a> Analyser<'a> {
                         unreachable!()
                     }
                 }
+                // let mut methods_self = 
+                self.enities.structs.get_mut(name).unwrap().methods = method_data.clone();
 
+                // for method in methods {
+                //     self.analyse_stmt(method)?;
+                // }
+
+                for (i, method) in methods.iter_mut().enumerate() {
+                    self.analyse_stmt(method)?;
+
+                    if let StmtType::Func { body, .. } = &method.stmt {
+                        method_data[i].1.body = body.clone();
+                    } else {
+                        unreachable!()
+                    }
+                }
                 self.enities.structs.get_mut(name).unwrap().methods = method_data;
+
+                // self.enities.structs.get_mut(name).unwrap().methods = method_data;
                 self.current_struct = None;
             }
         }
 
         if !self.enities.funcs.contains_key("main") {
             let err_ty = SemErrType::NoMainFunc;
-            return Err(SemanticErr::new(0, err_ty));
+            return Err(SemErr::new(0, err_ty));
         }
         Ok(())
     }
 
-    fn analyse_stmt(&mut self, stmt: &mut Stmt<'a>) -> Result<(), SemanticErr> {
+    fn analyse_stmt(&mut self, stmt: &mut Stmt<'a>) -> Result<(), SemErr> {
         let line = stmt.line;
         match &mut stmt.stmt {
             StmtType::Expr(expr) => {
@@ -138,7 +154,7 @@ impl<'a> Analyser<'a> {
                         && !self.enities.nat_structs.contains_key(name as &str)
                     {
                         let err = SemErrType::UndefinedStruct(name.clone());
-                        return Err(SemanticErr::new(line, err));
+                        return Err(SemErr::new(line, err));
                     }
                 }
 
@@ -148,7 +164,7 @@ impl<'a> Analyser<'a> {
                     && !try_coerce(&mut value.expr, ty)
                 {
                     let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 }
 
                 self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
@@ -166,7 +182,7 @@ impl<'a> Analyser<'a> {
                 {
                     let err_ty =
                         SemErrType::IncorrectReturnTy(self.current_return_ty.clone(), return_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 }
             }
             StmtType::Block(stmts) => {
@@ -222,7 +238,7 @@ impl<'a> Analyser<'a> {
         Ok(())
     }
 
-    fn analyse_expr(&mut self, expr: &mut Expr<'a>) -> Result<ValueType, SemanticErr> {
+    fn analyse_expr(&mut self, expr: &mut Expr<'a>) -> Result<ValueType, SemErr> {
         let line = expr.line;
         let result = match &mut expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
@@ -230,7 +246,7 @@ impl<'a> Analyser<'a> {
                 Some(symbol) => symbol.ty,
                 None => {
                     let ty = SemErrType::UndefinedVar(name.to_string());
-                    return Err(SemanticErr::new(line, ty));
+                    return Err(SemErr::new(line, ty));
                 }
             },
             ExprType::FuncCall { name, args, index } => {
@@ -253,7 +269,7 @@ impl<'a> Analyser<'a> {
                     self.enities.nat_funcs.insert(name, data);
 
                     let err_ty = SemErrType::NatParamTypeMismatch(name.to_string());
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 };
 
                 let (return_ty, parameters) = self.get_called_func_data(name, line)?;
@@ -274,7 +290,7 @@ impl<'a> Analyser<'a> {
                     ValueType::Arr(ty) => *ty,
                     _ => {
                         let ty = SemErrType::IndexNonArr(arr);
-                        return Err(SemanticErr::new(line, ty));
+                        return Err(SemErr::new(line, ty));
                     }
                 }
             }
@@ -318,7 +334,7 @@ impl<'a> Analyser<'a> {
                 let value_ty = self.analyse_expr(value)?;
                 if !value_ty.is_num() || !target.is_num() {
                     let ty = SemErrType::InvalidCast(target.clone(), value_ty);
-                    return Err(SemanticErr::new(line, ty));
+                    return Err(SemErr::new(line, ty));
                 }
                 target.clone()
             }
@@ -343,10 +359,10 @@ impl<'a> Analyser<'a> {
         body: &mut [Stmt<'a>],
         name: &str,
         use_self: bool,
-    ) -> Result<(), SemanticErr> {
+    ) -> Result<(), SemErr> {
         if self.current_return_ty != ValueType::None {
             let ty = SemErrType::FuncDefInFunc(name.to_string());
-            return Err(SemanticErr::new(line, ty));
+            return Err(SemErr::new(line, ty));
         }
         let prev_return_ty = self.current_return_ty.clone();
         let prev_use_self = self.current_use_self;
@@ -370,7 +386,7 @@ impl<'a> Analyser<'a> {
 
         if return_ty != ValueType::Null && !self.return_stmt_found {
             let ty = SemErrType::NoReturnTy(name.to_string(), return_ty.clone());
-            return Err(SemanticErr::new(line, ty));
+            return Err(SemErr::new(line, ty));
         }
 
         self.symbols.end_scope();
@@ -385,7 +401,7 @@ impl<'a> Analyser<'a> {
         name: &str,
         value: &mut Box<Expr<'a>>,
         line: u32,
-    ) -> Result<ValueType, SemanticErr> {
+    ) -> Result<ValueType, SemErr> {
         match self.symbols.resolve(name) {
             Some(symbol) => {
                 let value_ty = self.analyse_expr(value)?;
@@ -394,13 +410,13 @@ impl<'a> Analyser<'a> {
                     && !try_coerce(&mut value.expr, &symbol.ty)
                 {
                     let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 }
                 Ok(symbol.ty)
             }
             None => {
                 let ty = SemErrType::UndefinedVar(name.to_string());
-                Err(SemanticErr::new(line, ty))
+                Err(SemErr::new(line, ty))
             }
         }
     }
@@ -411,11 +427,24 @@ impl<'a> Analyser<'a> {
         property: &str,
         line: u32,
         args: &mut [Expr<'a>],
-    ) -> Result<(u8, ValueType, bool), SemanticErr> {
-        let inst_ty = self.analyse_expr(inst)?;
-        let ValueType::Struct(name) = inst_ty else {
-            let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
-            return Err(SemanticErr::new(line, ty));
+    ) -> Result<(u8, ValueType, bool), SemErr> {
+        let name = if let ExprType::This = inst.expr {
+            let Some(name) = self.current_struct else {
+                let ty = SemErrType::SelfOutsideStruct;
+                return Err(SemErr::new(line, ty));
+            };
+            if !self.current_use_self {
+                let ty = SemErrType::SelfInMethodWithoutSelfParam;
+                return Err(SemErr::new(line, ty));
+            }
+            name.to_string()
+        } else {
+            let inst_ty = self.analyse_expr(inst)?;
+            let ValueType::Struct(name) = inst_ty else {
+                let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
+                return Err(SemErr::new(line, ty));
+            };
+            name
         };
 
         for arg in args.iter_mut() {
@@ -424,7 +453,7 @@ impl<'a> Analyser<'a> {
 
         if let Some(data) = self.enities.structs.get(&name as &str) {
             let (index, return_ty, use_self, parameters) =
-                data.get_method_index_and_return_ty(&name, property, line)?;
+                data.get_method_data(&name, property, line)?;
             self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
             Ok((index, return_ty, use_self))
@@ -436,7 +465,7 @@ impl<'a> Analyser<'a> {
             Ok((index, return_ty, use_self))
         } else {
             let ty = SemErrType::UndefinedStruct(name);
-            Err(SemanticErr::new(line, ty))
+            Err(SemErr::new(line, ty))
         }
     }
 
@@ -445,20 +474,20 @@ impl<'a> Analyser<'a> {
         arr: &mut Box<Expr<'a>>,
         value: &mut Box<Expr<'a>>,
         line: u32,
-    ) -> Result<ValueType, SemanticErr> {
+    ) -> Result<ValueType, SemErr> {
         let arr = self.analyse_expr(arr)?;
         Ok(match arr {
             ValueType::Arr(ty) => {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty {
                     let ty = SemErrType::AssignArrTypeMismatch(*ty, value_ty);
-                    return Err(SemanticErr::new(line, ty));
+                    return Err(SemErr::new(line, ty));
                 }
                 *ty
             }
             _ => {
                 let ty = SemErrType::IndexNonArr(arr);
-                return Err(SemanticErr::new(line, ty));
+                return Err(SemErr::new(line, ty));
             }
         })
     }
@@ -467,7 +496,7 @@ impl<'a> Analyser<'a> {
         &mut self,
         values: &mut [Expr<'a>],
         line: u32,
-    ) -> Result<ValueType, SemanticErr> {
+    ) -> Result<ValueType, SemErr> {
         if values.is_empty() {
             return Ok(ValueType::Arr(Box::new(ValueType::Any)));
         }
@@ -477,7 +506,7 @@ impl<'a> Analyser<'a> {
 
             if next_el_ty != el_ty && !try_coerce(&mut el.expr, &el_ty) {
                 let err_ty = SemErrType::ArrElTypeMismatch(el_ty, next_el_ty);
-                return Err(SemanticErr::new(line, err_ty));
+                return Err(SemErr::new(line, err_ty));
             }
         }
         Ok(ValueType::Arr(Box::new(el_ty)))
@@ -489,7 +518,7 @@ impl<'a> Analyser<'a> {
         right: &mut Box<Expr<'a>>,
         op: BinaryOp,
         line: u32,
-    ) -> Result<ValueType, SemanticErr> {
+    ) -> Result<ValueType, SemErr> {
         let left_ty = self.analyse_expr(left)?;
         let right_ty = self.analyse_expr(right)?;
 
@@ -499,7 +528,7 @@ impl<'a> Analyser<'a> {
         {
             let op = op.to_operator();
             let err_ty = SemErrType::OpTypeMismatch(left_ty, op, right_ty);
-            return Err(SemanticErr::new(line, err_ty));
+            return Err(SemErr::new(line, err_ty));
         }
 
         use BinaryOp as BO;
@@ -519,7 +548,7 @@ impl<'a> Analyser<'a> {
         if is_valid {
             Ok(left_ty)
         } else {
-            Err(SemanticErr::new(line, SemErrType::InvalidInfix))
+            Err(SemErr::new(line, SemErrType::InvalidInfix))
         }
     }
 
@@ -528,7 +557,7 @@ impl<'a> Analyser<'a> {
         value: &mut Box<Expr<'a>>,
         prefix: TokenType,
         line: u32,
-    ) -> Result<ValueType, SemanticErr> {
+    ) -> Result<ValueType, SemErr> {
         let value_ty = self.analyse_expr(value)?;
 
         match prefix {
@@ -536,7 +565,7 @@ impl<'a> Analyser<'a> {
                 if value_ty != ValueType::I64 && value_ty != ValueType::F64 {
                     let err_ty =
                         SemErrType::OpTypeMismatch(ValueType::I64, Operator::Minus, value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 }
                 Ok(value_ty)
             }
@@ -544,11 +573,11 @@ impl<'a> Analyser<'a> {
                 if value_ty != ValueType::Bool {
                     let err_ty =
                         SemErrType::OpTypeMismatch(ValueType::Bool, Operator::Bang, value_ty);
-                    return Err(SemanticErr::new(line, err_ty));
+                    return Err(SemErr::new(line, err_ty));
                 }
                 Ok(value_ty)
             }
-            _ => Err(SemanticErr::new(line, SemErrType::InvalidPrefix)),
+            _ => Err(SemErr::new(line, SemErrType::InvalidPrefix)),
         }
     }
 
@@ -558,14 +587,14 @@ impl<'a> Analyser<'a> {
         parameters: Vec<ValueType>,
         name: String,
         line: u32,
-    ) -> Result<(), SemanticErr> {
+    ) -> Result<(), SemErr> {
         if args.len() != parameters.len() {
             let err_ty = SemErrType::IncorrectArity(
                 name.to_string(),
                 parameters.len() as u8,
                 args.len() as u8,
             );
-            return Err(SemanticErr::new(line, err_ty));
+            return Err(SemErr::new(line, err_ty));
         }
 
         for (i, arg) in args.iter_mut().enumerate() {
@@ -582,7 +611,7 @@ impl<'a> Analyser<'a> {
             {
                 let err_ty =
                     SemErrType::ParamTypeMismatch(name.to_string(), param_ty.clone(), arg_ty);
-                return Err(SemanticErr::new(line, err_ty));
+                return Err(SemErr::new(line, err_ty));
             }
         }
         Ok(())
@@ -594,28 +623,28 @@ impl<'a> Analyser<'a> {
         inst: &mut Box<Expr<'a>>,
         line: u32,
         property: &str,
-    ) -> Result<(ValueType, ExprType<'a>), SemanticErr> {
+    ) -> Result<(ValueType, ExprType<'a>), SemErr> {
         let name = if let ExprType::This = inst.expr {
             let Some(name) = self.current_struct else {
                 let ty = SemErrType::SelfOutsideStruct;
-                return Err(SemanticErr::new(line, ty));
+                return Err(SemErr::new(line, ty));
             };
             if !self.current_use_self {
                 let ty = SemErrType::SelfInMethodWithoutSelfParam;
-                return Err(SemanticErr::new(line, ty));
+                return Err(SemErr::new(line, ty));
             }
             name.to_string()
         } else {
             let inst_ty = self.analyse_expr(inst)?;
             let ValueType::Struct(name) = inst_ty else {
                 let ty = SemErrType::InvalidTypeFieldAccess(inst_ty);
-                return Err(SemanticErr::new(line, ty));
+                return Err(SemErr::new(line, ty));
             };
             name
         };
         let Some(data) = self.enities.structs.get(&name as &str) else {
             let ty = SemErrType::UndefinedStruct(name);
-            return Err(SemanticErr::new(line, ty));
+            return Err(SemErr::new(line, ty));
         };
 
         let index = data.get_field_index(name, property, line)?;
@@ -625,7 +654,7 @@ impl<'a> Analyser<'a> {
             let new_value_ty = self.analyse_expr(new_value)?;
             if new_value_ty != field_ty && !try_coerce(&mut new_value.expr, &field_ty) {
                 let err_ty = SemErrType::FieldTypeMismatch(field_ty, new_value_ty);
-                return Err(SemanticErr::new(line, err_ty));
+                return Err(SemErr::new(line, err_ty));
             }
             ExprType::DotAssignResolved {
                 inst: inst.clone(),
@@ -646,7 +675,7 @@ impl<'a> Analyser<'a> {
         &mut self,
         name: &'a str,
         line: u32,
-    ) -> Result<(ValueType, Vec<ValueType>), SemanticErr> {
+    ) -> Result<(ValueType, Vec<ValueType>), SemErr> {
         if let Some(data) = self.enities.structs.get(name) {
             let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
             let return_ty = ValueType::Struct(name.to_string());
@@ -667,7 +696,7 @@ impl<'a> Analyser<'a> {
         };
 
         let ty = SemErrType::UndefinedFunc(name.to_string());
-        Err(SemanticErr::new(line, ty))
+        Err(SemErr::new(line, ty))
     }
 }
 

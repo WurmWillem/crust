@@ -184,8 +184,7 @@ impl StackValue {
                 Object::Func(f) => format!("fn {}", f.data.get_name()),
                 Object::Native(f) => format!("nat {}", f.data.get_name()),
                 Object::Arr(a) => format!("arr {:?}", a.data.elements),
-                Object::Inst(i) => 
-                {
+                Object::Inst(i) => {
                     let mut s = String::from("inst ");
                     for f in &i.data.fields {
                         s.push_str(&format!("{}, ", f));

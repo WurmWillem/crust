@@ -344,7 +344,12 @@ impl<'a> Emitter<'a> {
                 }
             }
 
-            ExprType::MethodCallResolved { inst, index, args, use_self } => {
+            ExprType::MethodCallResolved {
+                inst,
+                index,
+                args,
+                use_self,
+            } => {
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
 

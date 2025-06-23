@@ -385,17 +385,15 @@ impl VM {
                     unsafe { self.frames.as_mut_ptr().add(self.frame_count).write(frame) }
                     self.frame_count += 1;
                 }
-                Object::Native(func) => {
-                    unsafe {
-                        let args_ptr = self.stack.as_ptr().add(slots + 1);
-                        let args = std::slice::from_raw_parts(args_ptr, arg_count);
+                Object::Native(func) => unsafe {
+                    let args_ptr = self.stack.as_ptr().add(slots + 1);
+                    let args = std::slice::from_raw_parts(args_ptr, arg_count);
 
-                        let value = (func.data.func)(args, &mut self.heap);
+                    let value = (func.data.func)(args, &mut self.heap);
 
-                        self.stack_top = slots;
-                        self.stack_push(value);
-                    }
-                }
+                    self.stack_top = slots;
+                    self.stack_push(value);
+                },
                 _ => unreachable!(),
             }
         } else {
