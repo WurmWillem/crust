@@ -1,20 +1,17 @@
 fn main() {
     Foo a = Foo(0, "a");
-    Foo b = Foo(10, "b");
-
+    a.hi();
     pr a.x;
-    pr b.x;
-    a.inc_x();
-    b.inc_x();
-    pr a.x;
-    pr b.x;
 }
 
 struct Foo {
     int x;
     str name;
 
+    fn hi() {
+       pr "hoi"; 
+    }
     fn inc_x() {
-        self.x /= 3;
+        self.x += 3;
     }
 }

@@ -15,6 +15,7 @@ pub fn register<'a>(structs: &mut HashMap<&'a str, NatStructData<'a>>) {
         parameters: vec![],
         func: vec2_product,
         return_ty: ValueType::F64,
+        use_self: true,
     };
 
     let data = NatStructData {

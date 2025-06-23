@@ -54,6 +54,7 @@ impl<'a> Analyser<'a> {
                 parameters,
                 body: _,
                 return_ty,
+                use_self,
             } = &stmt.stmt
             {
                 let func_data = FuncData {
@@ -61,6 +62,7 @@ impl<'a> Analyser<'a> {
                     body: vec![],
                     return_ty: return_ty.clone(),
                     line: stmt.line,
+                    use_self: *use_self,
                 };
 
                 if self.enities.funcs.insert(*name, func_data).is_some() {
@@ -94,6 +96,7 @@ impl<'a> Analyser<'a> {
                         parameters,
                         body,
                         return_ty,
+                        use_self,
                     } = &method.stmt
                     {
                         let func_data = FuncData {
@@ -101,6 +104,7 @@ impl<'a> Analyser<'a> {
                             body: body.clone(),
                             return_ty: return_ty.clone(),
                             line: stmt.line,
+                            use_self: *use_self,
                         };
                         method_data.push((*name, func_data));
                     } else {
@@ -201,8 +205,9 @@ impl<'a> Analyser<'a> {
                 parameters,
                 body,
                 return_ty,
+                use_self,
             } => {
-                self.analyse_func_stmt(return_ty.clone(), parameters, line, body, name)?;
+                self.analyse_func_stmt(return_ty.clone(), parameters, line, body, name, *use_self)?;
             }
             StmtType::Break => (),
             StmtType::Continue => (),
@@ -296,12 +301,14 @@ impl<'a> Analyser<'a> {
                 property,
                 args,
             } => {
-                let (index, return_ty) = self.analyse_method_call(inst, property, line, args)?;
+                let (index, return_ty, use_self) =
+                    self.analyse_method_call(inst, property, line, args)?;
 
                 expr.expr = ExprType::MethodCallResolved {
                     inst: inst.clone(),
                     index,
                     args: args.clone(),
+                    use_self,
                 };
                 return_ty
             }
@@ -315,12 +322,9 @@ impl<'a> Analyser<'a> {
             }
             ExprType::This => unreachable!(),
             ExprType::DotResolved { inst: _, index: _ } => unreachable!(),
-            ExprType::MethodCallResolved {
-                inst: _,
-                index: _,
-                args: _,
-            } => unreachable!(),
+            ExprType::MethodCallResolved { .. } => unreachable!(),
             ExprType::DotAssignResolved {
+                // TODO: use .. instead
                 inst: _,
                 index: _,
                 new_value: _,
@@ -336,6 +340,7 @@ impl<'a> Analyser<'a> {
         line: u32,
         body: &mut [Stmt<'a>],
         name: &str,
+        use_self: bool,
     ) -> Result<(), SemanticErr> {
         if self.current_return_ty != ValueType::None {
             let ty = SemErrType::FuncDefInFunc(name.to_string());
@@ -401,7 +406,7 @@ impl<'a> Analyser<'a> {
         property: &str,
         line: u32,
         args: &mut [Expr<'a>],
-    ) -> Result<(u8, ValueType), SemanticErr> {
+    ) -> Result<(u8, ValueType, bool), SemanticErr> {
         let inst_ty = self.analyse_expr(inst)?;
         let ValueType::Struct(name) = inst_ty else {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
@@ -413,17 +418,17 @@ impl<'a> Analyser<'a> {
         }
 
         if let Some(data) = self.enities.structs.get(&name as &str) {
-            let (index, return_ty, parameters) =
+            let (index, return_ty, use_self, parameters) =
                 data.get_method_index_and_return_ty(&name, property, line)?;
             self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
-            Ok((index, return_ty))
+            Ok((index, return_ty, use_self))
         } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
-            let (index, return_ty, parameters) =
+            let (index, return_ty, use_self, parameters) =
                 data.get_method_index_and_return_ty(&name, property, line)?;
             self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
-            Ok((index, return_ty))
+            Ok((index, return_ty, use_self))
         } else {
             let ty = SemErrType::UndefinedStruct(name);
             Err(SemanticErr::new(line, ty))

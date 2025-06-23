@@ -250,12 +250,7 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(OpCode::Pop as u8, line);
                 self.comps.decrement_local_count();
             }
-            StmtType::Func {
-                name: _,
-                parameters: _,
-                body: _,
-                return_ty: _,
-            } => {}
+            StmtType::Func { .. } => {}
             StmtType::Return(value) => {
                 self.emit_expr(&value)?;
                 self.comps.emit_byte(OpCode::Return as u8, line);
@@ -266,11 +261,7 @@ impl<'a> Emitter<'a> {
             StmtType::Continue => {
                 self.comps.add_continue(line)?;
             }
-            StmtType::Struct {
-                name: _,
-                fields: _,
-                methods: _,
-            } => (),
+            StmtType::Struct { .. } => (),
         }
         Ok(())
     }
@@ -353,19 +344,22 @@ impl<'a> Emitter<'a> {
                 }
             }
 
-            ExprType::MethodCallResolved { inst, index, args } => {
+            ExprType::MethodCallResolved { inst, index, args, use_self } => {
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
 
-                self.emit_expr(inst)?;
+                let mut args_len = args.len() as u8 + 1;
+                if *use_self {
+                    self.emit_expr(inst)?;
+                    args_len = args.len() as u8 + 2;
+                }
 
                 for var in args {
                     self.emit_expr(var)?;
                 }
 
                 self.comps
-                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 2, line);
-
+                    .emit_bytes(OpCode::FuncCall as u8, args_len, line);
 
                 //self.comps.emit_byte(OpCode::Pop as u8, line);
             }
@@ -424,20 +418,9 @@ impl<'a> Emitter<'a> {
                     _ => unreachable!(),
                 }
             }
-            ExprType::Dot {
-                inst: _,
-                property: _,
-            } => unreachable!(),
-            ExprType::DotAssign {
-                inst: _,
-                property: _,
-                new_value: _,
-            } => unreachable!(),
-            ExprType::MethodCall {
-                inst: _,
-                property: _,
-                args: _,
-            } => unreachable!(),
+            ExprType::Dot { .. } => unreachable!(),
+            ExprType::DotAssign { .. } => unreachable!(),
+            ExprType::MethodCall { .. } => unreachable!(),
             ExprType::This => unreachable!(),
         };
         Ok(())

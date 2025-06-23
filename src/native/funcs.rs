@@ -11,6 +11,7 @@ pub fn register(nat_funcs: &mut HashMap<&str, Vec<NatFuncData>>) {
                 parameters: $parameters,
                 func: $func,
                 return_ty: $return_ty,
+                use_self: false,
             };
             nat_funcs
                 .entry($name)

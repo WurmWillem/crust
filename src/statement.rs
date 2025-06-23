@@ -43,6 +43,7 @@ pub enum StmtType<'a> {
         parameters: Vec<(ValueType, &'a str)>,
         body: Vec<Stmt<'a>>,
         return_ty: ValueType,
+        use_self: bool,
     },
     Struct {
         name: &'a str,

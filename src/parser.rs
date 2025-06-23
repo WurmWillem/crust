@@ -223,7 +223,10 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::LeftParen, "Expected '(' after function name.")?;
 
         let mut parameters = Vec::new();
+        let mut use_self = false;
         if !self.check(TokenType::RightParen) {
+            use_self = self.matches(TokenType::This);
+
             parameters.push(self.parse_parameter()?);
             while self.matches(TokenType::Comma) {
                 parameters.push(self.parse_parameter()?);
@@ -267,6 +270,7 @@ impl<'a> Parser<'a> {
             parameters,
             body,
             return_ty,
+            use_self,
         };
         let func = Stmt::new(fn_ty, line);
         Ok(func)
@@ -553,7 +557,10 @@ impl<'a> Parser<'a> {
         op: BinaryOp,
         inst: Expr<'a>,
     ) -> Result<ExprType<'a>, ParseErr> {
-        let ty = ExprType::Dot { inst: Box::new(inst.clone()), property: field_name };
+        let ty = ExprType::Dot {
+            inst: Box::new(inst.clone()),
+            property: field_name,
+        };
         let left = Box::new(Expr::new(ty, line));
 
         let operand = Box::new(self.expression()?);

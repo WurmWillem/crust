@@ -56,12 +56,14 @@ pub struct FuncData<'a> {
     pub body: Vec<Stmt<'a>>,
     pub return_ty: ValueType,
     pub line: u32,
+    pub use_self: bool,
 }
 #[derive(Debug)]
 pub struct NatFuncData {
     pub parameters: Vec<ValueType>,
     pub func: NativeFunc,
     pub return_ty: ValueType,
+    pub use_self: bool,
 }
 #[derive(Debug)]
 pub struct NatStructData<'a> {
@@ -74,11 +76,11 @@ impl<'a> NatStructData<'a> {
         name: &str,
         property: &str,
         line: u32,
-    ) -> Result<(u8, ValueType, Vec<ValueType>), SemanticErr> {
+    ) -> Result<(u8, ValueType, bool, Vec<ValueType>), SemanticErr> {
         for (index, (method_name, data)) in self.methods.iter().enumerate() {
             if *method_name == property {
                 let params = data.parameters.to_vec();
-                return Ok((index as u8, data.return_ty.clone(), params));
+                return Ok((index as u8, data.return_ty.clone(), data.use_self, params));
             }
         }
         let ty = SemErrType::InvalidMethod(name.to_string(), property.to_string());
@@ -103,11 +105,11 @@ impl<'a> StructData<'a> {
         name: &str,
         property: &str,
         line: u32,
-    ) -> Result<(u8, ValueType, Vec<ValueType>), SemanticErr> {
+    ) -> Result<(u8, ValueType, bool, Vec<ValueType>), SemanticErr> {
         for (index, (method_name, data)) in self.methods.iter().enumerate() {
             if *method_name == property {
                 let params = data.parameters.iter().map(|p| p.0.clone()).collect();
-                return Ok((index as u8, data.return_ty.clone(), params));
+                return Ok((index as u8, data.return_ty.clone(), data.use_self, params));
             }
         }
         let ty = SemErrType::InvalidMethod(name.to_string(), property.to_string());

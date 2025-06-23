@@ -38,6 +38,7 @@ pub enum ExprType<'a> {
         inst: Box<Expr<'a>>,
         index: u8,
         args: Vec<Expr<'a>>,
+        use_self: bool,
     },
     This,
     Dot {

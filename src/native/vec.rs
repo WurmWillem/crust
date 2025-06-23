@@ -16,26 +16,31 @@ pub fn register<'a>(structs: &mut HashMap<&'a str, NatStructData<'a>>) {
         parameters: vec![ValueType::U64],
         func: get,
         return_ty: ValueType::Any,
+        use_self: true,
     };
     let push = NatFuncData {
         parameters: vec![ValueType::Any],
         func: push,
         return_ty: ValueType::Null,
+        use_self: true,
     };
     let pop = NatFuncData {
         parameters: vec![],
         func: pop,
         return_ty: ValueType::Any,
+        use_self: true,
     };
     let print = NatFuncData {
         parameters: vec![],
         func: print,
         return_ty: ValueType::Null,
+        use_self: true,
     };
     let len = NatFuncData {
         parameters: vec![],
         func: len,
         return_ty: ValueType::U64,
+        use_self: true,
     };
 
     let data = NatStructData {
