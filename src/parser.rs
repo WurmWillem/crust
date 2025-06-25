@@ -1,7 +1,7 @@
 use crate::{
     error::{print_error, ParseErr},
     expression::{Expr, ExprType},
-    parse_types::{BinaryOp, FnType, ParseRule, Precedence, PARSE_RULES},
+    parse_types::{BinaryOp, FnType, Precedence},
     statement::{Stmt, StmtType},
     token::{Literal, Token, TokenType},
     value::ValueType,
@@ -53,10 +53,10 @@ impl<'a> Parser<'a> {
         let (can_assign, mut expr) = self.parse_prefix(precedence)?;
 
         while self.peek().ty != TokenType::Eof
-            && precedence <= self.get_rule(self.peek().ty).precedence
+            && precedence <= self.peek().ty.to_parse_rule().precedence
         {
             self.advance();
-            let infix = self.get_rule(self.previous().ty).infix;
+            let infix = self.previous().ty.to_parse_rule().infix;
             expr = self.execute_infix(expr, infix, can_assign)?;
         }
         Ok(expr)
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
         let kind = self.previous().ty;
 
         // dbg!(kind);
-        let prefix = self.get_rule(kind).prefix;
+        let prefix = kind.to_parse_rule().prefix;
         if prefix == FnType::Empty {
             let msg = "Expected expression.";
             let err = ParseErr::new(self.previous().line, msg);
@@ -725,10 +725,6 @@ impl<'a> Parser<'a> {
             FnType::Cast => self.cast(left),
             _ => unreachable!(),
         }
-    }
-
-    fn get_rule(&mut self, kind: TokenType) -> ParseRule {
-        PARSE_RULES[kind as usize]
     }
 
     fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<(), ParseErr> {
