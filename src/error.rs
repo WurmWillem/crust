@@ -56,12 +56,11 @@ impl SemErr {
 #[derive(Debug)]
 pub enum SemErrType {
     NoMainFunc,
-    SelfOutsideStruct,
-    SelfInMethodWithoutSelfParam,
-    SelfAsStaticStruct,
-    StaticMethodOnInstance(String),
     InvalidInfix,
     InvalidPrefix,
+    SelfOutsideStruct,
+    SelfAsStaticStruct,
+    SelfInMethodWithoutSelfParam,
     UndefinedVar(String),
     FuncDefInFunc(String),
     UndefinedFunc(String),
@@ -72,6 +71,9 @@ pub enum SemErrType {
     AlreadyDefinedFunc(String),
     AlreadyDefinedStruct(String),
     NatParamTypeMismatch(String),
+    StaticMethodOnInstance(String),
+    SelfOnStaticMethod,
+    NoSelfOnMethod,
     InvalidTypeFieldAccess(ValueType),
     InvalidTypeMethodAccess(ValueType),
     NoReturnTy(String, ValueType),
@@ -110,6 +112,8 @@ impl SemErr {
                 "'self::property' is invalid syntax as self is not static. Did you mean 'self.property'?".to_string()
             }
             SemErrType::StaticMethodOnInstance(inst_name) => format!("You cannot use a static method on an instance ({}).", inst_name.green()),
+            SemErrType::SelfOnStaticMethod => "'struct::property' can only be used for static methods which don't have self as parameter.".to_string(),
+            SemErrType::NoSelfOnMethod => "'instance.property' can only be used for non-static methods which have self as parameter.".to_string(),
             SemErrType::InvalidTypeMethodAccess(ty) => {
                 format!(
                     "You can only access methods of instances, but you tried to access a method of type '{}'.",

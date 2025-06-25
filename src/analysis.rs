@@ -429,6 +429,15 @@ impl<'a> Analyser<'a> {
                 data.get_method_data(&name, property, line)?;
             self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
+            if is_static && use_self {
+                let ty = SemErrType::SelfOnStaticMethod;
+                return Err(SemErr::new(line, ty));
+            }
+            if !is_static && !use_self {
+                let ty = SemErrType::NoSelfOnMethod;
+                return Err(SemErr::new(line, ty));
+            }
+
             Ok((index, return_ty, use_self))
         } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
             let (index, return_ty, use_self, parameters) =

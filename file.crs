@@ -1,6 +1,7 @@
 fn main() {
     Foo a = Foo(0, "a");
-    Foo.hi();
+    Foo::hi();
+    a.hi();
     //a::hi();
 }
 
