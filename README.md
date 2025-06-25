@@ -54,7 +54,7 @@ struct Vector2D {
     double x;
     double y;
 
-    // define the functions
+    // define the methods
     fn product(self): double {
         // use 'self.property_name' to access fields and methods
         return self.x * self.y;
@@ -69,6 +69,8 @@ struct Vector2D {
 - Add pattern matching (match/switch)
 - Add enums
 - Add encapsulation
+- Add more tests
+- ✅ Add static methods
 - ✅ Add some syntactic sugar for mutating variables (+=, -=, *=, /=)
 - ✅ Add casting operations with the 'as' keyword
 - ✅ Add more integer types such as i64 and u64
