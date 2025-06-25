@@ -19,7 +19,7 @@ impl<'a> Expr<'a> {
 pub enum ExprType<'a> {
     Lit(Literal<'a>),
     Array(Vec<Expr<'a>>),
-    Var(&'a str),
+    Identifier(&'a str),
     FuncCall {
         name: &'a str,
         args: Vec<Expr<'a>>,
@@ -33,6 +33,7 @@ pub enum ExprType<'a> {
         inst: Box<Expr<'a>>,
         property: &'a str,
         args: Vec<Expr<'a>>,
+        is_static: bool,
     },
     MethodCallResolved {
         inst: Box<Expr<'a>>,

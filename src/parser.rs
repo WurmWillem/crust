@@ -398,7 +398,7 @@ impl<'a> Parser<'a> {
         };
         let cast = Expr::new(cast, line);
 
-        let get_var_ty = ExprType::Var(name);
+        let get_var_ty = ExprType::Identifier(name);
         let get_var = Box::new(Expr::new(get_var_ty, line));
         let condition_ty = ExprType::Binary {
             left: get_var,
@@ -529,7 +529,7 @@ impl<'a> Parser<'a> {
         } else if can_assign && self.matches(TokenType::DivEqual) {
             self.get_assign_shorthand(name, line, BinaryOp::Div)?
         } else {
-            ExprType::Var(name)
+            ExprType::Identifier(name)
         };
         let var = Expr::new(ty, line);
         Ok(var)
@@ -540,7 +540,7 @@ impl<'a> Parser<'a> {
         line: u32,
         op: BinaryOp,
     ) -> Result<ExprType<'a>, ParseErr> {
-        let var_ty = ExprType::Var(name);
+        let var_ty = ExprType::Identifier(name);
         let var = Box::new(Expr::new(var_ty, line));
 
         let operand = Box::new(self.expression()?);
@@ -702,7 +702,7 @@ impl<'a> Parser<'a> {
         )?;
 
         let ty = match name.expr {
-            ExprType::Var(name) => ExprType::FuncCall {
+            ExprType::Identifier(name) => ExprType::FuncCall {
                 name,
                 args,
                 index: None,
@@ -711,11 +711,13 @@ impl<'a> Parser<'a> {
                 inst,
                 property,
                 args,
+                is_static: false,
             },
             ExprType::Colon { inst, property } => ExprType::MethodCall {
                 inst,
                 property,
                 args,
+                is_static: true,
             },
             _ => unreachable!(),
         };

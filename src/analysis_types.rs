@@ -160,10 +160,10 @@ impl<'a> Symbol<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct SemanticScope<'a> {
     stack: Vec<HashMap<&'a str, Symbol<'a>>>,
 }
-
 impl<'a> SemanticScope<'a> {
     pub fn new() -> Self {
         Self {

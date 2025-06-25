@@ -127,6 +127,7 @@ impl<'a> Analyser<'a> {
 
                 self.enities.structs.get_mut(name).unwrap().methods = method_data;
                 self.current_struct = None;
+                // self.symbols.declare(Symbol::new("Foo", ValueType::Struct(())), line)
             }
         }
 
@@ -233,7 +234,7 @@ impl<'a> Analyser<'a> {
         let line = expr.line;
         let result = match &mut expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
-            ExprType::Var(name) => match self.symbols.resolve(name) {
+            ExprType::Identifier(name) => match self.symbols.resolve(name) {
                 Some(symbol) => symbol.ty,
                 None => {
                     let ty = SemErrType::UndefinedVar(name.to_string());
@@ -309,9 +310,10 @@ impl<'a> Analyser<'a> {
                 inst,
                 property,
                 args,
+                is_static,
             } => {
                 let (index, return_ty, use_self) =
-                    self.analyse_method_call(inst, property, line, args)?;
+                    self.analyse_method_call(inst, property, line, args, *is_static)?;
 
                 expr.expr = ExprType::MethodCallResolved {
                     inst: inst.clone(),
@@ -414,9 +416,33 @@ impl<'a> Analyser<'a> {
         property: &str,
         line: u32,
         args: &mut [Expr<'a>],
+        is_static: bool,
     ) -> Result<(u8, ValueType, bool), SemErr> {
-        let name = if let ExprType::This = inst.expr {
+        let method_name = self.get_method_name(inst, is_static, line)?;
 
+        for arg in args.iter_mut() {
+            self.analyse_expr(arg)?;
+        }
+
+        if let Some(data) = self.enities.structs.get(&method_name as &str) {
+            let (index, return_ty, use_self, parameters) =
+                data.get_method_data(&method_name, property, line)?;
+            self.check_if_params_and_args_correspond(args, parameters, method_name, line)?;
+
+            Ok((index, return_ty, use_self))
+        } else if let Some(data) = self.enities.nat_structs.get(&method_name as &str) {
+            let (index, return_ty, use_self, parameters) =
+                data.get_method_index_and_return_ty(&method_name, property, line)?;
+            self.check_if_params_and_args_correspond(args, parameters, method_name, line)?;
+
+            Ok((index, return_ty, use_self))
+        } else {
+            let ty = SemErrType::UndefinedStruct(method_name);
+            Err(SemErr::new(line, ty))
+        }
+    }
+    fn get_method_name(&mut self, inst: &mut Box<Expr<'a>>, is_static: bool, line: u32) -> Result<String, SemErr> {
+        if let ExprType::This = inst.expr {
             let Some(name) = self.current_struct else {
                 let ty = SemErrType::SelfOutsideStruct;
                 return Err(SemErr::new(line, ty));
@@ -426,37 +452,23 @@ impl<'a> Analyser<'a> {
                 let ty = SemErrType::SelfInMethodWithoutSelfParam;
                 return Err(SemErr::new(line, ty));
             }
-            name.to_string()
-        } else {
-            let inst_ty = self.analyse_expr(inst)?;
+            return Ok(name.to_string());
+        }
+        // dbg!(&inst);
+        if let ExprType::Identifier(name) = inst.expr {
+            if self.enities.structs.contains_key(name)
+                || self.enities.nat_structs.contains_key(name)
+            {
+                return Ok(name.to_string());
+            }
+        }
+        let inst_ty = self.analyse_expr(inst)?;
 
-            let ValueType::Struct(name) = inst_ty else {
-                let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
-                return Err(SemErr::new(line, ty));
-            };
-            name
+        let ValueType::Struct(name) = inst_ty else {
+            let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
+            return Err(SemErr::new(line, ty));
         };
-
-        for arg in args.iter_mut() {
-            self.analyse_expr(arg)?;
-        }
-
-        if let Some(data) = self.enities.structs.get(&name as &str) {
-            let (index, return_ty, use_self, parameters) =
-                data.get_method_data(&name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
-
-            Ok((index, return_ty, use_self))
-        } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
-            let (index, return_ty, use_self, parameters) =
-                data.get_method_index_and_return_ty(&name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
-
-            Ok((index, return_ty, use_self))
-        } else {
-            let ty = SemErrType::UndefinedStruct(name);
-            Err(SemErr::new(line, ty))
-        }
+        Ok(name)
     }
 
     fn analyse_assign_index(
@@ -615,7 +627,6 @@ impl<'a> Analyser<'a> {
         property: &str,
     ) -> Result<(ValueType, ExprType<'a>), SemErr> {
         let name = if let ExprType::This = inst.expr {
-            
             let Some(name) = self.current_struct else {
                 let ty = SemErrType::SelfOutsideStruct;
                 return Err(SemErr::new(line, ty));
