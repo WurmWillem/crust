@@ -1,8 +1,7 @@
 fn main() {
     Foo a = Foo(0, "a");
     Foo::hi();
-    //a::inc_x();
-    pr a.x;
+    a::hi();
 }
 
 struct Foo {

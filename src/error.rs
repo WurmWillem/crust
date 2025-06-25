@@ -58,6 +58,7 @@ pub enum SemErrType {
     NoMainFunc,
     SelfOutsideStruct,
     SelfInMethodWithoutSelfParam,
+    SelfAsStaticStruct,
     InvalidInfix,
     InvalidPrefix,
     UndefinedVar(String),
@@ -103,6 +104,9 @@ impl SemErr {
             }
             SemErrType::SelfInMethodWithoutSelfParam => {
                 "'self.property' can only be used inside methods with 'self' as parameter.".to_string()
+            }
+            SemErrType::SelfAsStaticStruct => {
+                "'self::property' is invalid syntax as self is not static. Did you mean 'self.property'?".to_string()
             }
             SemErrType::InvalidTypeMethodAccess(ty) => {
                 format!(

@@ -441,12 +441,22 @@ impl<'a> Analyser<'a> {
             Err(SemErr::new(line, ty))
         }
     }
-    fn get_method_name(&mut self, inst: &mut Box<Expr<'a>>, is_static: bool, line: u32) -> Result<String, SemErr> {
+    fn get_method_name(
+        &mut self,
+        inst: &mut Box<Expr<'a>>,
+        is_static: bool,
+        line: u32,
+    ) -> Result<String, SemErr> {
         if let ExprType::This = inst.expr {
             let Some(name) = self.current_struct else {
                 let ty = SemErrType::SelfOutsideStruct;
                 return Err(SemErr::new(line, ty));
             };
+
+            if is_static {
+                let ty = SemErrType::SelfAsStaticStruct;
+                return Err(SemErr::new(line, ty));
+            }
 
             if !self.current_use_self {
                 let ty = SemErrType::SelfInMethodWithoutSelfParam;
@@ -468,6 +478,11 @@ impl<'a> Analyser<'a> {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
             return Err(SemErr::new(line, ty));
         };
+
+        if is_static {
+            panic!("bro")
+        }
+
         Ok(name)
     }
 
