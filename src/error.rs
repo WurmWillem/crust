@@ -59,6 +59,7 @@ pub enum SemErrType {
     SelfOutsideStruct,
     SelfInMethodWithoutSelfParam,
     SelfAsStaticStruct,
+    StaticMethodOnInstance(String),
     InvalidInfix,
     InvalidPrefix,
     UndefinedVar(String),
@@ -108,6 +109,7 @@ impl SemErr {
             SemErrType::SelfAsStaticStruct => {
                 "'self::property' is invalid syntax as self is not static. Did you mean 'self.property'?".to_string()
             }
+            SemErrType::StaticMethodOnInstance(inst_name) => format!("You cannot use a static method on an instance ({}).", inst_name.green()),
             SemErrType::InvalidTypeMethodAccess(ty) => {
                 format!(
                     "You can only access methods of instances, but you tried to access a method of type '{}'.",

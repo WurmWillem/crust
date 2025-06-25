@@ -418,30 +418,30 @@ impl<'a> Analyser<'a> {
         args: &mut [Expr<'a>],
         is_static: bool,
     ) -> Result<(u8, ValueType, bool), SemErr> {
-        let method_name = self.get_method_name(inst, is_static, line)?;
+        let name = self.get_inst_or_struct_name(inst, is_static, line)?;
 
         for arg in args.iter_mut() {
             self.analyse_expr(arg)?;
         }
 
-        if let Some(data) = self.enities.structs.get(&method_name as &str) {
+        if let Some(data) = self.enities.structs.get(&name as &str) {
             let (index, return_ty, use_self, parameters) =
-                data.get_method_data(&method_name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, method_name, line)?;
+                data.get_method_data(&name, property, line)?;
+            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
             Ok((index, return_ty, use_self))
-        } else if let Some(data) = self.enities.nat_structs.get(&method_name as &str) {
+        } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
             let (index, return_ty, use_self, parameters) =
-                data.get_method_index_and_return_ty(&method_name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, method_name, line)?;
+                data.get_method_index_and_return_ty(&name, property, line)?;
+            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
             Ok((index, return_ty, use_self))
         } else {
-            let ty = SemErrType::UndefinedStruct(method_name);
+            let ty = SemErrType::UndefinedStruct(name);
             Err(SemErr::new(line, ty))
         }
     }
-    fn get_method_name(
+    fn get_inst_or_struct_name(
         &mut self,
         inst: &mut Box<Expr<'a>>,
         is_static: bool,
@@ -474,13 +474,14 @@ impl<'a> Analyser<'a> {
         }
         let inst_ty = self.analyse_expr(inst)?;
 
-        let ValueType::Struct(name) = inst_ty else {
+        let ValueType::Struct(name) = inst_ty.clone() else {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
             return Err(SemErr::new(line, ty));
         };
 
         if is_static {
-            panic!("bro")
+            let ty = SemErrType::StaticMethodOnInstance(name);
+            return Err(SemErr::new(line, ty));
         }
 
         Ok(name)
