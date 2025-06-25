@@ -335,7 +335,10 @@ impl<'a> Analyser<'a> {
             ExprType::DotResolved { .. } => unreachable!(),
             ExprType::MethodCallResolved { .. } => unreachable!(),
             ExprType::DotAssignResolved { .. } => unreachable!(),
-            ExprType::Colon { inst, property } => todo!(),
+            ExprType::Colon { .. } => {
+                let ty = SemErrType::InvalidStaticAccess;
+                return Err(SemErr::new(line, ty));
+            }
         };
         Ok(result)
     }
@@ -424,31 +427,28 @@ impl<'a> Analyser<'a> {
             self.analyse_expr(arg)?;
         }
 
-        if let Some(data) = self.enities.structs.get(&name as &str) {
-            let (index, return_ty, use_self, parameters) =
-                data.get_method_data(&name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
-
-            if is_static && use_self {
-                let ty = SemErrType::SelfOnStaticMethod;
+        let (index, return_ty, use_self, parameters) =
+            if let Some(data) = self.enities.structs.get(&name as &str) {
+                data.get_method_data(&name, property, line)?
+            } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
+                data.get_method_data(&name, property, line)?
+            } else {
+                let ty = SemErrType::UndefinedStruct(name);
                 return Err(SemErr::new(line, ty));
-            }
-            if !is_static && !use_self {
-                let ty = SemErrType::NoSelfOnMethod;
-                return Err(SemErr::new(line, ty));
-            }
+            };
 
-            Ok((index, return_ty, use_self))
-        } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
-            let (index, return_ty, use_self, parameters) =
-                data.get_method_index_and_return_ty(&name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
+        self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
-            Ok((index, return_ty, use_self))
-        } else {
-            let ty = SemErrType::UndefinedStruct(name);
-            Err(SemErr::new(line, ty))
+        if is_static && use_self {
+            let ty = SemErrType::SelfOnStaticMethod;
+            return Err(SemErr::new(line, ty));
         }
+        if !is_static && !use_self {
+            let ty = SemErrType::NoSelfOnMethod;
+            return Err(SemErr::new(line, ty));
+        }
+
+        Ok((index, return_ty, use_self))
     }
     fn get_inst_or_struct_name(
         &mut self,

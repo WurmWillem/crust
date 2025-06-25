@@ -427,7 +427,7 @@ impl<'a> Emitter<'a> {
             ExprType::DotAssign { .. } => unreachable!(),
             ExprType::MethodCall { .. } => unreachable!(),
             ExprType::This => unreachable!(),
-            ExprType::Colon { inst, property } => todo!(),
+            ExprType::Colon { .. } => unreachable!()
         };
         Ok(())
     }

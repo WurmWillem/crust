@@ -60,6 +60,7 @@ pub enum SemErrType {
     InvalidPrefix,
     SelfOutsideStruct,
     SelfAsStaticStruct,
+    InvalidStaticAccess,
     SelfInMethodWithoutSelfParam,
     UndefinedVar(String),
     FuncDefInFunc(String),
@@ -95,6 +96,7 @@ impl SemErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
+            SemErrType::InvalidStaticAccess => "You can only use the '::' syntax for static methods.".to_string(),
             SemErrType::FuncDefInFunc(name) => format!("You attempted to define the function '{}' inside another function, which is illegal.", name.green()),
             SemErrType::StructDefInFunc(name) => format!("You attempted to define the struct '{}' inside a function, which is illegal.", name.green()),
             SemErrType::InvalidCast(expected, found) => format!("You can't cast an expression of type '{}' to type '{}'.", found, expected),
