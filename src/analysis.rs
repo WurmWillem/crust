@@ -333,6 +333,7 @@ impl<'a> Analyser<'a> {
             ExprType::DotResolved { .. } => unreachable!(),
             ExprType::MethodCallResolved { .. } => unreachable!(),
             ExprType::DotAssignResolved { .. } => unreachable!(),
+            ExprType::Colon { inst, property } => todo!(),
         };
         Ok(result)
     }
@@ -415,10 +416,12 @@ impl<'a> Analyser<'a> {
         args: &mut [Expr<'a>],
     ) -> Result<(u8, ValueType, bool), SemErr> {
         let name = if let ExprType::This = inst.expr {
+
             let Some(name) = self.current_struct else {
                 let ty = SemErrType::SelfOutsideStruct;
                 return Err(SemErr::new(line, ty));
             };
+
             if !self.current_use_self {
                 let ty = SemErrType::SelfInMethodWithoutSelfParam;
                 return Err(SemErr::new(line, ty));
@@ -426,6 +429,7 @@ impl<'a> Analyser<'a> {
             name.to_string()
         } else {
             let inst_ty = self.analyse_expr(inst)?;
+
             let ValueType::Struct(name) = inst_ty else {
                 let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
                 return Err(SemErr::new(line, ty));
@@ -611,10 +615,12 @@ impl<'a> Analyser<'a> {
         property: &str,
     ) -> Result<(ValueType, ExprType<'a>), SemErr> {
         let name = if let ExprType::This = inst.expr {
+            
             let Some(name) = self.current_struct else {
                 let ty = SemErrType::SelfOutsideStruct;
                 return Err(SemErr::new(line, ty));
             };
+
             if !self.current_use_self {
                 let ty = SemErrType::SelfInMethodWithoutSelfParam;
                 return Err(SemErr::new(line, ty));

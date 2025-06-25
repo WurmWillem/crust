@@ -611,6 +611,17 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn double_colon(&mut self, struc: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+        self.consume(TokenType::Identifier, "Expected property name after '::'.")?;
+
+        let property = self.previous();
+        let ty = ExprType::Colon {
+            inst: Box::new(struc),
+            property: property.lexeme,
+        };
+        Ok(Expr::new(ty, property.line))
+    }
+
     fn dot(&mut self, inst: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
         self.consume(TokenType::Identifier, "Expected property name after '.'.")?;
         let property = self.previous();
@@ -690,25 +701,27 @@ impl<'a> Parser<'a> {
             "Expected ')' after function/constructor call.",
         )?;
 
-        if let ExprType::Var(name) = name.expr {
-            let ty = ExprType::FuncCall {
+        let ty = match name.expr {
+            ExprType::Var(name) => ExprType::FuncCall {
                 name,
                 args,
                 index: None,
-            };
-            let expr = Expr::new(ty, self.previous().line);
-            Ok(expr)
-        } else if let ExprType::Dot { inst, property } = name.expr {
-            let ty = ExprType::MethodCall {
+            },
+            ExprType::Dot { inst, property } => ExprType::MethodCall {
                 inst,
                 property,
                 args,
-            };
-            let expr = Expr::new(ty, self.previous().line);
-            Ok(expr)
-        } else {
-            unreachable!()
-        }
+            },
+            ExprType::Colon { inst, property } => ExprType::MethodCall {
+                inst,
+                property,
+                args,
+            },
+            _ => unreachable!(),
+        };
+
+        let expr = Expr::new(ty, self.previous().line);
+        Ok(expr)
     }
 
     fn execute_infix(
@@ -722,6 +735,7 @@ impl<'a> Parser<'a> {
             FnType::Call => self.call(left),
             FnType::Index => self.index(left, can_assign),
             FnType::Dot => self.dot(left, can_assign),
+            FnType::DoubleColon => self.double_colon(left),
             FnType::Cast => self.cast(left),
             _ => unreachable!(),
         }

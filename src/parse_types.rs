@@ -47,6 +47,7 @@ pub enum FnType {
     Call,
     Index,
     Dot,
+    DoubleColon,
     This,
 }
 

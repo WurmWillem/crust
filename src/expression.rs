@@ -40,8 +40,11 @@ pub enum ExprType<'a> {
         args: Vec<Expr<'a>>,
         use_self: bool,
     },
-    This,
     Dot {
+        inst: Box<Expr<'a>>,
+        property: &'a str,
+    },
+    Colon {
         inst: Box<Expr<'a>>,
         property: &'a str,
     },
@@ -81,4 +84,5 @@ pub enum ExprType<'a> {
         op: BinaryOp,
         right: Box<Expr<'a>>,
     },
+    This,
 }

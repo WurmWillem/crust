@@ -1,7 +1,7 @@
 fn main() {
     Foo a = Foo(0, "a");
-    a.hi();
-    a.inc_x();
+    //Foo::hi();
+    a::inc_x();
     pr a.x;
 }
 

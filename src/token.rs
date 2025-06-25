@@ -71,7 +71,6 @@ pub enum TokenType {
 
     Comma,
     Dot,
-    Colon,
     Semicolon,
 
     Minus,
@@ -80,6 +79,8 @@ pub enum TokenType {
     Star,
 
     // one or two character tokens
+    Colon,
+    DoubleColon,
     Bang,
     BangEqual,
     Equal,
@@ -141,6 +142,7 @@ impl TokenType {
             TT::LeftParen => ParseRule::new(F::Grouping, F::Call, P::Call),
             TT::LeftBracket => ParseRule::new(F::Array, F::Index, P::Call),
             TT::Dot => ParseRule::new(F::Empty, F::Dot, P::Call),
+            TT::DoubleColon => ParseRule::new(F::Empty, F::DoubleColon, P::Call),
             TT::Minus => ParseRule::new(F::Unary, F::Binary, P::Term),
             TT::Plus => ParseRule::new(F::Empty, F::Binary, P::Term),
             TT::Slash | TT::Star => ParseRule::new(F::Empty, F::Binary, P::Factor),
