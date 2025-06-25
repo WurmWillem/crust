@@ -43,7 +43,7 @@ struct Vector2D {
     double y;
 
     // define the functions
-    fn product(): double {
+    fn product(self): double {
         // use 'self.property_name' to access fields and methods
         return self.x * self.y;
     }

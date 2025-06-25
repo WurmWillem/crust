@@ -2,10 +2,10 @@ struct Vec2 {
     int x;
     int y;
 
-    fn product(): int {
+    fn product(self): int {
         return self.x * self.y;
     }
-    fn increment_x() {
+    fn increment_x(self) {
         self.x = self.x + 1;
     }
 }

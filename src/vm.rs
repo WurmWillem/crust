@@ -170,14 +170,14 @@ impl VM {
                 }
                 OpCode::PushMethod => {
                     let index = read_byte(&mut ip) as usize;
-                    let inst_stack = self.stack_pop();
+                    let inst_stack = self.stack_peek();
                     let StackValue::Obj(Object::Inst(inst)) = inst_stack else {
                         unreachable!()
                     };
 
                     let method = inst.data.methods[index];
+                    // self.stack_push(inst_stack);
                     self.stack_push(method);
-                    self.stack_push(inst_stack);
                 }
 
                 OpCode::AllocInstance => {
@@ -224,19 +224,20 @@ impl VM {
                     };
                     inst.data.fields[index] = new_value;
                 }
+
                 OpCode::GetSelfField => {
                     let index = read_byte(&mut ip) as usize;
-                    let inst = self.stack[(*frame).slots - 1];
-                    // dbg!(inst);
+                    let inst = self.stack[(*frame).slots + 1];
                     let StackValue::Obj(Object::Inst(inst)) = inst else {
                         unreachable!()
                     };
+                    // dbg!(&inst.data);
                     self.stack_push(inst.data.fields[index]);
                 }
-                OpCode::GetSetField => {
+                OpCode::SetSelfField => {
                     let new_value = self.stack_pop();
                     let index = read_byte(&mut ip) as usize;
-                    let inst = self.stack[(*frame).slots - 1];
+                    let inst = self.stack[(*frame).slots + 1];
                     let StackValue::Obj(Object::Inst(mut inst)) = inst else {
                         unreachable!()
                     };
@@ -365,7 +366,7 @@ impl VM {
         }
     }
 
-    unsafe fn call(&mut self, arg_count: usize) {
+    fn call(&mut self, arg_count: usize) {
         let slots = self.stack_top - arg_count;
         // dbg!(arg_count);
         let value = self.stack[slots];
@@ -383,18 +384,16 @@ impl VM {
 
                     unsafe { self.frames.as_mut_ptr().add(self.frame_count).write(frame) }
                     self.frame_count += 1;
-                    //*frameee = self.frames[self.frame_count - 1].assume_init_mut();
                 }
-                Object::Native(func) => {
+                Object::Native(func) => unsafe {
                     let args_ptr = self.stack.as_ptr().add(slots + 1);
                     let args = std::slice::from_raw_parts(args_ptr, arg_count);
-                    // dbg!(args);
 
                     let value = (func.data.func)(args, &mut self.heap);
 
                     self.stack_top = slots;
                     self.stack_push(value);
-                }
+                },
                 _ => unreachable!(),
             }
         } else {

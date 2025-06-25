@@ -250,12 +250,7 @@ impl<'a> Emitter<'a> {
                 self.comps.emit_byte(OpCode::Pop as u8, line);
                 self.comps.decrement_local_count();
             }
-            StmtType::Func {
-                name: _,
-                parameters: _,
-                body: _,
-                return_ty: _,
-            } => {}
+            StmtType::Func { .. } => {}
             StmtType::Return(value) => {
                 self.emit_expr(&value)?;
                 self.comps.emit_byte(OpCode::Return as u8, line);
@@ -266,11 +261,7 @@ impl<'a> Emitter<'a> {
             StmtType::Continue => {
                 self.comps.add_continue(line)?;
             }
-            StmtType::Struct {
-                name: _,
-                fields: _,
-                methods: _,
-            } => (),
+            StmtType::Struct { .. } => (),
         }
         Ok(())
     }
@@ -278,7 +269,7 @@ impl<'a> Emitter<'a> {
     fn emit_expr(&mut self, expr: &Expr<'a>) -> Result<(), EmitErr> {
         let line = expr.line;
         match &expr.expr {
-            ExprType::Call { name, args, index } => {
+            ExprType::FuncCall { name, args, index } => {
                 if let Some(methods) = self.structs.get(name) {
                     let method_len = methods.len() as u8;
                     for (_, value) in methods.iter().rev() {
@@ -344,7 +335,7 @@ impl<'a> Emitter<'a> {
                 if let ExprType::This = inst.expr {
                     self.emit_expr(new_value)?;
                     self.comps
-                        .emit_bytes(OpCode::GetSetField as u8, *index, line);
+                        .emit_bytes(OpCode::SetSelfField as u8, *index, line);
                 } else {
                     self.emit_expr(inst)?;
                     self.emit_expr(new_value)?;
@@ -353,17 +344,29 @@ impl<'a> Emitter<'a> {
                 }
             }
 
-            ExprType::MethodCallResolved { inst, index, args } => {
-                self.emit_expr(inst)?;
+            ExprType::MethodCallResolved {
+                inst,
+                index,
+                args,
+                use_self,
+            } => {
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
+
+                let mut args_len = args.len() as u8 + 1;
+                if *use_self {
+                    self.emit_expr(inst)?;
+                    args_len += 1;
+                }
 
                 for var in args {
                     self.emit_expr(var)?;
                 }
 
                 self.comps
-                    .emit_bytes(OpCode::FuncCall as u8, args.len() as u8 + 2, line);
+                    .emit_bytes(OpCode::FuncCall as u8, args_len, line);
+
+                //self.comps.emit_byte(OpCode::Pop as u8, line);
             }
             ExprType::Lit(lit) => match lit {
                 Literal::None => unreachable!(),
@@ -420,20 +423,9 @@ impl<'a> Emitter<'a> {
                     _ => unreachable!(),
                 }
             }
-            ExprType::Dot {
-                inst: _,
-                property: _,
-            } => unreachable!(),
-            ExprType::DotAssign {
-                inst: _,
-                property: _,
-                new_value: _,
-            } => unreachable!(),
-            ExprType::MethodCall {
-                inst: _,
-                property: _,
-                args: _,
-            } => unreachable!(),
+            ExprType::Dot { .. } => unreachable!(),
+            ExprType::DotAssign { .. } => unreachable!(),
+            ExprType::MethodCall { .. } => unreachable!(),
             ExprType::This => unreachable!(),
         };
         Ok(())

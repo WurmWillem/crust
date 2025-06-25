@@ -23,7 +23,7 @@ pub enum OpCode {
     GetPubField,
     SetPubField,
     GetSelfField,
-    GetSetField,
+    SetSelfField,
 
     IndexArr,
     AssignIndex,
@@ -77,7 +77,7 @@ impl std::convert::From<u8> for OpCode {
             13 => OpCode::GetPubField,
             14 => OpCode::SetPubField,
             15 => OpCode::GetSelfField,
-            16 => OpCode::GetSetField,
+            16 => OpCode::SetSelfField,
             17 => OpCode::IndexArr,
             18 => OpCode::AssignIndex,
             19 => OpCode::CastToI64,

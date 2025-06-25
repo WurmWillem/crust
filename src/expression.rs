@@ -20,7 +20,7 @@ pub enum ExprType<'a> {
     Lit(Literal<'a>),
     Array(Vec<Expr<'a>>),
     Var(&'a str),
-    Call {
+    FuncCall {
         name: &'a str,
         args: Vec<Expr<'a>>,
         index: Option<usize>,
@@ -38,6 +38,7 @@ pub enum ExprType<'a> {
         inst: Box<Expr<'a>>,
         index: u8,
         args: Vec<Expr<'a>>,
+        use_self: bool,
     },
     This,
     Dot {

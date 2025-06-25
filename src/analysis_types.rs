@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    error::{SemErrType, SemanticErr},
+    error::{SemErr, SemErrType},
     object::NativeFunc,
     statement::Stmt,
     value::ValueType,
@@ -50,18 +50,20 @@ impl core::fmt::Display for Operator {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FuncData<'a> {
     pub parameters: Vec<(ValueType, &'a str)>,
     pub body: Vec<Stmt<'a>>,
     pub return_ty: ValueType,
     pub line: u32,
+    pub use_self: bool,
 }
 #[derive(Debug)]
 pub struct NatFuncData {
     pub parameters: Vec<ValueType>,
     pub func: NativeFunc,
     pub return_ty: ValueType,
+    pub use_self: bool,
 }
 #[derive(Debug)]
 pub struct NatStructData<'a> {
@@ -74,15 +76,15 @@ impl<'a> NatStructData<'a> {
         name: &str,
         property: &str,
         line: u32,
-    ) -> Result<(u8, ValueType, Vec<ValueType>), SemanticErr> {
+    ) -> Result<(u8, ValueType, bool, Vec<ValueType>), SemErr> {
         for (index, (method_name, data)) in self.methods.iter().enumerate() {
             if *method_name == property {
                 let params = data.parameters.to_vec();
-                return Ok((index as u8, data.return_ty.clone(), params));
+                return Ok((index as u8, data.return_ty.clone(), data.use_self, params));
             }
         }
         let ty = SemErrType::InvalidMethod(name.to_string(), property.to_string());
-        Err(SemanticErr::new(line, ty))
+        Err(SemErr::new(line, ty))
     }
 }
 #[derive(Debug)]
@@ -98,28 +100,23 @@ impl<'a> StructData<'a> {
         }
     }
 
-    pub fn get_method_index_and_return_ty(
+    pub fn get_method_data(
         &self,
         name: &str,
         property: &str,
         line: u32,
-    ) -> Result<(u8, ValueType, Vec<ValueType>), SemanticErr> {
+    ) -> Result<(u8, ValueType, bool, Vec<ValueType>), SemErr> {
         for (index, (method_name, data)) in self.methods.iter().enumerate() {
             if *method_name == property {
                 let params = data.parameters.iter().map(|p| p.0.clone()).collect();
-                return Ok((index as u8, data.return_ty.clone(), params));
+                return Ok((index as u8, data.return_ty.clone(), data.use_self, params));
             }
         }
         let ty = SemErrType::InvalidMethod(name.to_string(), property.to_string());
-        Err(SemanticErr::new(line, ty))
+        Err(SemErr::new(line, ty))
     }
 
-    pub fn get_field_index(
-        &self,
-        name: String,
-        property: &str,
-        line: u32,
-    ) -> Result<u8, SemanticErr> {
+    pub fn get_field_index(&self, name: String, property: &str, line: u32) -> Result<u8, SemErr> {
         let index = match self
             .fields
             .iter()
@@ -128,7 +125,7 @@ impl<'a> StructData<'a> {
             Some(index) => index as u8,
             None => {
                 let ty = SemErrType::InvalidPubField(name, property.to_string());
-                return Err(SemanticErr::new(line, ty));
+                return Err(SemErr::new(line, ty));
             }
         };
         Ok(index)
@@ -181,10 +178,10 @@ impl<'a> SemanticScope<'a> {
         self.stack.pop();
     }
 
-    pub fn declare(&mut self, symbol: Symbol<'a>, line: u32) -> Result<(), SemanticErr> {
+    pub fn declare(&mut self, symbol: Symbol<'a>, line: u32) -> Result<(), SemErr> {
         let current = self.stack.last_mut().unwrap();
         if current.contains_key(symbol.name) {
-            return Err(SemanticErr::new(
+            return Err(SemErr::new(
                 line,
                 SemErrType::AlreadyDefinedVar(symbol.name.to_string()),
             ));

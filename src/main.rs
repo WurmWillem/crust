@@ -1,6 +1,6 @@
 use analysis::Analyser;
 use emitter::Emitter;
-use error::PRINT_TOKENS;
+use error::{PRINT_PARSE_TREE, PRINT_TOKENS};
 use op_code::OpCode;
 use scanner::Scanner;
 use value::StackValue;
@@ -27,6 +27,8 @@ mod value;
 mod vm;
 
 fn main() {
+    std::env::set_var("RUST_BACKTRACE", "1");
+    
     let args: Vec<String> = std::env::args().collect();
 
     let source = if args.len() <= 1 {
@@ -66,7 +68,9 @@ fn main() {
             return;
         }
     };
-    // dbg!(&statements);
+    if PRINT_PARSE_TREE {
+        dbg!(&statements);
+    }
 
     let entities = match Analyser::analyse_stmts(&mut statements) {
         Some(func_data) => func_data,

@@ -72,7 +72,7 @@ impl Chunk {
             OpCode::GetLocal => self.constant_instruction("OP_GET_LOCAL", offset),
             OpCode::SetLocal => self.constant_instruction("OP_SET_LOCAL", offset),
             OpCode::GetSelfField => self.constant_instruction("OP_GET_FIELD", offset),
-            OpCode::GetSetField => self.constant_instruction("OP_SET_FIELD", offset),
+            OpCode::SetSelfField => self.constant_instruction("OP_SET_FIELD", offset),
 
             OpCode::CastToF64 => self.constant_instruction("OP_CAST_TO_F64", offset),
             OpCode::CastToU64 => self.constant_instruction("OP_CAST_TO_U64", offset),

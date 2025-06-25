@@ -3,6 +3,7 @@ use colored::Colorize;
 use crate::{analysis_types::Operator, value::ValueType};
 
 pub const PRINT_TOKENS: bool = false;
+pub const PRINT_PARSE_TREE: bool = false;
 pub const DEBUG_TRACE_EXECUTION: bool = false;
 pub const PRINT_HEAP: bool = false;
 
@@ -43,11 +44,11 @@ impl EmitErr {
     }
 }
 #[derive(Debug)]
-pub struct SemanticErr {
+pub struct SemErr {
     ty: SemErrType,
     line: u32,
 }
-impl SemanticErr {
+impl SemErr {
     pub fn new(line: u32, ty: SemErrType) -> Self {
         Self { ty, line }
     }
@@ -55,7 +56,8 @@ impl SemanticErr {
 #[derive(Debug)]
 pub enum SemErrType {
     NoMainFunc,
-    InvalidThis,
+    SelfOutsideStruct,
+    SelfInMethodWithoutSelfParam,
     InvalidInfix,
     InvalidPrefix,
     UndefinedVar(String),
@@ -83,7 +85,7 @@ pub enum SemErrType {
     OpTypeMismatch(ValueType, Operator, ValueType),
     ParamTypeMismatch(String, ValueType, ValueType),
 }
-impl SemanticErr {
+impl SemErr {
     pub fn print(&self) {
         //dbg!(&self.ty);
         let msg = match &self.ty {
@@ -96,8 +98,11 @@ impl SemanticErr {
                 "You have to define a function with the name 'main' as entry point for the program."
                     .to_string()
             }
-            SemErrType::InvalidThis => {
-                "'self' can only be used inside methods of structs.".to_string()
+            SemErrType::SelfOutsideStruct => {
+                "'self.property' can only be used inside methods of structs.".to_string()
+            }
+            SemErrType::SelfInMethodWithoutSelfParam => {
+                "'self.property' can only be used inside methods with 'self' as parameter.".to_string()
             }
             SemErrType::InvalidTypeMethodAccess(ty) => {
                 format!(
