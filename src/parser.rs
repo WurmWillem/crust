@@ -1,7 +1,7 @@
 use crate::{
     error::{print_error, ParseErr},
     expression::{Expr, ExprType},
-    parse_types::{BinaryOp, FnType, ParseRule, Precedence, PARSE_RULES},
+    parse_types::{BinaryOp, FnType, Precedence},
     statement::{Stmt, StmtType},
     token::{Literal, Token, TokenType},
     value::ValueType,
@@ -53,10 +53,10 @@ impl<'a> Parser<'a> {
         let (can_assign, mut expr) = self.parse_prefix(precedence)?;
 
         while self.peek().ty != TokenType::Eof
-            && precedence <= self.get_rule(self.peek().ty).precedence
+            && precedence <= self.peek().ty.to_parse_rule().precedence
         {
             self.advance();
-            let infix = self.get_rule(self.previous().ty).infix;
+            let infix = self.previous().ty.to_parse_rule().infix;
             expr = self.execute_infix(expr, infix, can_assign)?;
         }
         Ok(expr)
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
         let kind = self.previous().ty;
 
         // dbg!(kind);
-        let prefix = self.get_rule(kind).prefix;
+        let prefix = kind.to_parse_rule().prefix;
         if prefix == FnType::Empty {
             let msg = "Expected expression.";
             let err = ParseErr::new(self.previous().line, msg);
@@ -398,7 +398,7 @@ impl<'a> Parser<'a> {
         };
         let cast = Expr::new(cast, line);
 
-        let get_var_ty = ExprType::Var(name);
+        let get_var_ty = ExprType::Identifier(name);
         let get_var = Box::new(Expr::new(get_var_ty, line));
         let condition_ty = ExprType::Binary {
             left: get_var,
@@ -529,7 +529,7 @@ impl<'a> Parser<'a> {
         } else if can_assign && self.matches(TokenType::DivEqual) {
             self.get_assign_shorthand(name, line, BinaryOp::Div)?
         } else {
-            ExprType::Var(name)
+            ExprType::Identifier(name)
         };
         let var = Expr::new(ty, line);
         Ok(var)
@@ -540,7 +540,7 @@ impl<'a> Parser<'a> {
         line: u32,
         op: BinaryOp,
     ) -> Result<ExprType<'a>, ParseErr> {
-        let var_ty = ExprType::Var(name);
+        let var_ty = ExprType::Identifier(name);
         let var = Box::new(Expr::new(var_ty, line));
 
         let operand = Box::new(self.expression()?);
@@ -609,6 +609,17 @@ impl<'a> Parser<'a> {
             FnType::This => self.this(),
             _ => unreachable!(),
         }
+    }
+
+    fn double_colon(&mut self, struc: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+        self.consume(TokenType::Identifier, "Expected property name after '::'.")?;
+
+        let property = self.previous();
+        let ty = ExprType::Colon {
+            inst: Box::new(struc),
+            property: property.lexeme,
+        };
+        Ok(Expr::new(ty, property.line))
     }
 
     fn dot(&mut self, inst: Expr<'a>, can_assign: bool) -> Result<Expr<'a>, ParseErr> {
@@ -690,25 +701,29 @@ impl<'a> Parser<'a> {
             "Expected ')' after function/constructor call.",
         )?;
 
-        if let ExprType::Var(name) = name.expr {
-            let ty = ExprType::FuncCall {
+        let ty = match name.expr {
+            ExprType::Identifier(name) => ExprType::FuncCall {
                 name,
                 args,
                 index: None,
-            };
-            let expr = Expr::new(ty, self.previous().line);
-            Ok(expr)
-        } else if let ExprType::Dot { inst, property } = name.expr {
-            let ty = ExprType::MethodCall {
+            },
+            ExprType::Dot { inst, property } => ExprType::MethodCall {
                 inst,
                 property,
                 args,
-            };
-            let expr = Expr::new(ty, self.previous().line);
-            Ok(expr)
-        } else {
-            unreachable!()
-        }
+                is_static: false,
+            },
+            ExprType::Colon { inst, property } => ExprType::MethodCall {
+                inst,
+                property,
+                args,
+                is_static: true,
+            },
+            _ => unreachable!(),
+        };
+
+        let expr = Expr::new(ty, self.previous().line);
+        Ok(expr)
     }
 
     fn execute_infix(
@@ -722,13 +737,10 @@ impl<'a> Parser<'a> {
             FnType::Call => self.call(left),
             FnType::Index => self.index(left, can_assign),
             FnType::Dot => self.dot(left, can_assign),
+            FnType::DoubleColon => self.double_colon(left),
             FnType::Cast => self.cast(left),
             _ => unreachable!(),
         }
-    }
-
-    fn get_rule(&mut self, kind: TokenType) -> ParseRule {
-        PARSE_RULES[kind as usize]
     }
 
     fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<(), ParseErr> {

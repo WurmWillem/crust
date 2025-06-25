@@ -1,4 +1,4 @@
-use crate::value::ValueType;
+use crate::{parse_types::ParseRule, value::ValueType};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Literal<'source> {
@@ -71,7 +71,6 @@ pub enum TokenType {
 
     Comma,
     Dot,
-    Colon,
     Semicolon,
 
     Minus,
@@ -80,6 +79,8 @@ pub enum TokenType {
     Star,
 
     // one or two character tokens
+    Colon,
+    DoubleColon,
     Bang,
     BangEqual,
     Equal,
@@ -132,6 +133,34 @@ pub enum TokenType {
     Eof,
 }
 impl TokenType {
+    pub fn to_parse_rule(self) -> ParseRule {
+        use crate::parse_types::FnType as F;
+        use crate::parse_types::Precedence as P;
+        use TokenType as TT;
+
+        match self {
+            TT::LeftParen => ParseRule::new(F::Grouping, F::Call, P::Call),
+            TT::LeftBracket => ParseRule::new(F::Array, F::Index, P::Call),
+            TT::Dot => ParseRule::new(F::Empty, F::Dot, P::Call),
+            TT::DoubleColon => ParseRule::new(F::Empty, F::DoubleColon, P::Call),
+            TT::Minus => ParseRule::new(F::Unary, F::Binary, P::Term),
+            TT::Plus => ParseRule::new(F::Empty, F::Binary, P::Term),
+            TT::Slash | TT::Star => ParseRule::new(F::Empty, F::Binary, P::Factor),
+            TT::Bang => ParseRule::new(F::Unary, F::Empty, P::Factor),
+            TT::BangEqual | TT::Greater | TT::GreaterEqual | TT::Less | TT::LessEqual => {
+                ParseRule::new(F::Empty, F::Binary, P::Comparison)
+            }
+            TT::Identifier => ParseRule::new(F::Var, F::Empty, P::None),
+            TT::StringLit => ParseRule::new(F::String, F::Empty, P::None),
+            TT::Num => ParseRule::new(F::Number, F::Empty, P::None),
+            TT::As => ParseRule::new(F::Number, F::Cast, P::Call),
+            TT::And => ParseRule::new(F::Empty, F::Binary, P::And),
+            TT::Or => ParseRule::new(F::Empty, F::Binary, P::Or),
+            TT::False | TT::True | TT::Null => ParseRule::new(F::Literal, F::Empty, P::None),
+            TT::This => ParseRule::new(F::This, F::Empty, P::None),
+            _ => ParseRule::new(F::Empty, F::Empty, P::None),
+        }
+    }
     // pub fn is_value_type(&self) -> bool {
     //     match self {
     //         TokenType::F64 | TokenType::Bool | TokenType::Str => true,

@@ -383,7 +383,7 @@ impl<'a> Emitter<'a> {
                 Literal::False => self.comps.emit_byte(OpCode::False as u8, line),
                 Literal::Null => self.comps.emit_byte(OpCode::Null as u8, line),
             },
-            ExprType::Var(name) => {
+            ExprType::Identifier(name) => {
                 if let Some(arg) = self.comps.resolve_local(name) {
                     self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
                 } else {
@@ -427,6 +427,7 @@ impl<'a> Emitter<'a> {
             ExprType::DotAssign { .. } => unreachable!(),
             ExprType::MethodCall { .. } => unreachable!(),
             ExprType::This => unreachable!(),
+            ExprType::Colon { .. } => unreachable!()
         };
         Ok(())
     }

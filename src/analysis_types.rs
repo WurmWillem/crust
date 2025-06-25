@@ -71,7 +71,7 @@ pub struct NatStructData<'a> {
     pub methods: Vec<(&'a str, NatFuncData)>,
 }
 impl<'a> NatStructData<'a> {
-    pub fn get_method_index_and_return_ty(
+    pub fn get_method_data(
         &self,
         name: &str,
         property: &str,
@@ -160,10 +160,10 @@ impl<'a> Symbol<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct SemanticScope<'a> {
     stack: Vec<HashMap<&'a str, Symbol<'a>>>,
 }
-
 impl<'a> SemanticScope<'a> {
     pub fn new() -> Self {
         Self {

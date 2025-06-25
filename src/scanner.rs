@@ -70,8 +70,8 @@ impl<'source> Scanner<'source> {
         self.current += 1;
 
         macro_rules! ternary {
-            ($t1: ident, $t2: ident) => {{
-                let token = if self.matches('=') {
+            ($second_char: expr, $t1: ident, $t2: ident) => {{
+                let token = if self.matches($second_char) {
                     self.current += 1;
                     TokenType::$t1
                 } else {
@@ -90,17 +90,17 @@ impl<'source> Scanner<'source> {
             ']' => self.add_token(TokenType::RightBracket),
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
-            ':' => self.add_token(TokenType::Colon),
             ';' => self.add_token(TokenType::Semicolon),
             // '^' => self.add_token(TokenType::Caret),
-            '!' => ternary!(BangEqual, Bang),
-            '=' => ternary!(EqualEqual, Equal),
-            '<' => ternary!(LessEqual, Less),
-            '>' => ternary!(GreaterEqual, Greater),
+            ':' => ternary!(':', DoubleColon, Colon),
+            '!' => ternary!('=', BangEqual, Bang),
+            '=' => ternary!('=', EqualEqual, Equal),
+            '<' => ternary!('=', LessEqual, Less),
+            '>' => ternary!('=', GreaterEqual, Greater),
 
-            '+' => ternary!(PlusEqual, Plus),
-            '-' => ternary!(MinEqual, Minus),
-            '*' => ternary!(MulEqual, Star),
+            '+' => ternary!('=', PlusEqual, Plus),
+            '-' => ternary!('=', MinEqual, Minus),
+            '*' => ternary!('=', MulEqual, Star),
 
             '&' => {
                 if !self.matches('&') {
@@ -132,7 +132,7 @@ impl<'source> Scanner<'source> {
                 } else if self.matches('*') {
                     self.check_for_end_comment();
                 } else {
-                    ternary!(DivEqual, Slash);
+                    ternary!('=', DivEqual, Slash);
                 }
             }
 

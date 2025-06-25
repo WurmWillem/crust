@@ -56,10 +56,12 @@ impl SemErr {
 #[derive(Debug)]
 pub enum SemErrType {
     NoMainFunc,
-    SelfOutsideStruct,
-    SelfInMethodWithoutSelfParam,
     InvalidInfix,
     InvalidPrefix,
+    SelfOutsideStruct,
+    SelfAsStaticStruct,
+    InvalidStaticAccess,
+    SelfInMethodWithoutSelfParam,
     UndefinedVar(String),
     FuncDefInFunc(String),
     UndefinedFunc(String),
@@ -70,6 +72,9 @@ pub enum SemErrType {
     AlreadyDefinedFunc(String),
     AlreadyDefinedStruct(String),
     NatParamTypeMismatch(String),
+    StaticMethodOnInstance(String),
+    SelfOnStaticMethod,
+    NoSelfOnMethod,
     InvalidTypeFieldAccess(ValueType),
     InvalidTypeMethodAccess(ValueType),
     NoReturnTy(String, ValueType),
@@ -91,6 +96,7 @@ impl SemErr {
         let msg = match &self.ty {
             SemErrType::InvalidPrefix => "invalid prefix.".to_string(),
             SemErrType::InvalidInfix => "invalid infix.".to_string(),
+            SemErrType::InvalidStaticAccess => "You can only use the '::' syntax for static methods.".to_string(),
             SemErrType::FuncDefInFunc(name) => format!("You attempted to define the function '{}' inside another function, which is illegal.", name.green()),
             SemErrType::StructDefInFunc(name) => format!("You attempted to define the struct '{}' inside a function, which is illegal.", name.green()),
             SemErrType::InvalidCast(expected, found) => format!("You can't cast an expression of type '{}' to type '{}'.", found, expected),
@@ -104,6 +110,12 @@ impl SemErr {
             SemErrType::SelfInMethodWithoutSelfParam => {
                 "'self.property' can only be used inside methods with 'self' as parameter.".to_string()
             }
+            SemErrType::SelfAsStaticStruct => {
+                "'self::property' is invalid syntax as self is not static. Did you mean 'self.property'?".to_string()
+            }
+            SemErrType::StaticMethodOnInstance(inst_name) => format!("You cannot use a static method on an instance ({}).", inst_name.green()),
+            SemErrType::SelfOnStaticMethod => "'struct::property' can only be used for static methods which don't have self as parameter.".to_string(),
+            SemErrType::NoSelfOnMethod => "'instance.property' can only be used for non-static methods which have self as parameter.".to_string(),
             SemErrType::InvalidTypeMethodAccess(ty) => {
                 format!(
                     "You can only access methods of instances, but you tried to access a method of type '{}'.",

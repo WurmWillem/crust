@@ -127,6 +127,7 @@ impl<'a> Analyser<'a> {
 
                 self.enities.structs.get_mut(name).unwrap().methods = method_data;
                 self.current_struct = None;
+                // self.symbols.declare(Symbol::new("Foo", ValueType::Struct(())), line)
             }
         }
 
@@ -233,7 +234,7 @@ impl<'a> Analyser<'a> {
         let line = expr.line;
         let result = match &mut expr.expr {
             ExprType::Lit(lit) => lit.as_value_type(),
-            ExprType::Var(name) => match self.symbols.resolve(name) {
+            ExprType::Identifier(name) => match self.symbols.resolve(name) {
                 Some(symbol) => symbol.ty,
                 None => {
                     let ty = SemErrType::UndefinedVar(name.to_string());
@@ -309,9 +310,10 @@ impl<'a> Analyser<'a> {
                 inst,
                 property,
                 args,
+                is_static,
             } => {
                 let (index, return_ty, use_self) =
-                    self.analyse_method_call(inst, property, line, args)?;
+                    self.analyse_method_call(inst, property, line, args, *is_static)?;
 
                 expr.expr = ExprType::MethodCallResolved {
                     inst: inst.clone(),
@@ -333,6 +335,10 @@ impl<'a> Analyser<'a> {
             ExprType::DotResolved { .. } => unreachable!(),
             ExprType::MethodCallResolved { .. } => unreachable!(),
             ExprType::DotAssignResolved { .. } => unreachable!(),
+            ExprType::Colon { .. } => {
+                let ty = SemErrType::InvalidStaticAccess;
+                return Err(SemErr::new(line, ty));
+            }
         };
         Ok(result)
     }
@@ -413,46 +419,81 @@ impl<'a> Analyser<'a> {
         property: &str,
         line: u32,
         args: &mut [Expr<'a>],
+        is_static: bool,
     ) -> Result<(u8, ValueType, bool), SemErr> {
-        let name = if let ExprType::This = inst.expr {
-            let Some(name) = self.current_struct else {
-                let ty = SemErrType::SelfOutsideStruct;
-                return Err(SemErr::new(line, ty));
-            };
-            if !self.current_use_self {
-                let ty = SemErrType::SelfInMethodWithoutSelfParam;
-                return Err(SemErr::new(line, ty));
-            }
-            name.to_string()
-        } else {
-            let inst_ty = self.analyse_expr(inst)?;
-            let ValueType::Struct(name) = inst_ty else {
-                let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
-                return Err(SemErr::new(line, ty));
-            };
-            name
-        };
+        let name = self.get_inst_or_struct_name(inst, is_static, line)?;
 
         for arg in args.iter_mut() {
             self.analyse_expr(arg)?;
         }
 
-        if let Some(data) = self.enities.structs.get(&name as &str) {
-            let (index, return_ty, use_self, parameters) =
-                data.get_method_data(&name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
+        let (index, return_ty, use_self, parameters) =
+            if let Some(data) = self.enities.structs.get(&name as &str) {
+                data.get_method_data(&name, property, line)?
+            } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
+                data.get_method_data(&name, property, line)?
+            } else {
+                let ty = SemErrType::UndefinedStruct(name);
+                return Err(SemErr::new(line, ty));
+            };
 
-            Ok((index, return_ty, use_self))
-        } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
-            let (index, return_ty, use_self, parameters) =
-                data.get_method_index_and_return_ty(&name, property, line)?;
-            self.check_if_params_and_args_correspond(args, parameters, name, line)?;
+        self.check_if_params_and_args_correspond(args, parameters, name, line)?;
 
-            Ok((index, return_ty, use_self))
-        } else {
-            let ty = SemErrType::UndefinedStruct(name);
-            Err(SemErr::new(line, ty))
+        if is_static && use_self {
+            let ty = SemErrType::SelfOnStaticMethod;
+            return Err(SemErr::new(line, ty));
         }
+        if !is_static && !use_self {
+            let ty = SemErrType::NoSelfOnMethod;
+            return Err(SemErr::new(line, ty));
+        }
+
+        Ok((index, return_ty, use_self))
+    }
+    fn get_inst_or_struct_name(
+        &mut self,
+        inst: &mut Box<Expr<'a>>,
+        is_static: bool,
+        line: u32,
+    ) -> Result<String, SemErr> {
+        if let ExprType::This = inst.expr {
+            let Some(name) = self.current_struct else {
+                let ty = SemErrType::SelfOutsideStruct;
+                return Err(SemErr::new(line, ty));
+            };
+
+            if is_static {
+                let ty = SemErrType::SelfAsStaticStruct;
+                return Err(SemErr::new(line, ty));
+            }
+
+            if !self.current_use_self {
+                let ty = SemErrType::SelfInMethodWithoutSelfParam;
+                return Err(SemErr::new(line, ty));
+            }
+            return Ok(name.to_string());
+        }
+        // dbg!(&inst);
+        if let ExprType::Identifier(name) = inst.expr {
+            if self.enities.structs.contains_key(name)
+                || self.enities.nat_structs.contains_key(name)
+            {
+                return Ok(name.to_string());
+            }
+        }
+        let inst_ty = self.analyse_expr(inst)?;
+
+        let ValueType::Struct(name) = inst_ty.clone() else {
+            let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
+            return Err(SemErr::new(line, ty));
+        };
+
+        if is_static {
+            let ty = SemErrType::StaticMethodOnInstance(name);
+            return Err(SemErr::new(line, ty));
+        }
+
+        Ok(name)
     }
 
     fn analyse_assign_index(
@@ -615,6 +656,7 @@ impl<'a> Analyser<'a> {
                 let ty = SemErrType::SelfOutsideStruct;
                 return Err(SemErr::new(line, ty));
             };
+
             if !self.current_use_self {
                 let ty = SemErrType::SelfInMethodWithoutSelfParam;
                 return Err(SemErr::new(line, ty));

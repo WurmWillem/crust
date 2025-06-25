@@ -1,4 +1,4 @@
-use crate::{analysis_types::Operator, token::TokenType, OpCode};
+use crate::{analysis_types::Operator, op_code::OpCode, token::TokenType};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(u8)]
@@ -47,6 +47,7 @@ pub enum FnType {
     Call,
     Index,
     Dot,
+    DoubleColon,
     This,
 }
 
@@ -56,79 +57,15 @@ pub struct ParseRule {
     pub infix: FnType,
     pub precedence: Precedence,
 }
-
-#[rustfmt::skip]
-pub const PARSE_RULES: [ParseRule; 55] = {
-    use FnType::*;
-    use Precedence as P;
-
-    macro_rules! none {
-        () => {
-            ParseRule { prefix: Empty, infix: Empty, precedence: P::None }
+impl ParseRule {
+    pub fn new(prefix: FnType, infix: FnType, precedence: Precedence) -> Self {
+        Self {
+            prefix,
+            infix,
+            precedence,
         }
     }
-
-    [
-        
-        ParseRule { prefix: Grouping, infix: Call, precedence: P::Call, }, // left paren
-        none!(), // right paren
-        none!(), // left brace
-        none!(), // right brace
-        ParseRule { prefix: Array, infix: Index, precedence: P::Call, }, // left bracket
-        none!(), // right bracket
-        none!(), // comma
-        ParseRule { prefix: Empty, infix: Dot, precedence: P::Call, }, // dot
-        none!(), // colon
-        none!(), // semicolon
-        ParseRule { prefix: Unary, infix: Binary, precedence: P::Term, }, // minus
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Term, }, // plus
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // slash
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Factor, }, // star
-        ParseRule { prefix: Unary, infix: Empty, precedence: P::Factor, }, // bang
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // bang equal
-        none!(), // equal
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // equal equal
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Greater
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Greater equal
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Comparison, }, // Less equal
-
-        none!(), //Plus Equal
-        none!(), //Minus Equal
-        none!(), //Mul Equal
-        none!(), //Div Equal
-
-        ParseRule { prefix: Var, infix: Empty, precedence: P::None, }, // identifier
-        ParseRule { prefix: String, infix: Empty, precedence: P::None, }, // string
-        ParseRule { prefix: Number, infix: Empty, precedence: P::None, }, // number
-        ParseRule { prefix: Empty, infix: Cast, precedence: P::Call, }, // as
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::And, }, // and
-        none!(), // class
-        none!(), // else
-        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // false
-        none!(), // for
-        none!(), // break
-        none!(), // continue
-        none!(), // in
-        none!(), // to
-        none!(), // fun
-        none!(), // if
-        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // nil
-        ParseRule { prefix: Empty, infix: Binary, precedence: P::Or, }, // or
-        none!(), // print
-        none!(), // return
-        none!(), // super
-        ParseRule { prefix: This, infix: Empty, precedence: P::None, }, // self
-        ParseRule { prefix: Literal, infix: Empty, precedence: P::None, }, // true
-        none!(), // while
-        none!(), // f64
-        none!(), // i64
-        none!(), // u64
-        none!(), // bool
-        none!(), // str
-        none!(), // EOF
-    ]
-};
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum BinaryOp {
