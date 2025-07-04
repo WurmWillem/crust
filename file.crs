@@ -30,11 +30,6 @@ fn main() {
     println(vec.get(3)); // prints '4'
 }
 
-fn p(str msg): str {
-    pr msg;
-    return "return value ";
-}
-
 // define a function named 'factorial' that takes and returns a uint
 fn factorial(uint n): uint {
     if n <= 1 return 1;
