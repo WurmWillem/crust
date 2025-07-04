@@ -350,6 +350,7 @@ impl<'a> Emitter<'a> {
                 args,
                 use_self,
             } => {
+                self.emit_expr(inst)?;
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
 
@@ -427,7 +428,7 @@ impl<'a> Emitter<'a> {
             ExprType::DotAssign { .. } => unreachable!(),
             ExprType::MethodCall { .. } => unreachable!(),
             ExprType::This => unreachable!(),
-            ExprType::Colon { .. } => unreachable!()
+            ExprType::Colon { .. } => unreachable!(),
         };
         Ok(())
     }

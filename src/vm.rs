@@ -170,12 +170,14 @@ impl VM {
                 }
                 OpCode::PushMethod => {
                     let index = read_byte(&mut ip) as usize;
-                    let inst_stack = self.stack_peek();
+                    let inst_stack = self.stack_pop();
                     let StackValue::Obj(Object::Inst(inst)) = inst_stack else {
                         unreachable!()
                     };
+                    // dbg!(&inst.data);
 
                     let method = inst.data.methods[index];
+
                     // self.stack_push(inst_stack);
                     self.stack_push(method);
                 }
