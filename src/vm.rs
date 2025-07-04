@@ -174,6 +174,7 @@ impl VM {
                     let StackValue::Obj(Object::Inst(inst)) = inst_stack else {
                         unreachable!()
                     };
+                    // dbg!(&inst.data);
 
                     let method = inst.data.methods[index];
                     // self.stack_push(inst_stack);

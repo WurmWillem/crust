@@ -157,6 +157,7 @@ impl<'a> Analyser<'a> {
                 let value_ty = self.analyse_expr(value)?;
                 if value_ty != *ty
                     && value_ty != ValueType::Null
+                    && value_ty != ValueType::Any
                     && !try_coerce(&mut value.expr, ty)
                 {
                     let err_ty = SemErrType::VarDeclTypeMismatch(ty.clone(), value_ty);
