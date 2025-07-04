@@ -78,69 +78,6 @@ impl<'a> Parser<'a> {
         Ok((can_assign, expr))
     }
 
-    fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
-        let left = Box::new(left);
-        let op = BinaryOp::from_token_type(self.previous().ty);
-
-        let precedence = op.get_precedency();
-        let right = Box::new(self.parse_precedence(precedence)?);
-
-        let line = self.previous().line;
-        let kind = ExprType::Binary { left, op, right };
-        let expr = Expr::new(kind, line);
-        Ok(expr)
-    }
-
-    fn array(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let mut values = Vec::new();
-        while !self.check(TokenType::RightBracket) {
-            values.push(self.expression()?);
-
-            if !self.matches(TokenType::Comma) {
-                break;
-            }
-        }
-        self.consume(TokenType::RightBracket, "Expected ']' at end of array.")?;
-
-        let ty = ExprType::Array(values);
-        Ok(Expr::new(ty, self.previous().line))
-    }
-
-    fn number(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let kind = match self.previous().literal {
-            Literal::F64(n) => ExprType::Lit(Literal::F64(n)),
-            Literal::I64(n) => ExprType::Lit(Literal::I64(n)),
-            Literal::U64(n) => ExprType::Lit(Literal::U64(n)),
-            _ => unreachable!(),
-        };
-        Ok(Expr::new(kind, self.previous().line))
-    }
-
-    fn unary(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let prefix = self.previous().ty;
-        let value = Box::new(self.parse_precedence(Precedence::Unary)?);
-
-        let line = self.previous().line;
-        let kind = ExprType::Unary { prefix, value };
-        let expr = Expr::new(kind, line);
-        Ok(expr)
-    }
-
-    fn literal(&mut self) -> Result<Expr<'a>, ParseErr> {
-        let literal = match self.previous().ty {
-            TokenType::True => Literal::True,
-            TokenType::False => Literal::False,
-            TokenType::Null => Literal::Null,
-            _ => unreachable!(),
-        };
-        let kind = ExprType::Lit(literal);
-        Ok(Expr::new(kind, self.previous().line))
-    }
-
-    fn expression(&mut self) -> Result<Expr<'a>, ParseErr> {
-        self.parse_precedence(Precedence::Assignment)
-    }
-
     fn declaration(&mut self) -> Result<Stmt<'a>, ParseErr> {
         if let Some(var_type) = self.peek().as_value_type() {
             self.advance();
@@ -161,9 +98,35 @@ impl<'a> Parser<'a> {
             self.func_decl()
         } else if self.matches(TokenType::Struct) {
             self.struct_decl()
+        } else if self.matches(TokenType::Enum) {
+            self.enum_decl()
         } else {
             self.statement()
         }
+    }
+
+    fn enum_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
+        self.consume(
+            TokenType::Identifier,
+            "Expected enum name after 'enum' keyword.",
+        )?;
+        let name = self.previous().lexeme;
+        let line = self.previous().line;
+
+        self.consume(TokenType::LeftBrace, "Expected '{' after enum name.")?;
+
+        let mut variants = Vec::new();
+        while !self.check(TokenType::RightBrace) {
+            self.consume(TokenType::Identifier, "Expected variant name.")?;
+            let variant_name = self.previous().lexeme;
+
+            variants.push(variant_name);
+            self.consume(TokenType::Comma, "Expected ',' after enum variant.")?;
+        }
+        self.consume(TokenType::RightBrace, "Expected '}' after struct body.")?;
+
+        let ty = StmtType::Enum { name, variants };
+        Ok(Stmt::new(ty, line))
     }
 
     fn struct_decl(&mut self) -> Result<Stmt<'a>, ParseErr> {
@@ -346,6 +309,69 @@ impl<'a> Parser<'a> {
         } else {
             self.expr_stmt()
         }
+    }
+
+    fn binary(&mut self, left: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+        let left = Box::new(left);
+        let op = BinaryOp::from_token_type(self.previous().ty);
+
+        let precedence = op.get_precedency();
+        let right = Box::new(self.parse_precedence(precedence)?);
+
+        let line = self.previous().line;
+        let kind = ExprType::Binary { left, op, right };
+        let expr = Expr::new(kind, line);
+        Ok(expr)
+    }
+
+    fn array(&mut self) -> Result<Expr<'a>, ParseErr> {
+        let mut values = Vec::new();
+        while !self.check(TokenType::RightBracket) {
+            values.push(self.expression()?);
+
+            if !self.matches(TokenType::Comma) {
+                break;
+            }
+        }
+        self.consume(TokenType::RightBracket, "Expected ']' at end of array.")?;
+
+        let ty = ExprType::Array(values);
+        Ok(Expr::new(ty, self.previous().line))
+    }
+
+    fn number(&mut self) -> Result<Expr<'a>, ParseErr> {
+        let kind = match self.previous().literal {
+            Literal::F64(n) => ExprType::Lit(Literal::F64(n)),
+            Literal::I64(n) => ExprType::Lit(Literal::I64(n)),
+            Literal::U64(n) => ExprType::Lit(Literal::U64(n)),
+            _ => unreachable!(),
+        };
+        Ok(Expr::new(kind, self.previous().line))
+    }
+
+    fn unary(&mut self) -> Result<Expr<'a>, ParseErr> {
+        let prefix = self.previous().ty;
+        let value = Box::new(self.parse_precedence(Precedence::Unary)?);
+
+        let line = self.previous().line;
+        let kind = ExprType::Unary { prefix, value };
+        let expr = Expr::new(kind, line);
+        Ok(expr)
+    }
+
+    fn literal(&mut self) -> Result<Expr<'a>, ParseErr> {
+        let literal = match self.previous().ty {
+            TokenType::True => Literal::True,
+            TokenType::False => Literal::False,
+            TokenType::Null => Literal::Null,
+            _ => unreachable!(),
+        };
+        let kind = ExprType::Lit(literal);
+        Ok(Expr::new(kind, self.previous().line))
+    }
+
+    fn expression(&mut self) -> Result<Expr<'a>, ParseErr> {
+        self.parse_precedence(Precedence::Assignment)
     }
 
     fn continue_stmt(&mut self) -> Result<Stmt<'a>, ParseErr> {

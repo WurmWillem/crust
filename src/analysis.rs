@@ -227,6 +227,7 @@ impl<'a> Analyser<'a> {
             StmtType::Break => (),
             StmtType::Continue => (),
             StmtType::Struct { .. } => (),
+            StmtType::Enum { .. } => (),
         };
         Ok(())
     }

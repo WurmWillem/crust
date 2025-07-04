@@ -262,6 +262,7 @@ impl<'a> Emitter<'a> {
                 self.comps.add_continue(line)?;
             }
             StmtType::Struct { .. } => (),
+            StmtType::Enum { .. } => (),
         }
         Ok(())
     }

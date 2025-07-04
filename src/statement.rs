@@ -50,4 +50,8 @@ pub enum StmtType<'a> {
         fields: Vec<(ValueType, &'a str)>,
         methods: Vec<Stmt<'a>>,
     },
+    Enum {
+        name: &'a str,
+        variants: Vec<&'a str>,
+    },
 }

@@ -104,6 +104,7 @@ pub enum TokenType {
     As,
     And,
     Struct,
+    Enum,
     Else,
     False,
     For,
