@@ -1,5 +1,6 @@
 // every program has an entry point called 'main'
 fn main() {
+    Color x;
 }
 
 enum Colors {

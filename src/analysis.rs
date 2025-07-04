@@ -51,7 +51,12 @@ impl<'a> Analyser<'a> {
 
         for stmt in stmts {
             let line = stmt.line;
-            if let StmtType::Func {
+            if let StmtType::Enum { name, variants } = &stmt.stmt {
+                if self.enities.enums.insert(*name, variants.clone()).is_some() {
+                    let err_ty = SemErrType::AlreadyDefinedEnum(name.to_string());
+                    return Err(SemErr::new(line, err_ty));
+                }
+            } else if let StmtType::Func {
                 name,
                 parameters,
                 body: _,

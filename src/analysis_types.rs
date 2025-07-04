@@ -137,6 +137,7 @@ pub struct EnityData<'a> {
     pub nat_funcs: HashMap<&'a str, Vec<NatFuncData>>,
     pub structs: HashMap<&'a str, StructData<'a>>,
     pub nat_structs: HashMap<&'a str, NatStructData<'a>>,
+    pub enums: HashMap<&'a str, Vec<&'a str>>,
 }
 impl<'a> EnityData<'a> {
     pub fn new() -> Self {
@@ -145,6 +146,7 @@ impl<'a> EnityData<'a> {
             nat_funcs: HashMap::new(),
             structs: HashMap::new(),
             nat_structs: HashMap::new(),
+            enums: HashMap::new(),
         }
     }
 }

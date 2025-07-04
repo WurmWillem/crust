@@ -70,6 +70,7 @@ pub enum SemErrType {
     UndefinedStruct(String),
     AlreadyDefinedVar(String),
     AlreadyDefinedFunc(String),
+    AlreadyDefinedEnum(String),
     AlreadyDefinedStruct(String),
     NatParamTypeMismatch(String),
     StaticMethodOnInstance(String),
@@ -187,6 +188,12 @@ impl SemErr {
             SemErrType::AlreadyDefinedFunc(name) => {
                 format!(
                     "Function with name '{}' has already been defined.",
+                    name.green()
+                )
+            }
+            SemErrType::AlreadyDefinedEnum(name) => {
+                format!(
+                    "Enum with name '{}' has already been defined.",
                     name.green()
                 )
             }
