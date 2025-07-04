@@ -283,12 +283,10 @@ impl<'a> Emitter<'a> {
                         .emit_bytes(OpCode::AllocInstance as u8, method_len, line);
                     self.comps.emit_byte(args.len() as u8, line);
                 } else {
-                    dbg!("func call");
                     let fn_ptr = self.funcs.get(name).unwrap();
                     self.comps.emit_constant(fn_ptr[index.unwrap()], line)?;
 
                     for var in args {
-                        dbg!(var);
                         self.emit_expr(var)?;
                     }
 
@@ -352,8 +350,7 @@ impl<'a> Emitter<'a> {
                 args,
                 use_self,
             } => {
-                    dbg!("method");
-                    //self.emit_expr(inst)?;
+                self.emit_expr(inst)?;
                 self.comps
                     .emit_bytes(OpCode::PushMethod as u8, *index, line);
 
@@ -431,7 +428,7 @@ impl<'a> Emitter<'a> {
             ExprType::DotAssign { .. } => unreachable!(),
             ExprType::MethodCall { .. } => unreachable!(),
             ExprType::This => unreachable!(),
-            ExprType::Colon { .. } => unreachable!()
+            ExprType::Colon { .. } => unreachable!(),
         };
         Ok(())
     }

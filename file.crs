@@ -25,11 +25,13 @@ fn main() {
     //double product = vec2D.product(); // holds '6.'
 
     // use structs from the standard library such as Vec (dynamic array)
+
+    println(3);
     Vec vec = Vec([1, 2, 3]);
     //p(p("hoi"));
     int x = 3;
     vec.push(4);
-    //println(vec.get(3)); // prints '4'
+    println(vec.get(3)); // prints '4'
 }
 
 fn p(str msg): str {
