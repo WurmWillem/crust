@@ -1,25 +1,15 @@
-struct Vec2 {
-    int x;
-    int y;
-
-    fn product(self): int {
-        return self.x * self.y;
-    }
-    fn increment_x(self) {
-        self.x += 1;
-    }
-    fn greet() {
-        pr "hoi";
-    }
-}
-
 fn main() {
-    Vec2 vec = Vec2(3, 2);
-    pr vec.product();
-
-    vec.increment_x();
-    pr vec.x;
-
-    Vec2::greet();
+    Foo a = Foo(0, "a");
+    Foo::hi(3);
+    //a.hi();
+    //a::hi();
 }
 
+struct Foo {
+    int x;
+    str name;
+
+    fn hi(int x) {
+       pr x; 
+    }
+}

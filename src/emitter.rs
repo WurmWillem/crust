@@ -356,7 +356,7 @@ impl<'a> Emitter<'a> {
                         unreachable!()
                     };
                     let methods = self.structs.get(name).unwrap();
-                    self.comps.emit_constant(methods[0].1, line)?;
+                    self.comps.emit_constant(methods[(*index) as usize].1, line)?;
 
                     let args_len = args.len() as u8 + 1;
                     for var in args {
