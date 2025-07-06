@@ -178,8 +178,8 @@ impl VM {
 
                     let method = inst.data.methods[index];
 
-                    // self.stack_push(inst_stack);
                     self.stack_push(method);
+                    self.stack_push(inst_stack);
                 }
 
                 OpCode::AllocInstance => {

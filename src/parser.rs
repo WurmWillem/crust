@@ -637,12 +637,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn double_colon(&mut self, struc: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
+    fn double_colon(&mut self, r#type: Expr<'a>) -> Result<Expr<'a>, ParseErr> {
         self.consume(TokenType::Identifier, "Expected property name after '::'.")?;
+        // dbg!("::");
 
         let property = self.previous();
         let ty = ExprType::Colon {
-            inst: Box::new(struc),
+            inst: Box::new(r#type),
             property: property.lexeme,
         };
         Ok(Expr::new(ty, property.line))

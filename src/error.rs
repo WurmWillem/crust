@@ -67,7 +67,7 @@ pub enum SemErrType {
     UndefinedFunc(String),
     IndexNonArr(ValueType),
     StructDefInFunc(String),
-    UndefinedStruct(String),
+    UndefinedType(String),
     AlreadyDefinedVar(String),
     AlreadyDefinedFunc(String),
     AlreadyDefinedEnum(String),
@@ -170,8 +170,8 @@ impl SemErr {
             SemErrType::UndefinedFunc(name) => {
                 format!("Function '{}' has not been defined.", name.green())
             }
-            SemErrType::UndefinedStruct(name) => {
-                format!("Struct '{}' has not been defined.", name.green())
+            SemErrType::UndefinedType(name) => {
+                format!("Type '{}' has not been defined.", name.green())
             }
             SemErrType::UndefinedVar(name) => {
                 format!(

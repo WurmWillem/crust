@@ -153,8 +153,9 @@ impl<'a> Analyser<'a> {
                 if let ValueType::Struct(name) = ty {
                     if !self.enities.structs.contains_key(name as &str)
                         && !self.enities.nat_structs.contains_key(name as &str)
+                        && !self.enities.enums.contains_key(name as &str)
                     {
-                        let err = SemErrType::UndefinedStruct(name.clone());
+                        let err = SemErrType::UndefinedType(name.clone());
                         return Err(SemErr::new(line, err));
                     }
                 }
@@ -440,7 +441,7 @@ impl<'a> Analyser<'a> {
             } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
                 data.get_method_data(&name, property, line)?
             } else {
-                let ty = SemErrType::UndefinedStruct(name);
+                let ty = SemErrType::UndefinedType(name);
                 return Err(SemErr::new(line, ty));
             };
 
@@ -678,7 +679,7 @@ impl<'a> Analyser<'a> {
             name
         };
         let Some(data) = self.enities.structs.get(&name as &str) else {
-            let ty = SemErrType::UndefinedStruct(name);
+            let ty = SemErrType::UndefinedType(name);
             return Err(SemErr::new(line, ty));
         };
 
