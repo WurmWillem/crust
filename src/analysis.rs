@@ -339,16 +339,40 @@ impl<'a> Analyser<'a> {
                 }
                 target.clone()
             }
+            ExprType::Colon { inst, property } => {
+                let index = self.get_enum_variant_index(inst, property, line)?;
+                todo!()
+            }
             ExprType::This => unreachable!(),
             ExprType::DotResolved { .. } => unreachable!(),
             ExprType::MethodCallResolved { .. } => unreachable!(),
             ExprType::DotAssignResolved { .. } => unreachable!(),
-            ExprType::Colon { .. } => {
-                let ty = SemErrType::InvalidStaticAccess;
-                return Err(SemErr::new(line, ty));
-            }
+            ExprType::ColonResolved { .. } => unreachable!(),
         };
         Ok(result)
+    }
+
+    fn get_enum_variant_index(
+        &self,
+        inst: &Box<Expr<'a>>,
+        property: &str,
+        line: u32,
+    ) -> Result<usize, SemErr> {
+        let ExprType::Identifier(name) = inst.expr else {
+            let ty = SemErrType::InvalidStaticAccess;
+            return Err(SemErr::new(line, ty));
+        };
+        let Some(variants) = self.enities.enums.get(name) else {
+            let ty = SemErrType::InvalidStaticAccess;
+            return Err(SemErr::new(line, ty));
+        };
+        for (index, var) in variants.iter().enumerate() {
+            if *var == property {
+                return Ok(index);
+            }
+        }
+        let ty = SemErrType::InvalidStaticAccess;
+        return Err(SemErr::new(line, ty));
     }
 
     fn analyse_func_stmt(

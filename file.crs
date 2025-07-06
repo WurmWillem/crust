@@ -1,8 +1,12 @@
 fn main() {
-    Foo a = Foo(0, "a");
-    Foo::hi(3);
-    //a.hi();
-    //a::hi();
+    Color col;
+    col = Color::Red;
+}
+
+enum Color {
+    Red,
+    Blue,
+    Green,
 }
 
 struct Foo {

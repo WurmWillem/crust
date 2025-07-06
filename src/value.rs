@@ -17,6 +17,7 @@ pub enum ValueType {
     Str,
     Arr(Box<ValueType>),
     Struct(String),
+    // EnumVariant(usize),
 }
 impl ValueType {
     pub fn is_num(&self) -> bool {
