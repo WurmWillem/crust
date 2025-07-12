@@ -31,10 +31,10 @@ fn main() {
     println(array[0]);  // prints 1
 
     // create instances with 'struct_name(fields)' syntax
-    Vector2D vec = Vector2D(3., 2.);
-    println(vec.x); // prints '3.'
+    Vector2D vec2D = Vector2D(3., 2.);
+    println(vec2D.x); // prints '3.'
     // call methods with the syntax 'struct_name.method_name(arguments)'
-    double product = vec.product(); // holds '6.'
+    double product = vec2D.product(); // holds '6.'
 
     // use structs from the standard library such as Vec (dynamic array)
     Vec vec = Vec([1, 2, 3]);
@@ -69,6 +69,8 @@ struct Vector2D {
 - Add pattern matching (match/switch)
 - Add enums
 - Add encapsulation
+- Add more tests
+- ✅ Add static methods
 - ✅ Add some syntactic sugar for mutating variables (+=, -=, *=, /=)
 - ✅ Add casting operations with the 'as' keyword
 - ✅ Add more integer types such as i64 and u64
