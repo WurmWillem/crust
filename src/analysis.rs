@@ -437,8 +437,6 @@ impl<'a> Analyser<'a> {
                     && symbol.ty != ValueType::Any
                     && !try_coerce(&mut value.expr, &symbol.ty)
                 {
-                    dbg!(&value_ty);
-                    dbg!(&symbol.ty);
                     let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
                     return Err(SemErr::new(line, err_ty));
                 }

@@ -1,6 +1,11 @@
 fn main() {
     Color col;
-    col = Color::Green;
+    col = Color::Red;
+    if col == Color::Red {
+        pr 3;
+    }
+    int x = 0;
+    x = col;
 }
 
 enum Color {

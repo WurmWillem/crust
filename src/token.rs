@@ -148,9 +148,12 @@ impl TokenType {
             TT::Plus => ParseRule::new(F::Empty, F::Binary, P::Term),
             TT::Slash | TT::Star => ParseRule::new(F::Empty, F::Binary, P::Factor),
             TT::Bang => ParseRule::new(F::Unary, F::Empty, P::Factor),
-            TT::BangEqual | TT::Greater | TT::GreaterEqual | TT::Less | TT::LessEqual => {
-                ParseRule::new(F::Empty, F::Binary, P::Comparison)
-            }
+            TT::EqualEqual
+            | TT::BangEqual
+            | TT::Greater
+            | TT::GreaterEqual
+            | TT::Less
+            | TT::LessEqual => ParseRule::new(F::Empty, F::Binary, P::Comparison),
             TT::Identifier => ParseRule::new(F::Var, F::Empty, P::None),
             TT::StringLit => ParseRule::new(F::String, F::Empty, P::None),
             TT::Num => ParseRule::new(F::Number, F::Empty, P::None),
