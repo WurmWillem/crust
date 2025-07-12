@@ -17,7 +17,7 @@ pub enum ValueType {
     Str,
     Arr(Box<ValueType>),
     Struct(String),
-    // EnumVariant(usize),
+    Enum(String),
 }
 impl ValueType {
     pub fn is_num(&self) -> bool {
@@ -37,6 +37,7 @@ impl fmt::Display for ValueType {
             ValueType::U64 => write!(f, "Uint"),
             ValueType::Str => write!(f, "String"),
             ValueType::Struct(s) => write!(f, "struct {}", s),
+            ValueType::Enum(e) => write!(f, "enum {}", e),
         }
     }
 }

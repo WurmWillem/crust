@@ -340,8 +340,7 @@ impl<'a> Analyser<'a> {
                 target.clone()
             }
             ExprType::Colon { inst, property } => {
-                let index = self.get_enum_variant_index(inst, property, line)?;
-                todo!()
+                self.get_enum_variant_data(inst, property, line)?
             }
             ExprType::This => unreachable!(),
             ExprType::DotResolved { .. } => unreachable!(),
@@ -352,12 +351,12 @@ impl<'a> Analyser<'a> {
         Ok(result)
     }
 
-    fn get_enum_variant_index(
+    fn get_enum_variant_data(
         &self,
         inst: &Box<Expr<'a>>,
         property: &str,
         line: u32,
-    ) -> Result<usize, SemErr> {
+    ) -> Result<ValueType, SemErr> {
         let ExprType::Identifier(name) = inst.expr else {
             let ty = SemErrType::InvalidStaticAccess;
             return Err(SemErr::new(line, ty));
@@ -366,9 +365,9 @@ impl<'a> Analyser<'a> {
             let ty = SemErrType::InvalidStaticAccess;
             return Err(SemErr::new(line, ty));
         };
-        for (index, var) in variants.iter().enumerate() {
+        for var in variants.iter() {
             if *var == property {
-                return Ok(index);
+                return Ok(ValueType::Enum(name.to_string()));
             }
         }
         let ty = SemErrType::InvalidStaticAccess;
@@ -433,6 +432,8 @@ impl<'a> Analyser<'a> {
                     && symbol.ty != ValueType::Any
                     && !try_coerce(&mut value.expr, &symbol.ty)
                 {
+                    dbg!(&value_ty);
+                    dbg!(&symbol.ty);
                     let err_ty = SemErrType::VarDeclTypeMismatch(symbol.ty, value_ty);
                     return Err(SemErr::new(line, err_ty));
                 }
