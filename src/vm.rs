@@ -99,7 +99,10 @@ impl VM {
                 }
                 OpCode::Constant => {
                     let index = read_byte(&mut ip) as usize;
-                    let constant = (*frame).func.data.chunk.constants[index];
+
+                    let func = (*frame).func;
+                    let constant = func.data.chunk.constants[index];
+
                     self.stack_push(constant);
                 }
 
@@ -437,14 +440,12 @@ impl VM {
         println!();
 
         let ip = (*frame).ip;
-        let offset = (*frame).func.data.chunk.code.as_ptr();
+        let func = (*frame).func;
+
+        let offset = func.data.chunk.code.as_ptr();
         let debug_offset = ip.offset_from(offset) as usize;
 
-        (*frame)
-            .func
-            .data
-            .chunk
-            .disassemble_instruction(debug_offset);
+        func.data.chunk.disassemble_instruction(debug_offset);
     }
 
     fn concatenate_strings(&mut self, lhs: Object, rhs: Object) -> StackValue {
