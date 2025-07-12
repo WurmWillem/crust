@@ -1,4 +1,3 @@
-// every program has an entry point called 'main'
 fn main() {
     // print values with newline with the function 'println'
     println("Hello World!");
@@ -19,15 +18,18 @@ fn main() {
     println(array[0]);  // prints 1
 
     // create instances with 'struct_name(fields)' syntax
-    Vector2D vec2D = Vector2D(3., 2.);
-    println(vec2D.x); // prints '3.'
+    Vector2D vec = Vector2D(3., 2.);
+    println(vec.x); // prints '3.'
     // call methods with the syntax 'struct_name.method_name(arguments)'
-    double product = vec2D.product(); // holds '6.'
+    double product = vec.product(); // holds '6.'
 
     // use structs from the standard library such as Vec (dynamic array)
     Vec vec = Vec([1, 2, 3]);
     vec.push(4);
     println(vec.get(3)); // prints '4'
+    
+    // use enums with the following syntax
+    Color col = Color::Red;
 }
 
 // define a function named 'factorial' that takes and returns a uint
@@ -47,4 +49,11 @@ struct Vector2D {
         // use 'self.property_name' to access fields and methods
         return self.x * self.y;
     }
+}
+
+// define an enum named 'Color'
+enum Color {
+    Red,
+    Blue,
+    Green,
 }

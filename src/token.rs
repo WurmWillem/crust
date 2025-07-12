@@ -53,7 +53,7 @@ impl<'source> Token<'source> {
             TokenType::U64 => Some(ValueType::U64),
             TokenType::Bool => Some(ValueType::Bool),
             TokenType::Str => Some(ValueType::Str),
-            TokenType::Identifier => Some(ValueType::Struct(self.lexeme.to_string())),
+            TokenType::Identifier => Some(ValueType::UnknownType(self.lexeme.to_string())),
             _ => None,
         }
     }
@@ -104,6 +104,7 @@ pub enum TokenType {
     As,
     And,
     Struct,
+    Enum,
     Else,
     False,
     For,
@@ -147,9 +148,12 @@ impl TokenType {
             TT::Plus => ParseRule::new(F::Empty, F::Binary, P::Term),
             TT::Slash | TT::Star => ParseRule::new(F::Empty, F::Binary, P::Factor),
             TT::Bang => ParseRule::new(F::Unary, F::Empty, P::Factor),
-            TT::BangEqual | TT::Greater | TT::GreaterEqual | TT::Less | TT::LessEqual => {
-                ParseRule::new(F::Empty, F::Binary, P::Comparison)
-            }
+            TT::EqualEqual
+            | TT::BangEqual
+            | TT::Greater
+            | TT::GreaterEqual
+            | TT::Less
+            | TT::LessEqual => ParseRule::new(F::Empty, F::Binary, P::Comparison),
             TT::Identifier => ParseRule::new(F::Var, F::Empty, P::None),
             TT::StringLit => ParseRule::new(F::String, F::Empty, P::None),
             TT::Num => ParseRule::new(F::Number, F::Empty, P::None),

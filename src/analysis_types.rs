@@ -36,7 +36,7 @@ impl core::fmt::Display for Operator {
             Operator::Sub => write!(f, "-"),
             Operator::Mul => write!(f, "*"),
             Operator::Div => write!(f, "/"),
-            Operator::Equal => write!(f, "="),
+            Operator::Equal => write!(f, "=="),
             Operator::NotEqual => write!(f, "=="),
             Operator::Less => write!(f, "<"),
             Operator::LessEqual => write!(f, "<="),
@@ -137,6 +137,7 @@ pub struct EnityData<'a> {
     pub nat_funcs: HashMap<&'a str, Vec<NatFuncData>>,
     pub structs: HashMap<&'a str, StructData<'a>>,
     pub nat_structs: HashMap<&'a str, NatStructData<'a>>,
+    pub enums: HashMap<&'a str, Vec<&'a str>>,
 }
 impl<'a> EnityData<'a> {
     pub fn new() -> Self {
@@ -145,6 +146,19 @@ impl<'a> EnityData<'a> {
             nat_funcs: HashMap::new(),
             structs: HashMap::new(),
             nat_structs: HashMap::new(),
+            enums: HashMap::new(),
+        }
+    }
+
+    pub fn resolve_value_ty(&self, ty: &mut ValueType) {
+        if let ValueType::UnknownType(name) = ty {
+            if self.structs.contains_key(name as &str)
+                || self.nat_structs.contains_key(name as &str)
+            {
+                *ty = ValueType::Struct(name.clone())
+            } else if self.enums.contains_key(name as &str) {
+                *ty = ValueType::Enum(name.clone())
+            }
         }
     }
 }

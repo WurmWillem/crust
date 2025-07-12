@@ -9,9 +9,9 @@ use crate::{
 };
 
 pub struct Analyser<'a> {
-    enities: EnityData<'a>,
+    entities: EnityData<'a>,
     symbols: SemanticScope<'a>,
-    current_return_ty: ValueType,
+    current_return_ty: Option<ValueType>,
     current_use_self: bool,
     return_stmt_found: bool,
     current_struct: Option<&'a str>,
@@ -20,8 +20,8 @@ impl<'a> Analyser<'a> {
     fn new() -> Self {
         Self {
             symbols: SemanticScope::new(),
-            current_return_ty: ValueType::None,
-            enities: EnityData::new(),
+            current_return_ty: None,
+            entities: EnityData::new(),
             current_struct: None,
             return_stmt_found: false,
             current_use_self: false,
@@ -41,23 +41,33 @@ impl<'a> Analyser<'a> {
             }
         }
 
-        Some(analyser.enities)
+        Some(analyser.entities)
     }
 
     fn init_type_data(&mut self, stmts: &mut Vec<Stmt<'a>>) -> Result<(), SemErr> {
         let (nat_funcs, nat_structs) = crate::native::register();
-        self.enities.nat_funcs = nat_funcs;
-        self.enities.nat_structs = nat_structs;
+        self.entities.nat_funcs = nat_funcs;
+        self.entities.nat_structs = nat_structs;
 
         for stmt in stmts {
             let line = stmt.line;
-            if let StmtType::Func {
+            if let StmtType::Enum { name, variants } = &stmt.stmt {
+                if self
+                    .entities
+                    .enums
+                    .insert(*name, variants.clone())
+                    .is_some()
+                {
+                    let err_ty = SemErrType::AlreadyDefinedEnum(name.to_string());
+                    return Err(SemErr::new(line, err_ty));
+                }
+            } else if let StmtType::Func {
                 name,
                 parameters,
                 body: _,
                 return_ty,
                 use_self,
-            } = &stmt.stmt
+            } = &mut stmt.stmt
             {
                 let func_data = FuncData {
                     parameters: parameters.clone(),
@@ -67,7 +77,7 @@ impl<'a> Analyser<'a> {
                     use_self: *use_self,
                 };
 
-                if self.enities.funcs.insert(*name, func_data).is_some() {
+                if self.entities.funcs.insert(*name, func_data).is_some() {
                     let err_ty = SemErrType::AlreadyDefinedFunc(name.to_string());
                     return Err(SemErr::new(line, err_ty));
                 }
@@ -86,7 +96,7 @@ impl<'a> Analyser<'a> {
                 let struct_data = StructData::new(fields.clone());
                 let mut method_data = vec![];
 
-                if self.enities.structs.insert(*name, struct_data).is_some() {
+                if self.entities.structs.insert(*name, struct_data).is_some() {
                     let err_ty = SemErrType::AlreadyDefinedStruct(name.to_string());
                     return Err(SemErr::new(line, err_ty));
                 }
@@ -113,7 +123,7 @@ impl<'a> Analyser<'a> {
                     }
                 }
 
-                self.enities.structs.get_mut(name).unwrap().methods = method_data.clone();
+                self.entities.structs.get_mut(name).unwrap().methods = method_data.clone();
 
                 for (i, method) in methods.iter_mut().enumerate() {
                     self.analyse_stmt(method)?;
@@ -125,13 +135,13 @@ impl<'a> Analyser<'a> {
                     }
                 }
 
-                self.enities.structs.get_mut(name).unwrap().methods = method_data;
+                self.entities.structs.get_mut(name).unwrap().methods = method_data;
                 self.current_struct = None;
                 // self.symbols.declare(Symbol::new("Foo", ValueType::Struct(())), line)
             }
         }
 
-        if !self.enities.funcs.contains_key("main") {
+        if !self.entities.funcs.contains_key("main") {
             let err_ty = SemErrType::NoMainFunc;
             return Err(SemErr::new(0, err_ty));
         }
@@ -145,16 +155,19 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Var { name, value, ty } => {
-                if let ValueType::Struct(name) = ty {
-                    if !self.enities.structs.contains_key(name as &str)
-                        && !self.enities.nat_structs.contains_key(name as &str)
+                if let ValueType::UnknownType(name) = ty {
+                    if !self.entities.structs.contains_key(name as &str)
+                        && !self.entities.nat_structs.contains_key(name as &str)
+                        && !self.entities.enums.contains_key(name as &str)
                     {
-                        let err = SemErrType::UndefinedStruct(name.clone());
+                        let err = SemErrType::UndefinedType(name.clone());
                         return Err(SemErr::new(line, err));
                     }
                 }
 
+                self.entities.resolve_value_ty(ty);
                 let value_ty = self.analyse_expr(value)?;
+
                 if value_ty != *ty
                     && value_ty != ValueType::Null
                     && value_ty != ValueType::Any
@@ -173,13 +186,15 @@ impl<'a> Analyser<'a> {
                 self.return_stmt_found = true;
                 let return_ty = self.analyse_expr(expr)?;
 
-                if return_ty != self.current_return_ty
-                    && return_ty != ValueType::Null
-                    && !try_coerce(&mut expr.expr, &self.current_return_ty)
-                {
-                    let err_ty =
-                        SemErrType::IncorrectReturnTy(self.current_return_ty.clone(), return_ty);
-                    return Err(SemErr::new(line, err_ty));
+                if let Some(expected_return_ty) = &self.current_return_ty {
+                    if return_ty != *expected_return_ty
+                        && return_ty != ValueType::Null
+                        && !try_coerce(&mut expr.expr, expected_return_ty)
+                    {
+                        let err_ty =
+                            SemErrType::IncorrectReturnTy(expected_return_ty.clone(), return_ty);
+                        return Err(SemErr::new(line, err_ty));
+                    }
                 }
             }
             StmtType::Block(stmts) => {
@@ -227,6 +242,7 @@ impl<'a> Analyser<'a> {
             StmtType::Break => (),
             StmtType::Continue => (),
             StmtType::Struct { .. } => (),
+            StmtType::Enum { .. } => (),
         };
         Ok(())
     }
@@ -243,7 +259,7 @@ impl<'a> Analyser<'a> {
                 }
             },
             ExprType::FuncCall { name, args, index } => {
-                if let Some(data) = self.enities.nat_funcs.remove(name) {
+                if let Some(data) = self.entities.nat_funcs.remove(name) {
                     for (i, func) in data.iter().enumerate() {
                         let parameters = func.parameters.clone();
                         let return_ty = func.return_ty.clone();
@@ -254,12 +270,12 @@ impl<'a> Analyser<'a> {
                             name.to_string(),
                             line,
                         ) {
-                            self.enities.nat_funcs.insert(name, data);
+                            self.entities.nat_funcs.insert(name, data);
                             *index = Some(i);
                             return Ok(return_ty);
                         }
                     }
-                    self.enities.nat_funcs.insert(name, data);
+                    self.entities.nat_funcs.insert(name, data);
 
                     let err_ty = SemErrType::NatParamTypeMismatch(name.to_string());
                     return Err(SemErr::new(line, err_ty));
@@ -332,16 +348,41 @@ impl<'a> Analyser<'a> {
                 }
                 target.clone()
             }
+            ExprType::Colon { inst, property } => {
+                let (ty, index) = self.get_enum_variant_data(inst, property, line)?;
+                expr.expr = ExprType::Lit(Literal::U64(index));
+                ty
+            }
             ExprType::This => unreachable!(),
             ExprType::DotResolved { .. } => unreachable!(),
             ExprType::MethodCallResolved { .. } => unreachable!(),
             ExprType::DotAssignResolved { .. } => unreachable!(),
-            ExprType::Colon { .. } => {
-                let ty = SemErrType::InvalidStaticAccess;
-                return Err(SemErr::new(line, ty));
-            }
         };
         Ok(result)
+    }
+
+    fn get_enum_variant_data(
+        &self,
+        inst: &Expr<'a>,
+        property: &str,
+        line: u32,
+    ) -> Result<(ValueType, u64), SemErr> {
+        let ExprType::Identifier(name) = inst.expr else {
+            let ty = SemErrType::InvalidStaticAccess;
+            return Err(SemErr::new(line, ty));
+        };
+        let Some(variants) = self.entities.enums.get(name) else {
+            let ty = SemErrType::InvalidStaticAccess;
+            return Err(SemErr::new(line, ty));
+        };
+        for (index, var) in variants.iter().enumerate() {
+            if *var == property {
+                return Ok((ValueType::Enum(name.to_string()), index as u64));
+            }
+        }
+
+        let ty = SemErrType::InvalidVariant(name.to_string(), property.to_string());
+        Err(SemErr::new(line, ty))
     }
 
     fn analyse_func_stmt(
@@ -353,18 +394,21 @@ impl<'a> Analyser<'a> {
         name: &str,
         use_self: bool,
     ) -> Result<(), SemErr> {
-        if self.current_return_ty != ValueType::None {
+        if self.current_return_ty.is_some() {
             let ty = SemErrType::FuncDefInFunc(name.to_string());
             return Err(SemErr::new(line, ty));
         }
-        let prev_return_ty = self.current_return_ty.clone();
+
         let prev_use_self = self.current_use_self;
-        self.current_return_ty = return_ty.clone();
+        let return_ty_is_null = return_ty == ValueType::Null;
+
+        self.current_return_ty = Some(return_ty);
         self.current_use_self = use_self;
 
         self.symbols.begin_scope();
 
         for (ty, name) in parameters {
+            self.entities.resolve_value_ty(ty);
             self.symbols.declare(Symbol::new(name, ty.clone()), line)?;
         }
         self.return_stmt_found = false;
@@ -373,17 +417,18 @@ impl<'a> Analyser<'a> {
             self.analyse_stmt(stmt)?;
         }
 
-        if let Some(func) = self.enities.funcs.get_mut(name) {
+        if let Some(func) = self.entities.funcs.get_mut(name) {
             func.body = body.to_owned();
         }
 
-        if return_ty != ValueType::Null && !self.return_stmt_found {
-            let ty = SemErrType::NoReturnTy(name.to_string(), return_ty.clone());
+        if !return_ty_is_null && !self.return_stmt_found {
+            let ty =
+                SemErrType::NoReturnTy(name.to_string(), self.current_return_ty.clone().unwrap());
             return Err(SemErr::new(line, ty));
         }
 
         self.symbols.end_scope();
-        self.current_return_ty = prev_return_ty;
+        self.current_return_ty = None;
         self.current_use_self = prev_use_self;
 
         Ok(())
@@ -429,12 +474,12 @@ impl<'a> Analyser<'a> {
         }
 
         let (index, return_ty, use_self, parameters) =
-            if let Some(data) = self.enities.structs.get(&name as &str) {
+            if let Some(data) = self.entities.structs.get(&name as &str) {
                 data.get_method_data(&name, property, line)?
-            } else if let Some(data) = self.enities.nat_structs.get(&name as &str) {
+            } else if let Some(data) = self.entities.nat_structs.get(&name as &str) {
                 data.get_method_data(&name, property, line)?
             } else {
-                let ty = SemErrType::UndefinedStruct(name);
+                let ty = SemErrType::UndefinedType(name);
                 return Err(SemErr::new(line, ty));
             };
 
@@ -476,13 +521,14 @@ impl<'a> Analyser<'a> {
         }
         // dbg!(&inst);
         if let ExprType::Identifier(name) = inst.expr {
-            if self.enities.structs.contains_key(name)
-                || self.enities.nat_structs.contains_key(name)
+            if self.entities.structs.contains_key(name)
+                || self.entities.nat_structs.contains_key(name)
             {
                 return Ok(name.to_string());
             }
         }
-        let inst_ty = self.analyse_expr(inst)?;
+        let mut inst_ty = self.analyse_expr(inst)?;
+        self.entities.resolve_value_ty(&mut inst_ty);
 
         let ValueType::Struct(name) = inst_ty.clone() else {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
@@ -547,8 +593,10 @@ impl<'a> Analyser<'a> {
         op: BinaryOp,
         line: u32,
     ) -> Result<ValueType, SemErr> {
-        let left_ty = self.analyse_expr(left)?;
-        let right_ty = self.analyse_expr(right)?;
+        let mut left_ty = self.analyse_expr(left)?;
+        let mut right_ty = self.analyse_expr(right)?;
+        self.entities.resolve_value_ty(&mut left_ty);
+        self.entities.resolve_value_ty(&mut right_ty);
 
         if left_ty != right_ty
             && !try_coerce(&mut right.expr, &left_ty)
@@ -627,6 +675,7 @@ impl<'a> Analyser<'a> {
 
         for (i, arg) in args.iter_mut().enumerate() {
             let arg_ty = self.analyse_expr(arg)?;
+            // self.entities.resolve_value_ty(&mut arg_ty);
 
             let param_ty = &parameters[i];
 
@@ -635,8 +684,16 @@ impl<'a> Analyser<'a> {
             let is_array_match = matches!(param_ty, ValueType::Arr(inner) if **inner == ValueType::Any)
                 && matches!(arg_ty, ValueType::Arr(_));
 
-            if !is_exact_match && !is_any && !is_array_match && !try_coerce(&mut arg.expr, param_ty)
-            {
+            let is_type_match = match (param_ty, &arg_ty) {
+                (ValueType::UnknownType(name_1), ValueType::Struct(name_2)) => name_1 == name_2,
+                (ValueType::UnknownType(name_1), ValueType::Enum(name_2)) => name_1 == name_2,
+                _ => false,
+            };
+            let can_coerce = !try_coerce(&mut arg.expr, param_ty);
+
+            if !is_exact_match && !is_any && !is_array_match && can_coerce && !is_type_match {
+                dbg!(param_ty);
+                dbg!(&arg_ty);
                 let err_ty =
                     SemErrType::ParamTypeMismatch(name.to_string(), param_ty.clone(), arg_ty);
                 return Err(SemErr::new(line, err_ty));
@@ -664,15 +721,17 @@ impl<'a> Analyser<'a> {
             }
             name.to_string()
         } else {
-            let inst_ty = self.analyse_expr(inst)?;
+            let mut inst_ty = self.analyse_expr(inst)?;
+            self.entities.resolve_value_ty(&mut inst_ty);
+
             let ValueType::Struct(name) = inst_ty else {
                 let ty = SemErrType::InvalidTypeFieldAccess(inst_ty);
                 return Err(SemErr::new(line, ty));
             };
             name
         };
-        let Some(data) = self.enities.structs.get(&name as &str) else {
-            let ty = SemErrType::UndefinedStruct(name);
+        let Some(data) = self.entities.structs.get(&name as &str) else {
+            let ty = SemErrType::UndefinedType(name);
             return Err(SemErr::new(line, ty));
         };
 
@@ -705,19 +764,19 @@ impl<'a> Analyser<'a> {
         name: &'a str,
         line: u32,
     ) -> Result<(ValueType, Vec<ValueType>), SemErr> {
-        if let Some(data) = self.enities.structs.get(name) {
+        if let Some(data) = self.entities.structs.get(name) {
             let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
             let return_ty = ValueType::Struct(name.to_string());
             return Ok((return_ty, params));
         }
 
-        if let Some(data) = self.enities.nat_structs.get(name) {
+        if let Some(data) = self.entities.nat_structs.get(name) {
             let params = data.fields.iter().map(|(ty, _)| ty.clone()).collect();
             let return_ty = ValueType::Struct(name.to_string());
             return Ok((return_ty, params));
         }
 
-        if let Some(data) = self.enities.funcs.get(name) {
+        if let Some(data) = self.entities.funcs.get(name) {
             let parameters = data.parameters.iter().map(|p| p.0.clone()).collect();
             let return_ty = data.return_ty.clone();
 

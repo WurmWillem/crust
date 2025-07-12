@@ -8,6 +8,9 @@ struct Vec2 {
     fn increment_x(self) {
         self.x += 1;
     }
+    fn greet() {
+        pr "hoi";
+    }
 }
 
 fn main() {
@@ -16,4 +19,6 @@ fn main() {
 
     vec.increment_x();
     pr vec.x;
+
+    Vec2::greet();
 }

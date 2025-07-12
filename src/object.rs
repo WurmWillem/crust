@@ -108,11 +108,6 @@ impl ObjArr {
         Self { elements: values }
     }
 }
-// impl std::fmt::Display for ObjArr {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{:?}", self.values)
-//     }
-// }
 impl GcMemSize for ObjArr {
     fn size_of(&self) -> usize {
         std::mem::size_of::<StackValue>() * self.elements.capacity()

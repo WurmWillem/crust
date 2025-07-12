@@ -137,11 +137,11 @@ fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     print!("[");
     if !els.is_empty() {
         let string = format!("{}", els[0]).green();
-        print!("{}", string);
+        print!("{string}");
 
         for el in arr.data.elements.iter().skip(1) {
-            let string = format!(", {}", el).green();
-            print!("{}", string);
+            let string = format!(", {el}").green();
+            print!("{string}");
         }
     }
     println!("]");

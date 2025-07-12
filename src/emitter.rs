@@ -262,6 +262,7 @@ impl<'a> Emitter<'a> {
                 self.comps.add_continue(line)?;
             }
             StmtType::Struct { .. } => (),
+            StmtType::Enum { .. } => (),
         }
         Ok(())
     }
@@ -350,22 +351,34 @@ impl<'a> Emitter<'a> {
                 args,
                 use_self,
             } => {
-                self.emit_expr(inst)?;
-                self.comps
-                    .emit_bytes(OpCode::PushMethod as u8, *index, line);
+                if !*use_self {
+                    let ExprType::Identifier(name) = inst.expr else {
+                        unreachable!()
+                    };
+                    let methods = self.structs.get(name).unwrap();
+                    self.comps
+                        .emit_constant(methods[(*index) as usize].1, line)?;
 
-                let mut args_len = args.len() as u8 + 1;
-                if *use_self {
+                    let args_len = args.len() as u8 + 1;
+                    for var in args {
+                        self.emit_expr(var)?;
+                    }
+
+                    self.comps
+                        .emit_bytes(OpCode::FuncCall as u8, args_len, line);
+                } else {
                     self.emit_expr(inst)?;
-                    args_len += 1;
-                }
+                    self.comps
+                        .emit_bytes(OpCode::PushMethod as u8, *index, line);
 
-                for var in args {
-                    self.emit_expr(var)?;
-                }
+                    let args_len = args.len() as u8 + 2;
+                    for var in args {
+                        self.emit_expr(var)?;
+                    }
 
-                self.comps
-                    .emit_bytes(OpCode::FuncCall as u8, args_len, line);
+                    self.comps
+                        .emit_bytes(OpCode::FuncCall as u8, args_len, line);
+                }
 
                 //self.comps.emit_byte(OpCode::Pop as u8, line);
             }
@@ -387,6 +400,11 @@ impl<'a> Emitter<'a> {
             ExprType::Identifier(name) => {
                 if let Some(arg) = self.comps.resolve_local(name) {
                     self.comps.emit_bytes(OpCode::GetLocal as u8, arg, line);
+                } else if let Some(methods) = self.structs.get(name) {
+                    self.comps.emit_constant(methods[0].1, line)?;
+
+                    self.comps.emit_bytes(OpCode::FuncCall as u8, 1, line);
+                    dbg!("struct");
                 } else {
                     unreachable!()
                 }

@@ -26,7 +26,7 @@ impl<'source> Scanner<'source> {
         }
 
         let keywords = create_keywords!(
-            "if",If "else",Else "while",While "for",For "as",As
+            "if",If "else",Else "while",While "for",For "as",As "enum",Enum
             "true",True "false",False "null",Null "self",This "parent",Super
             "struct",Struct "fn",Fn "return",Return "pr",Print "double",F64 "uint",U64
             "int",I64 "bool",Bool "str",Str "in",In "to",To "break",Break "continue",Continue
@@ -177,7 +177,7 @@ impl<'source> Scanner<'source> {
 
                     self.add_token(kind);
                 } else {
-                    let msg = format!("'{}' is an unvalid character.", c);
+                    let msg = format!("'{c}' is an unvalid character.");
                     print_error(self.line, &msg);
                     self.had_error = true;
                 }

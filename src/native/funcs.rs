@@ -47,7 +47,6 @@ pub fn register(nat_funcs: &mut HashMap<&str, Vec<NatFuncData>>) {
     add_func!("len", len, vec![VT::Arr(Box::new(VT::Any))], VT::U64);
     add_func!("print_heap", print_heap, vec![], VT::Null);
 }
-// TODO: update these to work with all nums
 
 fn clock(_args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -61,7 +60,7 @@ fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
     let string = format!("{}", args[0]).green();
-    print!("{}", string);
+    print!("{string}");
 
     StackValue::Null
 }
@@ -69,7 +68,7 @@ fn println(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
     let string = format!("{}", args[0]).green();
-    println!("{}", string);
+    println!("{string}");
 
     StackValue::Null
 }

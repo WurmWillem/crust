@@ -103,13 +103,13 @@ impl Chunk {
     }
 
     fn simple_instruction(name: &str, offset: usize) -> usize {
-        println!("{}", name);
+        println!("{name}");
         offset + 1
     }
 
     fn constant_instruction(&self, name: &str, offset: usize) -> usize {
         let constant_index = self.code[offset + 1];
-        print!("{}  {}:", name, constant_index);
+        print!("{name}  {constant_index}:");
         // println!(" '{}'", self.constants[constant_index as usize].display());
         // println!();
         offset + 2

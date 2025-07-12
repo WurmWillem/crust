@@ -7,8 +7,7 @@ use crate::object::Object;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ValueType {
-    None, // default value for locals
-    Any,  // useful as generic type for functions like println()
+    Any, // useful as generic type for functions like println()
     Null,
     Bool,
     F64,
@@ -17,17 +16,22 @@ pub enum ValueType {
     Str,
     Arr(Box<ValueType>),
     Struct(String),
+    Enum(String),
+    UnknownType(String),
 }
 impl ValueType {
     pub fn is_num(&self) -> bool {
-        matches!(self, ValueType::F64 | ValueType::I64 | ValueType::U64)
+        matches!(
+            self,
+            ValueType::F64 | ValueType::I64 | ValueType::U64 | ValueType::Enum(_)
+        )
     }
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // dbg!(self);
         match self {
-            ValueType::None => unreachable!(),
-            ValueType::Arr(ty) => write!(f, "[{}]", ty),
+            ValueType::Arr(ty) => write!(f, "[{ty}]"),
             ValueType::Any => write!(f, "Any"),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
@@ -35,7 +39,9 @@ impl fmt::Display for ValueType {
             ValueType::I64 => write!(f, "Int"),
             ValueType::U64 => write!(f, "Uint"),
             ValueType::Str => write!(f, "String"),
-            ValueType::Struct(s) => write!(f, "struct {}", s),
+            ValueType::Struct(s) => write!(f, "struct {s}"),
+            ValueType::Enum(e) => write!(f, "enum {e}"),
+            ValueType::UnknownType(t) => write!(f, "type {t}"),
         }
     }
 }
@@ -103,6 +109,8 @@ impl StackValue {
             (StackValue::U64(lhs), StackValue::I64(rhs)) => lhs as i64 == rhs,
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs == rhs,
             (StackValue::Null, StackValue::Null) => true,
+            (StackValue::Null, _) => false,
+            (_, StackValue::Null) => false,
             (StackValue::Obj(Object::Str(str1)), StackValue::Obj(Object::Str(str2))) => {
                 str1.data == str2.data
             }
@@ -157,10 +165,10 @@ impl Display for StackValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             StackValue::Null => write!(f, "null"),
-            StackValue::Bool(b) => write!(f, "{}", b),
-            StackValue::F64(num) => write!(f, "{}", num),
-            StackValue::U64(num) => write!(f, "{}", num),
-            StackValue::I64(num) => write!(f, "{}", num),
+            StackValue::Bool(b) => write!(f, "{b}"),
+            StackValue::F64(num) => write!(f, "{num}"),
+            StackValue::U64(num) => write!(f, "{num}"),
+            StackValue::I64(num) => write!(f, "{num}"),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => write!(f, "{}", s.data),
                 Object::Func(_) => unreachable!(),
@@ -187,7 +195,7 @@ impl StackValue {
                 Object::Inst(i) => {
                     let mut s = String::from("inst ");
                     for f in &i.data.fields {
-                        s.push_str(&format!("{}, ", f));
+                        s.push_str(&format!("{f}, "));
                     }
                     s
                 }

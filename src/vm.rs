@@ -99,7 +99,10 @@ impl VM {
                 }
                 OpCode::Constant => {
                     let index = read_byte(&mut ip) as usize;
-                    let constant = (*frame).func.data.chunk.constants[index];
+
+                    let func = (*frame).func;
+                    let constant = func.data.chunk.constants[index];
+
                     self.stack_push(constant);
                 }
 
@@ -178,8 +181,8 @@ impl VM {
 
                     let method = inst.data.methods[index];
 
-                    // self.stack_push(inst_stack);
                     self.stack_push(method);
+                    self.stack_push(inst_stack);
                 }
 
                 OpCode::AllocInstance => {
@@ -206,8 +209,6 @@ impl VM {
                     self.stack_push(obj);
                 }
                 OpCode::GetPubField => {
-                    // TODO: make it so instances are allocated but initialized to null if no constructor is used
-                    // or make not initializing them illegal
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_pop();
 
@@ -362,7 +363,7 @@ impl VM {
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
                 OpCode::Print => {
                     let string = self.stack_pop().display().green();
-                    println!("{}", string);
+                    println!("{string}");
                 }
             }
         }
@@ -437,14 +438,12 @@ impl VM {
         println!();
 
         let ip = (*frame).ip;
-        let offset = (*frame).func.data.chunk.code.as_ptr();
+        let func = (*frame).func;
+
+        let offset = func.data.chunk.code.as_ptr();
         let debug_offset = ip.offset_from(offset) as usize;
 
-        (*frame)
-            .func
-            .data
-            .chunk
-            .disassemble_instruction(debug_offset);
+        func.data.chunk.disassemble_instruction(debug_offset);
     }
 
     fn concatenate_strings(&mut self, lhs: Object, rhs: Object) -> StackValue {
