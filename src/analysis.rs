@@ -11,7 +11,7 @@ use crate::{
 pub struct Analyser<'a> {
     entities: EnityData<'a>,
     symbols: SemanticScope<'a>,
-    current_return_ty: ValueType,
+    current_return_ty: Option<ValueType>,
     current_use_self: bool,
     return_stmt_found: bool,
     current_struct: Option<&'a str>,
@@ -20,7 +20,7 @@ impl<'a> Analyser<'a> {
     fn new() -> Self {
         Self {
             symbols: SemanticScope::new(),
-            current_return_ty: ValueType::None,
+            current_return_ty: None,
             entities: EnityData::new(),
             current_struct: None,
             return_stmt_found: false,
@@ -160,8 +160,7 @@ impl<'a> Analyser<'a> {
                 if let ValueType::Struct(name) = ty {
                     if !self.entities.structs.contains_key(name as &str)
                         && !self.entities.nat_structs.contains_key(name as &str)
-                    // TODO: check if correct
-                    // && !self.enities.enums.contains_key(name as &str)
+                        && !self.entities.enums.contains_key(name as &str)
                     {
                         let err = SemErrType::UndefinedType(name.clone());
                         return Err(SemErr::new(line, err));
@@ -187,13 +186,15 @@ impl<'a> Analyser<'a> {
                 self.return_stmt_found = true;
                 let return_ty = self.analyse_expr(expr)?;
 
-                if return_ty != self.current_return_ty
-                    && return_ty != ValueType::Null
-                    && !try_coerce(&mut expr.expr, &self.current_return_ty)
-                {
-                    let err_ty =
-                        SemErrType::IncorrectReturnTy(self.current_return_ty.clone(), return_ty);
-                    return Err(SemErr::new(line, err_ty));
+                if let Some(expected_return_ty) = &self.current_return_ty {
+                    if return_ty != *expected_return_ty
+                        && return_ty != ValueType::Null
+                        && !try_coerce(&mut expr.expr, expected_return_ty)
+                    {
+                        let err_ty =
+                            SemErrType::IncorrectReturnTy(expected_return_ty.clone(), return_ty);
+                        return Err(SemErr::new(line, err_ty));
+                    }
                 }
             }
             StmtType::Block(stmts) => {
@@ -393,13 +394,13 @@ impl<'a> Analyser<'a> {
         name: &str,
         use_self: bool,
     ) -> Result<(), SemErr> {
-        if self.current_return_ty != ValueType::None {
+        if self.current_return_ty.is_some() {
             let ty = SemErrType::FuncDefInFunc(name.to_string());
             return Err(SemErr::new(line, ty));
         }
-        let prev_return_ty = self.current_return_ty.clone();
         let prev_use_self = self.current_use_self;
-        self.current_return_ty = return_ty.clone();
+        let return_ty_is_null = return_ty == ValueType::Null;
+        self.current_return_ty = Some(return_ty);
         self.current_use_self = use_self;
 
         self.symbols.begin_scope();
@@ -418,13 +419,14 @@ impl<'a> Analyser<'a> {
             func.body = body.to_owned();
         }
 
-        if return_ty != ValueType::Null && !self.return_stmt_found {
-            let ty = SemErrType::NoReturnTy(name.to_string(), return_ty.clone());
+        if !return_ty_is_null && !self.return_stmt_found {
+            let ty =
+                SemErrType::NoReturnTy(name.to_string(), self.current_return_ty.clone().unwrap());
             return Err(SemErr::new(line, ty));
         }
 
         self.symbols.end_scope();
-        self.current_return_ty = prev_return_ty;
+        self.current_return_ty = None;
         self.current_use_self = prev_use_self;
 
         Ok(())
