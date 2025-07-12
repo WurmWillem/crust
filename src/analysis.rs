@@ -155,9 +155,7 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Var { name, value, ty } => {
-                self.entities.resolve_value_ty(ty);
-
-                if let ValueType::Struct(name) = ty {
+                if let ValueType::UnknownType(name) = ty {
                     if !self.entities.structs.contains_key(name as &str)
                         && !self.entities.nat_structs.contains_key(name as &str)
                         && !self.entities.enums.contains_key(name as &str)
@@ -167,7 +165,9 @@ impl<'a> Analyser<'a> {
                     }
                 }
 
+                self.entities.resolve_value_ty(ty);
                 let value_ty = self.analyse_expr(value)?;
+
                 if value_ty != *ty
                     && value_ty != ValueType::Null
                     && value_ty != ValueType::Any
@@ -380,7 +380,7 @@ impl<'a> Analyser<'a> {
                 return Ok((ValueType::Enum(name.to_string()), index as u64));
             }
         }
-        
+
         let ty = SemErrType::InvalidVariant(name.to_string(), property.to_string());
         Err(SemErr::new(line, ty))
     }

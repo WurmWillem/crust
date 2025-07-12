@@ -209,8 +209,6 @@ impl VM {
                     self.stack_push(obj);
                 }
                 OpCode::GetPubField => {
-                    // TODO: make it so instances are allocated but initialized to null if no constructor is used
-                    // or make not initializing them illegal
                     let index = read_byte(&mut ip) as usize;
                     let inst = self.stack_pop();
 

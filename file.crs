@@ -1,6 +1,5 @@
 fn main() {
     Color col;
-    col = Color::Red;
     print_color(col);
 
     col = Color::Blue;

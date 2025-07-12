@@ -7,7 +7,7 @@ use crate::object::Object;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ValueType {
-    Any,  // useful as generic type for functions like println()
+    Any, // useful as generic type for functions like println()
     Null,
     Bool,
     F64,
@@ -109,6 +109,8 @@ impl StackValue {
             (StackValue::U64(lhs), StackValue::I64(rhs)) => lhs as i64 == rhs,
             (StackValue::Bool(lhs), StackValue::Bool(rhs)) => lhs == rhs,
             (StackValue::Null, StackValue::Null) => true,
+            (StackValue::Null, _) => false,
+            (_, StackValue::Null) => false,
             (StackValue::Obj(Object::Str(str1)), StackValue::Obj(Object::Str(str2))) => {
                 str1.data == str2.data
             }
