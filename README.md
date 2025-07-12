@@ -40,6 +40,9 @@ fn main() {
     Vec vec = Vec([1, 2, 3]);
     vec.push(4);
     println(vec.get(3)); // prints '4'
+
+    // use enums with the following syntax
+    Color col = Color::Red;
 }
 
 // define a function named 'factorial' that takes and returns a uint
@@ -60,6 +63,13 @@ struct Vector2D {
         return self.x * self.y;
     }
 }
+
+// define an enum named 'Color'
+enum Color {
+    Red,
+    Blue,
+    Green,
+}
 ```
 
 <H2>Roadmap</H2>
@@ -67,9 +77,9 @@ struct Vector2D {
 - Expand standard library
 - Add modules
 - Add pattern matching (match/switch)
-- Add enums
 - Add encapsulation
 - Add more tests
+- ✅ Add enums
 - ✅ Add static methods
 - ✅ Add some syntactic sugar for mutating variables (+=, -=, *=, /=)
 - ✅ Add casting operations with the 'as' keyword
