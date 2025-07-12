@@ -22,11 +22,15 @@ pub enum ValueType {
 }
 impl ValueType {
     pub fn is_num(&self) -> bool {
-        matches!(self, ValueType::F64 | ValueType::I64 | ValueType::U64 | ValueType::Enum(_))
+        matches!(
+            self,
+            ValueType::F64 | ValueType::I64 | ValueType::U64 | ValueType::Enum(_)
+        )
     }
 }
 impl fmt::Display for ValueType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // dbg!(self);
         match self {
             ValueType::None => unreachable!(),
             ValueType::Arr(ty) => write!(f, "[{}]", ty),
@@ -39,7 +43,7 @@ impl fmt::Display for ValueType {
             ValueType::Str => write!(f, "String"),
             ValueType::Struct(s) => write!(f, "struct {}", s),
             ValueType::Enum(e) => write!(f, "enum {}", e),
-            ValueType::UnknownType(_) => unreachable!(),
+            ValueType::UnknownType(t) => write!(f, "type {}", t),
         }
     }
 }

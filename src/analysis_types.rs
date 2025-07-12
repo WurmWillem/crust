@@ -36,7 +36,7 @@ impl core::fmt::Display for Operator {
             Operator::Sub => write!(f, "-"),
             Operator::Mul => write!(f, "*"),
             Operator::Div => write!(f, "/"),
-            Operator::Equal => write!(f, "="),
+            Operator::Equal => write!(f, "=="),
             Operator::NotEqual => write!(f, "=="),
             Operator::Less => write!(f, "<"),
             Operator::LessEqual => write!(f, "<="),
