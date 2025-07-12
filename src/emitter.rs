@@ -448,7 +448,6 @@ impl<'a> Emitter<'a> {
             ExprType::MethodCall { .. } => unreachable!(),
             ExprType::This => unreachable!(),
             ExprType::Colon { .. } => unreachable!(),
-            ExprType::ColonResolved { inst, index } => todo!(),
         };
         Ok(())
     }

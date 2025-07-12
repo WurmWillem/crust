@@ -156,7 +156,7 @@ impl<'a> Analyser<'a> {
                     if !self.enities.structs.contains_key(name as &str)
                         && !self.enities.nat_structs.contains_key(name as &str)
                         // TODO: check if correct
-                        && !self.enities.enums.contains_key(name as &str)
+                        // && !self.enities.enums.contains_key(name as &str)
                     {
                         let err = SemErrType::UndefinedType(name.clone());
                         return Err(SemErr::new(line, err));
@@ -343,13 +343,14 @@ impl<'a> Analyser<'a> {
                 target.clone()
             }
             ExprType::Colon { inst, property } => {
-                self.get_enum_variant_data(inst, property, line)?
+                let (ty, index) = self.get_enum_variant_data(inst, property, line)?;
+                expr.expr = ExprType::Lit(Literal::U64(index));
+                ty
             }
             ExprType::This => unreachable!(),
             ExprType::DotResolved { .. } => unreachable!(),
             ExprType::MethodCallResolved { .. } => unreachable!(),
             ExprType::DotAssignResolved { .. } => unreachable!(),
-            ExprType::ColonResolved { .. } => unreachable!(),
         };
         Ok(result)
     }
@@ -359,7 +360,7 @@ impl<'a> Analyser<'a> {
         inst: &Box<Expr<'a>>,
         property: &str,
         line: u32,
-    ) -> Result<ValueType, SemErr> {
+    ) -> Result<(ValueType, u64), SemErr> {
         let ExprType::Identifier(name) = inst.expr else {
             let ty = SemErrType::InvalidStaticAccess;
             return Err(SemErr::new(line, ty));
@@ -368,11 +369,12 @@ impl<'a> Analyser<'a> {
             let ty = SemErrType::InvalidStaticAccess;
             return Err(SemErr::new(line, ty));
         };
-        for var in variants.iter() {
+        for (index, var) in variants.iter().enumerate() {
             if *var == property {
-                return Ok(ValueType::Enum(name.to_string()));
+                return Ok((ValueType::Enum(name.to_string()), index as u64));
             }
         }
+        // TODO: add error for invalid variant
         let ty = SemErrType::InvalidStaticAccess;
         return Err(SemErr::new(line, ty));
     }

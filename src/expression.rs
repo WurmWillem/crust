@@ -49,10 +49,6 @@ pub enum ExprType<'a> {
         inst: Box<Expr<'a>>,
         property: &'a str,
     },
-    ColonResolved {
-        inst: Box<Expr<'a>>,
-        index: u8,
-    },
     DotResolved {
         inst: Box<Expr<'a>>,
         index: u8,
