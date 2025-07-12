@@ -1,0 +1,27 @@
+fn main() {
+    Color col = Color::Red;
+    print_color(col);
+
+    col = Color::Blue;
+    print_color(col);
+
+    uint x = 3;
+    x += Color::Blue as uint;
+    println(x);
+}
+
+enum Color {
+    Red,
+    Blue,
+    Green,
+}
+
+fn print_color(Color col) {
+    if col == Color::Red {
+        println("0 = red");
+    } else if col == Color::Blue {
+        println("1 = blue");
+    } else if col == Color::Green {
+        println("2 = green");
+    }
+}
