@@ -4,8 +4,9 @@ fn main() {
     if col == Color::Red {
         pr 3;
     }
-    int x = 0;
-    x = col;
+    double x = 3.;
+    x += Color::Blue as double;
+    pr x;
 }
 
 enum Color {
