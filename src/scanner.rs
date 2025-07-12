@@ -177,7 +177,7 @@ impl<'source> Scanner<'source> {
 
                     self.add_token(kind);
                 } else {
-                    let msg = format!("'{}' is an unvalid character.", c);
+                    let msg = format!("'{c}' is an unvalid character.");
                     print_error(self.line, &msg);
                     self.had_error = true;
                 }

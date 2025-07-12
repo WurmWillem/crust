@@ -61,7 +61,7 @@ fn print(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
     let string = format!("{}", args[0]).green();
-    print!("{}", string);
+    print!("{string}");
 
     StackValue::Null
 }
@@ -69,7 +69,7 @@ fn println(args: &[StackValue], _heap: &mut Heap) -> StackValue {
     use colored::Colorize;
 
     let string = format!("{}", args[0]).green();
-    println!("{}", string);
+    println!("{string}");
 
     StackValue::Null
 }

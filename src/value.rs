@@ -33,7 +33,7 @@ impl fmt::Display for ValueType {
         // dbg!(self);
         match self {
             ValueType::None => unreachable!(),
-            ValueType::Arr(ty) => write!(f, "[{}]", ty),
+            ValueType::Arr(ty) => write!(f, "[{ty}]"),
             ValueType::Any => write!(f, "Any"),
             ValueType::Null => write!(f, "Null"),
             ValueType::Bool => write!(f, "Bool"),
@@ -41,9 +41,9 @@ impl fmt::Display for ValueType {
             ValueType::I64 => write!(f, "Int"),
             ValueType::U64 => write!(f, "Uint"),
             ValueType::Str => write!(f, "String"),
-            ValueType::Struct(s) => write!(f, "struct {}", s),
-            ValueType::Enum(e) => write!(f, "enum {}", e),
-            ValueType::UnknownType(t) => write!(f, "type {}", t),
+            ValueType::Struct(s) => write!(f, "struct {s}"),
+            ValueType::Enum(e) => write!(f, "enum {e}"),
+            ValueType::UnknownType(t) => write!(f, "type {t}"),
         }
     }
 }
@@ -165,10 +165,10 @@ impl Display for StackValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             StackValue::Null => write!(f, "null"),
-            StackValue::Bool(b) => write!(f, "{}", b),
-            StackValue::F64(num) => write!(f, "{}", num),
-            StackValue::U64(num) => write!(f, "{}", num),
-            StackValue::I64(num) => write!(f, "{}", num),
+            StackValue::Bool(b) => write!(f, "{b}"),
+            StackValue::F64(num) => write!(f, "{num}"),
+            StackValue::U64(num) => write!(f, "{num}"),
+            StackValue::I64(num) => write!(f, "{num}"),
             StackValue::Obj(o) => match o {
                 Object::Str(s) => write!(f, "{}", s.data),
                 Object::Func(_) => unreachable!(),
@@ -195,7 +195,7 @@ impl StackValue {
                 Object::Inst(i) => {
                     let mut s = String::from("inst ");
                     for f in &i.data.fields {
-                        s.push_str(&format!("{}, ", f));
+                        s.push_str(&format!("{f}, "));
                     }
                     s
                 }

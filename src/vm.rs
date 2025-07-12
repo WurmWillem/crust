@@ -365,7 +365,7 @@ impl VM {
                 OpCode::LessEqual => binary_op!(is_less_equal_than),
                 OpCode::Print => {
                     let string = self.stack_pop().display().green();
-                    println!("{}", string);
+                    println!("{string}");
                 }
             }
         }

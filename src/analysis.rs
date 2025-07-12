@@ -362,7 +362,7 @@ impl<'a> Analyser<'a> {
 
     fn get_enum_variant_data(
         &self,
-        inst: &Box<Expr<'a>>,
+        inst: &Expr<'a>,
         property: &str,
         line: u32,
     ) -> Result<(ValueType, u64), SemErr> {
@@ -381,7 +381,7 @@ impl<'a> Analyser<'a> {
         }
         // TODO: add error for invalid variant
         let ty = SemErrType::InvalidStaticAccess;
-        return Err(SemErr::new(line, ty));
+        Err(SemErr::new(line, ty))
     }
 
     fn analyse_func_stmt(

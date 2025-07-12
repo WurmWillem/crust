@@ -13,7 +13,7 @@ pub fn print_error(line: u32, msg: &str) {
     let closing_bracket = "]".blue();
     let i = " Error: ".bright_red();
     let msg = msg.yellow();
-    println!("{}{}{}{}{}", l, line, closing_bracket, i, msg);
+    println!("{l}{line}{closing_bracket}{i}{msg}");
 }
 
 #[derive(Debug)]
@@ -100,7 +100,7 @@ impl SemErr {
             SemErrType::InvalidStaticAccess => "You can only use the '::' syntax for static methods.".to_string(),
             SemErrType::FuncDefInFunc(name) => format!("You attempted to define the function '{}' inside another function, which is illegal.", name.green()),
             SemErrType::StructDefInFunc(name) => format!("You attempted to define the struct '{}' inside a function, which is illegal.", name.green()),
-            SemErrType::InvalidCast(expected, found) => format!("You can't cast an expression of type '{}' to type '{}'.", found, expected),
+            SemErrType::InvalidCast(expected, found) => format!("You can't cast an expression of type '{found}' to type '{expected}'."),
             SemErrType::NoMainFunc => {
                 "You have to define a function with the name 'main' as entry point for the program."
                     .to_string()
@@ -119,43 +119,37 @@ impl SemErr {
             SemErrType::NoSelfOnMethod => "'instance.property' can only be used for non-static methods which have self as parameter.".to_string(),
             SemErrType::InvalidTypeMethodAccess(ty) => {
                 format!(
-                    "You can only access methods of instances, but you tried to access a method of type '{}'.",
-                    ty
+                    "You can only access methods of instances, but you tried to access a method of type '{ty}'."
                 )
             }
             SemErrType::InvalidTypeFieldAccess(ty) => {
                 format!(
-                    "You can only access fields of instances, but you tried to access a field of type '{}'.",
-                    ty
+                    "You can only access fields of instances, but you tried to access a field of type '{ty}'."
                 )
             }
             SemErrType::InvalidPubField(name, property) => {
-                format!("Struct '{}' has no field named '{}'.", name, property)
+                format!("Struct '{name}' has no field named '{property}'.")
             }
             SemErrType::InvalidMethod(name, property) => {
-                format!("Struct '{}' has no method named '{}'.", name, property)
+                format!("Struct '{name}' has no method named '{property}'.")
             }
             SemErrType::IndexNonArr(ty) => format!(
-                "You can only index arrays, but you tried to index the type '{}'.",
-                ty
+                "You can only index arrays, but you tried to index the type '{ty}'."
             ),
 
             SemErrType::AssignArrTypeMismatch(expected, found) => {
                 format!(
-                    "Array is of type '[{}]', but you tried to assign a value of type '{}' to one of its elements.",
-                    expected, found
+                    "Array is of type '[{expected}]', but you tried to assign a value of type '{found}' to one of its elements."
                 )
             }
             SemErrType::IncorrectReturnTy(expected, found) => {
                 format!(
-                    "Function expected return type {}, but found type {}.",
-                    expected, found
+                    "Function expected return type {expected}, but found type {found}."
                 )
             }
             SemErrType::NoReturnTy(name, return_ty) => {
                 format!(
-                    "Function '{}' has return type '{}', but no return statement was found.",
-                    name, return_ty
+                    "Function '{name}' has return type '{return_ty}', but no return statement was found."
                 )
             }
             SemErrType::IncorrectArity(name, expected, found) => {
@@ -206,20 +200,17 @@ impl SemErr {
 
             SemErrType::OpTypeMismatch(expected, op, found) => {
                 format!(
-                    "Operator '{}' Expects type '{}', but found type '{}'.",
-                    op, expected, found
+                    "Operator '{op}' Expects type '{expected}', but found type '{found}'."
                 )
             }
             SemErrType::VarDeclTypeMismatch(expected, found) => {
                 format!(
-                    "Variable was given type '{}', but found type '{}'.",
-                    expected, found
+                    "Variable was given type '{expected}', but found type '{found}'."
                 )
             }
             SemErrType::ParamTypeMismatch(name, expected, found) => {
                 format!(
-                    "Parameter of function '{}' has type '{}', but found type '{}'.",
-                    name, expected, found
+                    "Parameter of function '{name}' has type '{expected}', but found type '{found}'."
                 )
             }
             SemErrType::NatParamTypeMismatch(name) => {
@@ -230,14 +221,12 @@ impl SemErr {
             }
             SemErrType::FieldTypeMismatch(expected, found) => {
                 format!(
-                    "Field was given type '{}', but found type '{}'.",
-                    expected, found
+                    "Field was given type '{expected}', but found type '{found}'."
                 )
             }
             SemErrType::ArrElTypeMismatch(expected, found) => {
                 format!(
-                    "Not all elements in the array are of the same type. Array expected type '{}', but found type '{}'.",
-                    expected, found
+                    "Not all elements in the array are of the same type. Array expected type '{expected}', but found type '{found}'."
                 )
             }
         };

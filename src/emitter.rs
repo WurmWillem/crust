@@ -403,8 +403,7 @@ impl<'a> Emitter<'a> {
                 } else if let Some(methods) = self.structs.get(name) {
                     self.comps.emit_constant(methods[0].1, line)?;
 
-                    self.comps
-                        .emit_bytes(OpCode::FuncCall as u8, 0 as u8 + 1, line);
+                    self.comps.emit_bytes(OpCode::FuncCall as u8, 1, line);
                     dbg!("struct");
                 } else {
                     unreachable!()
