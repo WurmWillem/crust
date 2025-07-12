@@ -82,6 +82,7 @@ pub enum SemErrType {
     InvalidMethod(String, String),
     InvalidPubField(String, String),
     InvalidCast(ValueType, ValueType),
+    InvalidVariant(String, String),
     IncorrectReturnTy(ValueType, ValueType),
     FieldTypeMismatch(ValueType, ValueType),
     ArrElTypeMismatch(ValueType, ValueType),
@@ -132,6 +133,9 @@ impl SemErr {
             }
             SemErrType::InvalidMethod(name, property) => {
                 format!("Struct '{name}' has no method named '{property}'.")
+            }
+            SemErrType::InvalidVariant(name, property) => {
+                format!("Enum '{name}' has no variant named '{property}'.")
             }
             SemErrType::IndexNonArr(ty) => format!(
                 "You can only index arrays, but you tried to index the type '{ty}'."

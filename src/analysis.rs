@@ -380,8 +380,8 @@ impl<'a> Analyser<'a> {
                 return Ok((ValueType::Enum(name.to_string()), index as u64));
             }
         }
-        // TODO: add error for invalid variant
-        let ty = SemErrType::InvalidStaticAccess;
+        
+        let ty = SemErrType::InvalidVariant(name.to_string(), property.to_string());
         Err(SemErr::new(line, ty))
     }
 
@@ -398,8 +398,10 @@ impl<'a> Analyser<'a> {
             let ty = SemErrType::FuncDefInFunc(name.to_string());
             return Err(SemErr::new(line, ty));
         }
+
         let prev_use_self = self.current_use_self;
         let return_ty_is_null = return_ty == ValueType::Null;
+
         self.current_return_ty = Some(return_ty);
         self.current_use_self = use_self;
 
