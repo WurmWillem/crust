@@ -80,6 +80,7 @@ impl<'a> Parser<'a> {
 
     fn declaration(&mut self) -> Result<Stmt<'a>, ParseErr> {
         if let Some(var_type) = self.peek().as_value_type() {
+            dbg!(self.peek());
             self.advance();
             if self.peek().ty != TokenType::Identifier && self.peek().ty != TokenType::LeftBracket {
                 self.regress();
@@ -266,6 +267,7 @@ impl<'a> Parser<'a> {
     }
 
     fn var_decl(&mut self, mut ty: ValueType) -> Result<Stmt<'a>, ParseErr> {
+        dbg!(&ty);
         while self.matches(TokenType::LeftBracket) {
             self.consume(TokenType::RightBracket, "Expected ']' after left bracket.")?;
             ty = ValueType::Arr(Box::new(ty));

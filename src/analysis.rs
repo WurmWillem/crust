@@ -150,9 +150,12 @@ impl<'a> Analyser<'a> {
                 self.analyse_expr(expr)?;
             }
             StmtType::Var { name, value, ty } => {
+                self.enities.resolve_value_ty(ty);
+
                 if let ValueType::Struct(name) = ty {
                     if !self.enities.structs.contains_key(name as &str)
                         && !self.enities.nat_structs.contains_key(name as &str)
+                        // TODO: check if correct
                         && !self.enities.enums.contains_key(name as &str)
                     {
                         let err = SemErrType::UndefinedType(name.clone());
@@ -514,7 +517,8 @@ impl<'a> Analyser<'a> {
                 return Ok(name.to_string());
             }
         }
-        let inst_ty = self.analyse_expr(inst)?;
+        let mut inst_ty = self.analyse_expr(inst)?;
+        self.enities.resolve_value_ty(&mut inst_ty);
 
         let ValueType::Struct(name) = inst_ty.clone() else {
             let ty = SemErrType::InvalidTypeMethodAccess(inst_ty);
@@ -696,7 +700,9 @@ impl<'a> Analyser<'a> {
             }
             name.to_string()
         } else {
-            let inst_ty = self.analyse_expr(inst)?;
+            let mut inst_ty = self.analyse_expr(inst)?;
+            self.enities.resolve_value_ty(&mut inst_ty);
+
             let ValueType::Struct(name) = inst_ty else {
                 let ty = SemErrType::InvalidTypeFieldAccess(inst_ty);
                 return Err(SemErr::new(line, ty));

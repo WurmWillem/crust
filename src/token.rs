@@ -53,7 +53,7 @@ impl<'source> Token<'source> {
             TokenType::U64 => Some(ValueType::U64),
             TokenType::Bool => Some(ValueType::Bool),
             TokenType::Str => Some(ValueType::Str),
-            TokenType::Identifier => Some(ValueType::Struct(self.lexeme.to_string())),
+            TokenType::Identifier => Some(ValueType::UnknownType(self.lexeme.to_string())),
             _ => None,
         }
     }

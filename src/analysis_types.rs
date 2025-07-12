@@ -149,6 +149,17 @@ impl<'a> EnityData<'a> {
             enums: HashMap::new(),
         }
     }
+
+    pub fn resolve_value_ty(&self, ty: &mut ValueType) {
+        if let ValueType::UnknownType(name) = ty {
+            if self.structs.contains_key(&name as &str) || self.nat_structs.contains_key(&name as &str) {
+               *ty = ValueType::Struct(name.clone()) 
+            }
+            else if self.enums.contains_key(&name as &str){
+               *ty = ValueType::Enum(name.clone()) 
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

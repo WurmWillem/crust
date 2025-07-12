@@ -29,6 +29,6 @@ create_test!(continue_loop, "continue", "123458910");
 create_test!(break_loop, "break", "0123");
 create_test!(arr_print_2d, "2d_arr_print", "1234");
 create_test!(fields, "fields", "3 2\n1");
-create_test!(methods, "methods", "6\n4");
+create_test!(methods, "methods", "6\n4\n\"hoi\"");
 create_test!(vec, "vec", "2\n3\n[1, 2]\n[1, 2, 4]\n3");
 create_test!(mult_insts, "mult_insts", "0\n10\n1\n11");

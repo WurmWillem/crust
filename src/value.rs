@@ -7,7 +7,7 @@ use crate::object::Object;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ValueType {
-    None, // default value for locals
+    None, // default value for locals TODO: check if necessary
     Any,  // useful as generic type for functions like println()
     Null,
     Bool,
@@ -18,6 +18,7 @@ pub enum ValueType {
     Arr(Box<ValueType>),
     Struct(String),
     Enum(String),
+    UnknownType(String),
 }
 impl ValueType {
     pub fn is_num(&self) -> bool {
@@ -38,6 +39,7 @@ impl fmt::Display for ValueType {
             ValueType::Str => write!(f, "String"),
             ValueType::Struct(s) => write!(f, "struct {}", s),
             ValueType::Enum(e) => write!(f, "enum {}", e),
+            ValueType::UnknownType(_) => unreachable!(),
         }
     }
 }
