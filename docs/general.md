@@ -41,7 +41,7 @@ y = true;  // y now holds 'true'.
 
 ## Control flow 
 
-If statementents work in a similiar way to most modern languages, however it only accepts booleans as condition. 
+If statementents work in a similiar way to most modern languages, however they only accept booleans as condition. 
 Crust gives an error for any other value.
 ```rs
 uint number = 5;
@@ -53,9 +53,24 @@ if number > 5 {
     println("Number is equal to 5.");
 }
 
-if true println("true."); // The body doesn't need curly braces if it is just one statement.
+if true println("true."); // The body doesn't need curly braces if it is only one statement.
 
-
+if null {
+    // throws compile-time error.  
+    println("null found.");
+}
+```
+While loops also work as you'd expect, except similiarly to if statements they also only accept booleans as condition.
+```rs
+uint i = 0;
+while i < 10 {   // curly braces can be omitted.
+    println(i);  // prints the numbers 1 up to and including 9.
+    i += 1;
+}
 ```
 
-
+For loops have special syntax that may be unfamiliar to you.
+```rs
+for i in 0 to 10 // curly braces can be added if needed.
+    println(i);  // prints the numbers 1 up to and including 9.
+```
