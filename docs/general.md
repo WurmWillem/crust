@@ -1,22 +1,61 @@
-<H1>Documentation</H1>
+# 📚 Documentation
 
-This file explains the features of crust in detail. 
-For a simple explanation take a look at the sneakpeek in the readme at the base of the project.
+This document provides a detailed explanation of Crust's features.  
+For a simpler overview, check out the **Sneak Peek** section in the [README](../README.md).
 
+---
 
-<H3>Datatypes</H3>
-Crust has a few built in datatypes:
+## 🔤 Datatypes
 
-- null The default value of uninitialized values
-- bool 
--  - can be either true or false. It is also the only values that is allowed in if statements.
-- str  heap-allocated string.
+Crust supports several built-in datatypes:
 
-- int  64-bit signed integer.
-- uint  64-bit unsigned integer.
-- double 64-bit float.
+- **`null`**  
+  The default value of uninitialized variables.
 
+- **`bool`**  
+  Represents a boolean value — either `true` or `false`.
 
+- **`str`**  
+  A heap-allocated string.
 
+- **`int`**  
+  A 64-bit signed integer.
+
+- **`uint`**  
+  A 64-bit unsigned integer.
+
+- **`double`**  
+  A 64-bit floating-point number.
+  To represent a double place a dot after the number, e.g. write `3.` instead of `3`
+  
+
+## Variables 
+
+Variables can be declared and defined with C-style syntax:
 ```rs
+int x = 3; // define a signed integer named x which holds the value '3'.
+
+bool y;    // define a bool named y which holds 'null'.
+y = true;  // y now holds 'true'.
 ```
+
+## Control flow 
+
+If statementents work in a similiar way to most modern languages, however it only accepts booleans as condition. 
+Crust gives an error for any other value.
+```rs
+uint number = 5;
+if number > 5 {
+    println("Number is higher than 5.");
+} else if number < 5 {
+    println("Number is less than 5.");
+} else {
+    println("Number is equal to 5.");
+}
+
+if true println("true."); // The body doesn't need curly braces if it is just one statement.
+
+
+```
+
+
