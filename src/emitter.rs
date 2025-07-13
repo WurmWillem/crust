@@ -404,7 +404,6 @@ impl<'a> Emitter<'a> {
                     self.comps.emit_constant(methods[0].1, line)?;
 
                     self.comps.emit_bytes(OpCode::FuncCall as u8, 1, line);
-                    dbg!("struct");
                 } else {
                     unreachable!()
                 }
