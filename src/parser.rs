@@ -190,6 +190,7 @@ impl<'a> Parser<'a> {
         if !self.check(TokenType::RightParen) {
             if self.matches(TokenType::This) {
                 use_self = true;
+                self.matches(TokenType::Comma);
             }
 
             if !self.check(TokenType::RightParen) {

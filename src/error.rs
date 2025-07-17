@@ -76,6 +76,8 @@ pub enum SemErrType {
     StaticMethodOnInstance(String),
     SelfOnStaticMethod,
     NoSelfOnMethod,
+    InvalidIfCondition(ValueType),
+    InvalidWhileCondition(ValueType),
     InvalidTypeFieldAccess(ValueType),
     InvalidTypeMethodAccess(ValueType),
     NoReturnTy(String, ValueType),
@@ -102,6 +104,8 @@ impl SemErr {
             SemErrType::FuncDefInFunc(name) => format!("You attempted to define the function '{}' inside another function, which is illegal.", name.green()),
             SemErrType::StructDefInFunc(name) => format!("You attempted to define the struct '{}' inside a function, which is illegal.", name.green()),
             SemErrType::InvalidCast(expected, found) => format!("You can't cast an expression of type '{found}' to type '{expected}'."),
+            SemErrType::InvalidIfCondition(found) => format!("If statement only accepts condition of type 'bool', found '{found}'."),
+            SemErrType::InvalidWhileCondition(found) => format!("While statement only accepts condition of type 'bool', found '{found}'."),
             SemErrType::NoMainFunc => {
                 "You have to define a function with the name 'main' as entry point for the program."
                     .to_string()

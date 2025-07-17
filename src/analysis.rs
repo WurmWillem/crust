@@ -209,14 +209,24 @@ impl<'a> Analyser<'a> {
                 body,
                 final_else,
             } => {
-                self.analyse_expr(condition)?;
+                let condition_ty = self.analyse_expr(condition)?;
+                if condition_ty != ValueType::Bool {
+                    let err_ty = SemErrType::InvalidIfCondition(condition_ty);
+                    return Err(SemErr::new(line, err_ty));
+                }
+
                 self.analyse_stmt(body)?;
                 if let Some(final_else) = final_else {
                     self.analyse_stmt(final_else)?;
                 }
             }
             StmtType::While { condition, body } => {
-                self.analyse_expr(condition)?;
+                let condition_ty = self.analyse_expr(condition)?;
+                if condition_ty != ValueType::Bool {
+                    let err_ty = SemErrType::InvalidWhileCondition(condition_ty);
+                    return Err(SemErr::new(line, err_ty));
+                }
+
                 self.analyse_stmt(body)?;
             }
             StmtType::For {
